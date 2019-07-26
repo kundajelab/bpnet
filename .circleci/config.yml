@@ -1,0 +1,107 @@
+version: 2
+
+variables:
+  update_conda: &update_conda
+    run:
+      name: Update conda
+      command: conda update --yes conda
+  install_git_lfs: &install_git_lfs
+    run:
+      name: Install git-lfs
+      command: |
+        conda install --yes -c conda-forge git-lfs
+        cp .circleci/gitconfig ~/.gitconfig
+  install_bpnet: &install_bpnet
+    run:
+      name: Install bpnet
+      command: pip install '.[develop]'
+  install_requests: &install_requests
+    run:
+      name: Install requirements for requests correctly
+      command: pip install requests
+  kipoi_ls: &kipoi_ls
+    run:
+      name: List kipoi packages
+      command: kipoi ls
+  run_tests: &run_tests
+    run:
+      name: Run tests
+      command: |
+        mkdir test-reports
+        py.test --cov=bpnet/ tests/ -n 1 --no-cov-on-fail --junitxml=test-reports/junit.xml
+  run_coveralls: &run_coveralls
+    run:
+      name: run coveralls
+      command: coveralls || true
+  store_test_results: &store_test_results
+    store_test_results:
+      path: test-reports
+  store_test_artifacts: &store_test_artifacts
+    store_artifacts:
+      path: test-reports
+      destination: test-reports
+
+
+jobs:
+
+  # TODO generate a new environment
+  test-py36:
+    docker:
+      - image: continuumio/anaconda3:5.0.1
+      # - image: kipoi/miniconda3:4.3.14
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *update_conda
+      # - *install_git_lfs
+      # - *update_pytorch
+      - *install_pip_deps
+      - *install_bpnet
+      - *run_tests
+      - *run_coveralls
+      - *store_test_results
+      - *store_test_artifacts
+
+  build-deploy-docs:
+    docker:
+      # - image: continuumio/miniconda3
+      # - image: kipoi/miniconda3:4.3.14
+      - image: continuumio/anaconda3:5.0.1
+    working_directory: ~/repo
+    steps:
+      # - add_ssh_keys:
+      #     fingerprints:
+      #       - e3:44:16:ec:72:df:ae:59:82:c2:ee:57:4a:52:71:aa
+      - checkout
+      - run:
+          name: Install pip bpnet
+          command: pip install -e .
+      - run:
+          name: Install build deps
+          # use custom pydoc-markdown
+          command: pip install nbconvert mkdocs git+https://github.com/kipoi/pydoc-markdown@master
+      - run:
+          name: Build docs
+          command: |
+            cd docs/
+            mkdir -p theme_dir/img/ipynb/
+            ./render_ipynb.bash
+            pydocmd build
+      - run:
+          name: Deploy docs
+          command: .circleci/deploy_docs.bash
+
+workflows:
+  version: 2
+
+  test:
+    jobs:
+      - test-py36
+      # - build-deploy-docs:
+      #     requires:
+      #       - test-py36
+      #     filters:
+      #       branches:
+      #         only:
+      #           - master
+      #           - test_deployment_script

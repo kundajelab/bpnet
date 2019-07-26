@@ -1,0 +1,59 @@
+name: basepair
+channels:
+- bioconda
+- pytorch
+- conda-forge
+- defaults
+dependencies:
+- python=3.6
+
+# genomics
+- pybedtools
+- genomelake
+- pysam
+
+- pytorch
+- cython
+- h5py
+- numpy
+
+- pandas>=0.23.0
+- fastparquet
+- python-snappy
+
+- nb_conda
+- pip:
+  # in-house packages
+  - urllib3==1.24.1
+  - kipoi>=0.6.8
+  - kipoiseq>=0.2.2
+  - concise==0.6.6
+  - modisco==0.5.1.1
+  - gin-train
+  - git+https://github.com/kundajelab/DeepExplain.git
+
+  # ML & numerics
+  - tensorflow==1.7  # tensorflow-gpu==1.7 for gpu
+  - keras==2.2.4
+  - scikit-learn
+  - joblib==0.12.5
+  - comet_ml
+  - wandb
+  - gin-config
+
+  # Plotting
+  - matplotlib==3.0.2
+  - plotnine
+  - seaborn
+
+  # Utils
+  - tqdm
+  - ipykernel
+  - ipython
+
+  # rendering notebooks
+  - papermill
+  - nbconvert==5.5.0  # for snakemake conversion
+
+  # basepair package
+  - -e .  # install the local basepair package

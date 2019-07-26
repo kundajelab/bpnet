@@ -1,0 +1,73 @@
+site_name: BPNet
+
+# ------- readthedocs ---------
+theme:
+ name: readthedocs
+ custom_dir: theme_dir
+extra_css: [css/extra.css]
+# --------------------------
+repo_url: http://github.com/kundajelab/bpnet
+site_url: https://kundajelab.github.io/bpnet
+edit_uri: edit/master/docs/templates/
+site_description: 'Documentation of BPNet.'
+
+dev_addr: '0.0.0.0:8000'
+
+# google_analytics: ["UA-115025493-1", "kipoi.org"]
+# --------------------------------------------
+
+# This tells pydocmd which pages to generate from which Python modules,
+# functions and classes. At the first level is the page name, below that
+# is a tree of Python member names (modules, classes, etc.) that should be
+# documented. Higher indentation leads to smaller header size.
+generate:
+  - extractors.md:
+    - bpnet.extractors+
+  - transforms/functional.md:
+    - bpnet.transforms.functional+
+  - transforms/transforms.md:
+    - bpnet.transforms.transforms+
+  - dataloaders.md:
+    - bpnet.dataloaders.sequence+
+    - bpnet.dataloaders.splicing.MMSpliceDl
+
+# - baz/cool-stuff.md:
+#   - foobar.baz:
+#     - foobar.baz.CoolClass+     # (+ to include members)
+#     - foobar.baz.some_function
+# - baz/more-stuff.md:
+#   - foobar.more++               # (++ to include members, and their members)
+
+# MkDocs pages configuration. The `<<` operator is sugar added by pydocmd
+# that allows you to use an external Markdown file (eg. your project's README)
+# in the documentation. The path must be relative to current working directory.
+# pages:
+# - Home: index.md << ../README.md
+# - foobar.baz:
+#   - Cool Stuff: baz/cool-stuff.md
+
+pages:
+- Home: index.md << ../README.md
+- Dataloaders: dataloaders.md
+- Transforms:
+  - Functional: transforms/functional.md
+  - Class-based: transforms/transforms.md
+- Extractors: extractors.md
+    
+# These options all show off their default values. You don't have to add
+# them to your configuration if you're fine with the default.
+docs_dir: templates
+gens_dir: sources
+site_dir: site
+loader:   pydocmd.loader.PythonLoader
+# preprocessor: kiposeq.utils.YamlPreprocessor
+preprocessor: pydocmd.preprocessor.DataLoaderYamlPreprocessor
+# preprocessor: pydocmd.preprocessor.Preprocessor
+
+# TODO - modify parsing of the yaml doc-strings?
+
+# Additional search path for your Python module. If you use Pydocmd from a
+# subdirectory of your project (eg. docs/), you may want to add the parent
+# directory here.
+additional_search_paths:
+- ..
