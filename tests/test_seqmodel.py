@@ -1,7 +1,7 @@
 """Test sequence model
 """
-from basepair.seqmodel import SeqModel
-from basepair.heads import ScalarHead, BinaryClassificationHead, ProfileHead
+from bpnet.seqmodel import SeqModel
+from bpnet.heads import ScalarHead, BinaryClassificationHead, ProfileHead
 import numpy as np
 import keras.layers as kl
 
@@ -42,7 +42,7 @@ class BaseNet:
 
 
 def test_interpret_wo_bias():
-    from basepair.metrics import PeakPredictionProfileMetric
+    from bpnet.metrics import PeakPredictionProfileMetric
     from gin_train.metrics import RegressionMetrics, ClassificationMetrics
     from concise.preprocessing import encodeDNA
     # test the model
@@ -88,7 +88,7 @@ def test_interpret_wo_bias():
     assert o['a/profile/wn'].shape == seqs.shape
 
     # evaluate the dataset -> setup an array dataset (NumpyDataset) -> convert to
-    from basepair.data import NumpyDataset
+    from bpnet.data import NumpyDataset
     ds = NumpyDataset({"inputs": inputs, "targets": targets})
     o = m.evaluate(ds)
     assert 'avg/counts/mad' in o

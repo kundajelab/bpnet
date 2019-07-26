@@ -5,9 +5,9 @@ import pytest
 from pytest import fixture
 import pandas as pd
 import numpy as np
-from basepair.modisco.utils import longer_pattern
-import basepair
-from basepair.modisco.core import Pattern
+from bpnet.modisco.utils import longer_pattern
+import bpnet
+from bpnet.modisco.core import Pattern
 from concise.preprocessing import encodeDNA
 
 def scan_seq(p, seq):
