@@ -4,7 +4,6 @@ except Exception:
     pass
 
 import pandas as pd  # need to import that first to prevent some install issues
-from . import config
 from . import losses
 from . import activations
 from . import cli

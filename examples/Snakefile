@@ -1,0 +1,42 @@
+"""Download the required files
+"""
+
+from bpnet.cli.schemas import DataSpec
+
+base_url = 'http://mitra.stanford.edu/kundaje/avsec/chipnexus/paper/data'
+
+dataspecs = ['chip-nexus/dataspec.yml',
+             'chip-seq/dataspec.yml']
+
+# download all the required files by the DataSpec to ./data
+rule all:
+    input:
+        [os.path.normpath(os.path.join('data', f))
+         for ds in dataspecs
+         for f in DataSpec.load(ds).list_all_files(include_peaks=True)]
+
+
+rule chip-nexus:
+    input:
+        [os.path.normpath(os.path.join('data', f))
+         for f in DataSpec.load('chip-nexus/dataspec.yml').list_all_files(include_peaks=True)]
+
+        
+rule chip-seq:
+    input:
+        [os.path.normpath(os.path.join('data', f))
+         for f in DataSpec.load('chip-nexus/dataspec.yml').list_all_files(include_peaks=True)]
+
+
+# -----------------------
+
+        
+rule download:
+    """Download an individual file
+    """
+    output:
+        f = 'data/{path}'
+    params:
+        base_url = base_url
+    shell:
+        "wget {params.base_url}/chip-nexus/{wildcards.path} -O {output.f}"

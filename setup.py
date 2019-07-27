@@ -9,13 +9,13 @@ requirements = [
     "related",
 
     "concise",
-    "git+https://github.com/kundajelab/DeepExplain.git",
+    "deepexplain",
 
     # ml
     "gin-config",
     "keras>=2.2.4",
     "scikit-learn",
-    "tensorflow",
+    # "tensorflow",
 
     # numerics
     "h5py",
@@ -73,6 +73,11 @@ test_requirements = [
     "pytest",
     "virtualenv",
 ]
+
+dependency_links = [
+    "deepexplain @ git+https://github.com/kundajelab/DeepExplain.git@#egg=deepexplain-0.1"
+]
+
 
 setup(
     name="bpnet",

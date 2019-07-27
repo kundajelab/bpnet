@@ -107,3 +107,7 @@ venv.bak/
 **/downloaded/**
 /docs/mkdocs.yml
 /tests/data/sample.5kb.fa.fai
+
+/examples/data
+**/.snakemake/**
+*~

@@ -71,18 +71,28 @@ class TaskSpec(RelatedConfigMixin):
     def get_bw_dict(self):
         return {"pos": self.pos_counts, "neg": self.neg_counts}
 
-    def touch_all_files(self, verbose=True):
-        from bpnet.utils import touch_file
+    def list_all_files(self, include_peaks=False):
+        """List all file paths specified
+        """
+        files = []
         if isinstance(self.pos_counts, str):
-            touch_file(self.pos_counts, verbose)
-            touch_file(self.neg_counts, verbose)
+            files += [self.pos_counts,
+                      self.neg_counts]
         elif isinstance(self.pos_counts, list):
             for counts in self.pos_counts:
-                touch_file(counts, verbose)
+                files.append(counts)
             for counts in self.neg_counts:
-                touch_file(counts, verbose)
+                files.append(counts)
         else:
             raise ValueError('pos_counts is not a str or a list')
+        if include_peaks and self.peaks is not None:
+            files.append(self.peaks)
+        return files
+
+    def touch_all_files(self, verbose=True):
+        from bpnet.utils import touch_file
+        for f in self.list_all_files(include_peaks=False):
+            touch_file(f, verbose)
 
     def abspath(self):
         """Use absolute filepaths
@@ -172,6 +182,18 @@ class DataSpec(RelatedLoadSaveMixin):
         return OrderedDict([(task, task_spec.get_bw_dict())
                             for task, task_spec in self.task_specs.items()])
 
+    def list_all_files(self, include_peaks=False):
+        """List all file paths specified
+        """
+        files = []
+        files.append(self.fasta_file)
+        for ts in self.task_specs.values():
+            files += ts.list_all_files(include_peaks=include_peaks)
+
+        for ts in self.bias_specs.values():
+            files += ts.list_all_files(include_peaks=include_peaks)
+        return files
+
     def touch_all_files(self, verbose=True):
         from bpnet.utils import touch_file
         touch_file(self.fasta_file, verbose)
@@ -180,9 +202,7 @@ class DataSpec(RelatedLoadSaveMixin):
             ts.touch_all_files(verbose=verbose)
 
         for ts in self.bias_specs.values():
-            touch_file(ts.pos_counts, verbose)
-            touch_file(ts.neg_counts, verbose)
-            # touch_file(ts.peaks)
+            ts.touch_all_files(verbose=verbose)
 
     def load_counts(self, intervals, use_strand=True, progbar=False):
         return {task: ts.load_counts(intervals, use_strand=use_strand, progbar=progbar)
