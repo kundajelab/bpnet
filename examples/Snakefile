@@ -16,13 +16,13 @@ rule all:
          for f in DataSpec.load(ds).list_all_files(include_peaks=True)]
 
 
-rule chip-nexus:
+rule chip_nexus:
     input:
         [os.path.normpath(os.path.join('data', f))
          for f in DataSpec.load('chip-nexus/dataspec.yml').list_all_files(include_peaks=True)]
 
         
-rule chip-seq:
+rule chip_seq:
     input:
         [os.path.normpath(os.path.join('data', f))
          for f in DataSpec.load('chip-nexus/dataspec.yml').list_all_files(include_peaks=True)]
