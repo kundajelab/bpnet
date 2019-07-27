@@ -1,0 +1,28 @@
+fasta_file: data/mm10_no_alt_analysis_set_ENCODE.fasta
+task_specs:
+  Oct4:
+    pos_counts: data/Oct4/counts.pos.bw
+    neg_counts: data/Oct4/counts.neg.bw
+    peaks: data/Oct4/idr-optimal-set.summit.bed.gz
+  Sox2:
+    pos_counts: data/Sox2/counts.pos.bw
+    neg_counts: data/Sox2/counts.neg.bw
+    peaks: data/Sox2/idr-optimal-set.summit.bed.gz
+  Nanog:
+    pos_counts: data/Nanog/counts.pos.bw
+    neg_counts: data/Nanog/counts.neg.bw
+    peaks: data/Nanog/idr-optimal-set.summit.bed.gz
+  Klf4:
+    pos_counts: data/Klf4/counts.pos.bw
+    neg_counts: data/Klf4/counts.neg.bw
+    peaks: data/Klf4/idr-optimal-set.summit.bed.gz
+
+bias_specs:
+  input:
+    pos_counts: data/patchcap/counts.pos.bw
+    neg_counts: data/patchcap/counts.neg.bw
+    tasks:
+      - Oct4
+      - Sox2
+      - Nanog
+      - Klf4
