@@ -223,6 +223,33 @@ class DeConv1D:
             return - 2 * (self.tconv_kernel_size // 2)
 
 
+class MovingAverages:
+    """Layer to compute moving averages at multiple resolutions
+    """
+
+    def __init__(self, window_sizes):
+        self.window_sizes = window_sizes
+
+    def __call__(self, x):
+        # x.shape = (batch, seqlen, features)
+        out = []
+        for window_size in self.window_sizes:
+            if window_size == 1:
+                # no need to perform the convolution
+                out.append(x)
+            else:
+                conv = kl.SeparableConv1D(1,
+                                          kernel_size=window_size,
+                                          padding='same',
+                                          depthwise_initializer='ones',
+                                          pointwise_initializer='ones',
+                                          use_bias=False,
+                                          trainable=False)
+                out.append(conv(x))
+        # (batch, seqlen, len(window_sizes))
+        return kl.concatenate(out)
+
+
 AVAILABLE = []
 
 

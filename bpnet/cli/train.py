@@ -10,6 +10,7 @@ from uuid import uuid4
 from fs.osfs import OSFS
 import numpy as np
 from tqdm import tqdm
+from bpnet.cli.schemas import DataSpec
 from bpnet.utils import (create_tf_session, write_json,
                          Logger, NumpyAwareJSONEncoder,
                          dict_prefix_key, kv_string2dict)
@@ -383,7 +384,8 @@ def bpnet_train(dataspec,
                                                      run_id=run_id,
                                                      note_params=note_params,
                                                      force_overwrite=force_overwrite)
-    # TODO - parse and validate the dataspec
+    # parse and validate the dataspec
+    ds = DataSpec.load(dataspec)
 
     # --------------------------------------------
     # Parse the config file
@@ -406,21 +408,28 @@ def bpnet_train(dataspec,
     if len(gin_files) == 0:
         raise ValueError("Please specify at least one of the two: --premade or --config")
 
-    # TODO - infer differnet hyper-parameters from the dataspec file
-    # use_bias = False
-    # n_bias_tracks = 2
-    # n_profile_bias_tracks = 2
-    # dataspec = 'ChIP-nexus.dataspec.yml'
-    # tasks = ['Oct4', 'Sox2', 'Nanog', 'Klf4']
-
-    # # -> specify in dataspec?
-    # valid_chr = ['chr2', 'chr3', 'chr4']
-    # test_chr = ['chr1', 'chr8', 'chr9']
-    # exclude_chr = ['chrX', 'chrY']
-    dataspec_bindings = [f'dataspec="{dataspec}"']
+    # infer differnet hyper-parameters from the dataspec file
+    if len(ds.bias_specs) > 0:
+        use_bias = True
+        n_bias_tracks = len(ds.bias_specs)
+    else:
+        use_bias = False
+        n_bias_tracks = 0
+    tasks = list(ds.task_specs)
+    # figure out the right hyper-parameters
+    dataspec_bindings = [f'dataspec="{dataspec}"',
+                         f'use_bias={use_bias}',
+                         f'n_bias_tracks={n_bias_tracks}',
+                         f'tasks={tasks}'
+                         ]
 
     gin.parse_config_files_and_bindings(gin_files,
                                         bindings=dataspec_bindings + override.split(";"),
+                                        # NOTE: custom files were inserted right after
+                                        # ther user's config file and before the `override`
+                                        # parameters specified at the command-line
+                                        # This allows the user to disable the bias correction
+                                        # despite being specified in the config file
                                         skip_unknown=False)
 
     # --------------------------------------------

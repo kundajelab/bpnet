@@ -1,24 +1,27 @@
+fasta_file: ../data/mm10_no_alt_analysis_set_ENCODE.fasta
 task_specs:
   Oct4:
-    pos_counts: ../data/chip-seq/Oct4/counts.pos.bw
-    neg_counts: ../data/chip-seq/Oct4/counts.neg.bw
+    tracks:
+      - ../data/chip-seq/Oct4/counts.pos.bw
+      - ../data/chip-seq/Oct4/counts.neg.bw
     peaks: ../data/chip-seq/Oct4/idr-optimal-set.summit.bed.gz
   Sox2:
-    pos_counts: ../data/chip-seq/Sox2/counts.pos.bw
-    neg_counts: ../data/chip-seq/Sox2/counts.neg.bw
+    tracks:
+      - ../data/chip-seq/Sox2/counts.pos.bw
+      - ../data/chip-seq/Sox2/counts.neg.bw
     peaks: ../data/chip-seq/Sox2/idr-optimal-set.summit.bed.gz
   Nanog:
-    pos_counts: ../data/chip-seq/Nanog/counts.pos.bw
-    neg_counts: ../data/chip-seq/Nanog/counts.neg.bw
+    tracks:
+      - ../data/chip-seq/Nanog/counts.pos.bw
+      - ../data/chip-seq/Nanog/counts.neg.bw
     peaks: ../data/chip-seq/Nanog/idr-optimal-set.summit.bed.gz
 
 bias_specs:
   input:
-    pos_counts: ../data/chip-seq/input-control/counts.pos.bw
-    neg_counts: ../data/chip-seq/input-control/counts.neg.bw
+    tracks:
+      - ../data/chip-seq/input-control/counts.pos.bw
+      - ../data/chip-seq/input-control/counts.neg.bw
     tasks:
       - Oct4
       - Sox2
       - Nanog
-
-fasta_file: ../data/mm10_no_alt_analysis_set_ENCODE.fasta
