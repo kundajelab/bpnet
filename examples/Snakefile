@@ -39,4 +39,4 @@ rule download:
     params:
         base_url = base_url
     shell:
-        "wget {params.base_url}/chip-nexus/{wildcards.path} -O {output.f}"
+        "wget {params.base_url}/{wildcards.path} -O {output.f}"

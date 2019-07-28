@@ -2,7 +2,7 @@
 """
 import numpy as np
 from bpnet.utils import dict_prefix_key
-from gin_train.metrics import ClassificationMetrics, RegressionMetrics
+from bpnet.metrics import ClassificationMetrics, RegressionMetrics
 import keras.backend as K
 import tensorflow as tf
 import keras.layers as kl

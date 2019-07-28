@@ -1,9 +1,9 @@
-import logging
 import sys
 import os
 import pickle
 import json
 import subprocess
+import numpy as np
 import pandas as pd
 import papermill as pm  # Render the ipython notebook
 from kipoi.external.flatten_json import flatten, unflatten
@@ -83,9 +83,19 @@ def read_json(fname):
         return json.load(f)
 
 
+class NumpyAwareJSONEncoder(json.JSONEncoder):
+
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, np.generic):
+            return obj.item()
+        return json.JSONEncoder.default(self, obj)
+
+
 def write_json(obj, fname, **kwargs):
     with open(fname, "w") as f:
-        return json.dump(obj, f, **kwargs)
+        return json.dump(obj, f, cls=NumpyAwareJSONEncoder, **kwargs)
 
 
 dump = write_pkl
@@ -188,6 +198,13 @@ def expand_str_list(l, prefix="", suffix=""):
     return [prefix + x + suffix for x in l]
 
 
+def kv_string2dict(s):
+    """Convert a key-value string: k=v,k2=v2,... into a dictionary
+    """
+    import yaml
+    return yaml.load(s.replace(",", "\n").replace("=", ": "))
+
+
 def dict_suffix_key(d, suffix):
     return {k + suffix: v for k, v in d.items()}
 
@@ -262,6 +279,34 @@ class ConditionalRun:
                     exist_ok=True)
         with open(fname, "w") as f:
             f.write(get_timestamp())
+
+
+class Logger(object):
+    """tee functionality in python. If this object exists,
+    then all of stdout gets logged to the file
+    Adoped from:
+    https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python/3423392#3423392
+    """
+
+    def __init__(self, name, mode='a'):
+        self.file = open(name, mode)
+        self.stdout = sys.stdout
+        sys.stdout = self
+
+    def __del__(self):
+        sys.stdout = self.stdout
+        self.file.close()
+
+    def write(self, data):
+        self.file.write(data)
+        self.stdout.write(data)
+        # flush right away
+        self.file.flush()
+        self.stdout.flush()
+
+    def flush(self):
+        self.file.flush()
+        self.stdout.flush()
 
 
 def fnmatch_any(s, patterns):

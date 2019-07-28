@@ -1,0 +1,102 @@
+# TODO setup the bpnet9 model
+
+# ==================================================================
+# model.gin
+# --------------------------------------------
+# model
+import bpnet
+import bpnet.models
+import bpnet.heads
+import bpnet.layers
+import bpnet.seqmodel
+import bpnet.trainers
+import bpnet.losses
+import bpnet.datasets
+import bpnet.metrics
+
+# macros
+# tconv_kernel_size = 25
+# n_dil_layers = 9
+
+# TODO - call this architecture bpnet?
+
+# SeqModel
+train.model = @multihead_seq_model()
+multihead_seq_model.tasks = %tasks
+multihead_seq_model.filters = %filters
+multihead_seq_model.seqlen = %seq_width
+
+multihead_seq_model.n_dil_layers = %n_dil_layers
+multihead_seq_model.conv1_kernel_size = 25
+
+multihead_seq_model.tconv_kernel_size = %tconv_kernel_size
+multihead_seq_model.batchnorm = %batchnorm
+multihead_seq_model.lr = %lr
+multihead_seq_model.padding = 'same'
+multihead_seq_model.use_bias = %use_bias
+multihead_seq_model.n_profile_bias_tracks = %n_profile_bias_tracks
+
+# specified from the CLI
+multihead_seq_model.b_loss_weight = 0
+multihead_seq_model.c_loss_weight = %lambda
+multihead_seq_model.p_loss_weight = 1
+multihead_seq_model.merge_profile_reg = False
+
+# --------------------------------------------
+# training
+train.seed = None
+train.batch_size = 128
+train.epochs = 200
+train.early_stop_patience = 5
+train.num_workers = 6
+
+# --------------------------------------------
+# data
+# TODO - shorten the function name
+# - databunch
+# seq_width  -> specified from gin-bindings
+train.data = @get_StrandedProfile_datasets2()
+get_StrandedProfile_datasets2.valid_chr = %valid_chr
+get_StrandedProfile_datasets2.test_chr = %test_chr
+get_StrandedProfile_datasets2.peak_width = %seq_width
+get_StrandedProfile_datasets2.include_metadata = False
+get_StrandedProfile_datasets2.tasks = %tasks
+get_StrandedProfile_datasets2.taskname_first = True  # so that the output labels will be "{task}/profile"
+get_StrandedProfile_datasets2.exclude_chr = %exclude_chr
+get_StrandedProfile_datasets2.profile_bias_pool_size = %profile_bias_pool_size
+get_StrandedProfile_datasets2.augment_interval = %augment_interval
+
+# specified from the CLI
+get_StrandedProfile_datasets2.dataspec = %dataspec
+get_StrandedProfile_datasets2.seq_width = %seq_width
+train.train_epoch_frac = 1.0
+train.valid_epoch_frac = 1.0
+
+# ============================================
+# Macros 
+augment_interval = False  # Will be overriden by gin-train
+profile_bias_pool_size = None
+
+lambda = 10
+filters = 64
+tconv_kernel_size = 25
+lr = 0.004
+n_dil_layers = 9
+train.batch_size = 128
+batchnorm = False
+seq_width = 1000
+# TODO - mention the usage of macros
+
+# ============================================
+# These parameters will be specified from the command line
+
+use_bias = False
+n_bias_tracks = 2
+n_profile_bias_tracks = 2
+dataspec = 'ChIP-nexus.dataspec.yml'
+tasks = ['Oct4', 'Sox2', 'Nanog', 'Klf4']
+
+# -> specify in dataspec?
+valid_chr = ['chr2', 'chr3', 'chr4']
+test_chr = ['chr1', 'chr8', 'chr9']
+exclude_chr = ['chrX', 'chrY']

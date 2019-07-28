@@ -95,37 +95,6 @@ def tidy_ols(results):
     return pd.DataFrame(coef.data[1:], columns=coef.data[0])
 
 # ----------------------------------------
-# different smoothing functions
-
-
-def smooth_window_agg(dist, y, window=10, agg_fn=np.mean):
-    xmin, xmax = dist.min(), dist.max()
-    dist_vec = np.arange(xmin, xmax - window + 1, step=1)
-    y_vec = np.zeros_like(dist_vec)
-    for i, d in enumerate(dist_vec):
-        select = (dist >= d) & (dist < d + window)
-        y_vec[i] = agg_fn(y[select])
-    return dist_vec, y_vec, None
-
-
-def smooth_lowess(x, y, **kwargs):
-    from statsmodels.nonparametric.smoothers_lowess import lowess
-    a = pd.DataFrame(lowess(y, x, **kwargs)).drop_duplicates()
-    return a[0], a[1], None
-
-
-def smooth_gam(x, y, n_splines=100, lam=10):
-    # TODO - remove?
-    from pygam import ExpectileGAM, LinearGAM, s, f
-    gam = LinearGAM(s(0, n_splines=n_splines), lam=lam).fit(x, y)
-    # gam = ExpectileGAM(s(0, n_splines=n_splines), expectile=0.5, lam=lam).gridsearch(x.values.reshape((-1,1)), y)
-    XX = gam.generate_X_grid(term=0)
-    confi = gam.confidence_intervals(XX)
-    # confi = gam.prediction_intervals(XX)
-    ym = gam.predict_mu(XX)
-    return XX[:, 0], ym, confi
-
-
 def symmetric_kl(ref, alt):
     from scipy.stats import entropy
     return (entropy(ref, alt) + entropy(alt, ref)) / 2

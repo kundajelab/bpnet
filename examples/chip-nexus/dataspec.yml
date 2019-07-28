@@ -1,21 +1,21 @@
 task_specs:
   Oct4:
-    pos_counts: ../data/Oct4/counts.pos.bw
-    neg_counts: ../data/Oct4/counts.neg.bw
-    peaks: ../data/Oct4/idr-optimal-set.summit.bed.gz
+    pos_counts: ../data/chip-nexus/Oct4/counts.pos.bw
+    neg_counts: ../data/chip-nexus/Oct4/counts.neg.bw
+    peaks: ../data/chip-nexus/Oct4/idr-optimal-set.summit.bed.gz
   Sox2:
-    pos_counts: ../data/Sox2/counts.pos.bw
-    neg_counts: ../data/Sox2/counts.neg.bw
-    peaks: ../data/Sox2/idr-optimal-set.summit.bed.gz
+    pos_counts: ../data/chip-nexus/Sox2/counts.pos.bw
+    neg_counts: ../data/chip-nexus/Sox2/counts.neg.bw
+    peaks: ../data/chip-nexus/Sox2/idr-optimal-set.summit.bed.gz
   Nanog:
-    pos_counts: ../data/Nanog/counts.pos.bw
-    neg_counts: ../data/Nanog/counts.neg.bw
-    peaks: ../data/Nanog/idr-optimal-set.summit.bed.gz
+    pos_counts: ../data/chip-nexus/Nanog/counts.pos.bw
+    neg_counts: ../data/chip-nexus/Nanog/counts.neg.bw
+    peaks: ../data/chip-nexus/Nanog/idr-optimal-set.summit.bed.gz
 
 bias_specs:
   input:
-    pos_counts: ../data/patchcap/counts.pos.bw
-    neg_counts: ../data/patchcap/counts.neg.bw
+    pos_counts: ../data/chip-nexus/patchcap/counts.pos.bw
+    neg_counts: ../data/chip-nexus/patchcap/counts.neg.bw
     tasks:
       - Oct4
       - Sox2

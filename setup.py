@@ -50,7 +50,6 @@ requirements = [
     "pprint",
 
     # Remove
-    "gin-train",
     "genomelake",
     "pysam",  # replace with pyfaidx
 ]
@@ -64,10 +63,10 @@ optional = [
 ]
 
 
-optional2 = [
-    "pygam",
-    "pytorch",
-]
+# optional2 = [
+#     "pygam",
+#     "pytorch",
+# ]
 
 test_requirements = [
     "pytest",
@@ -91,14 +90,17 @@ setup(
     install_requires=requirements,
     extras_require={
         "develop": test_requirements,
+        "extras": optional,
     },
     license="MIT license",
+    entry_points={'console_scripts': ['bpnet = bpnet.__main__:main']},
     zip_safe=False,
     keywords=["deep learning",
               "computational biology",
               "bioinformatics",
               "genomics"],
     test_suite="tests",
-    include_package_data=False,
+    package_data={'bpnet': ['logging.conf']},
+    include_package_data=True,
     tests_require=test_requirements
 )

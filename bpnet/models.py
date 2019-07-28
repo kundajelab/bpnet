@@ -36,7 +36,7 @@ def multihead_seq_model(tasks,
     from bpnet.layers import DilatedConv1D, DeConv1D, GlobalAvgPoolFCN
     from bpnet.metrics import BPNetMetricSingleProfile, default_peak_pred_metric
     from bpnet.heads import ScalarHead, ProfileHead
-    from gin_train.metrics import ClassificationMetrics, RegressionMetrics
+    from bpnet.metrics import ClassificationMetrics, RegressionMetrics
     from bpnet.losses import mc_multinomial_nll_2, CountsMultinomialNLL
     from bpnet.activations import clipped_exp
     from bpnet.functions import softmax
@@ -147,7 +147,7 @@ def binary_seq_model(tasks,
     """
     from bpnet.seqmodel import SeqModel
     from bpnet.heads import ScalarHead, ProfileHead
-    from gin_train.metrics import ClassificationMetrics
+    from bpnet.metrics import ClassificationMetrics
     # Heads -------------------------------------------------
     heads = [ScalarHead(target_name='{task}/class',
                         net=net_head,

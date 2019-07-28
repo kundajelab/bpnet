@@ -73,56 +73,56 @@ class StratifiedRandomBatchSampler(Sampler):
         return len(self.class_vector) // self.batch_size
 
 
-# OLD
-# convenience samplers for ChIP-nexus data
+# # OLD
+# # convenience samplers for ChIP-nexus data
 
 
-def random(arr, n=10):
-    """
-    Randomly sample the values
-      arr: numpy array
-      n = number of samples to draw
-    """
+# def random(arr, n=10):
+#     """
+#     Randomly sample the values
+#       arr: numpy array
+#       n = number of samples to draw
+#     """
 
-    return list(pd.Series(np.arange(len(arr))).sample(n).index)
-
-
-def top_max_count(arr, end=10, start=0, keep=None):
-    """
-    Return indices where arr has the highest max(pos) + max(neg)
-
-    Args:
-      arr: can be an array or a list of arrays
-      start: Where to start returning the values
-      end: where to stop
-    """
-    if keep is None:
-        keep = np.arange(len(arr))
-    assert end > start
-    # Top maxcount indicies
-    return pd.Series(arr.max(1).sum(1))[keep].sort_values(ascending=False).index[start:end]
+#     return list(pd.Series(np.arange(len(arr))).sample(n).index)
 
 
-def top_sum_count(arr, end=10, start=0, keep=None):
-    """
-    Return indices where arr has the highest number of counts
+# def top_max_count(arr, end=10, start=0, keep=None):
+#     """
+#     Return indices where arr has the highest max(pos) + max(neg)
 
-    Args:
-      arr: can be an array or a list of arrays
-      start: Where to start returning the values
-      end: where to stop
-    """
-    if keep is None:
-        keep = np.arange(len(arr))
-    assert end > start
-    return pd.Series(arr.sum(1).sum(1))[keep].sort_values(ascending=False).index[start:end]
+#     Args:
+#       arr: can be an array or a list of arrays
+#       start: Where to start returning the values
+#       end: where to stop
+#     """
+#     if keep is None:
+#         keep = np.arange(len(arr))
+#     assert end > start
+#     # Top maxcount indicies
+#     return pd.Series(arr.max(1).sum(1))[keep].sort_values(ascending=False).index[start:end]
 
 
-def random_larger(arr, n=10, percentile=50):
-    """Randomly sample the values larger than a certain quantile
+# def top_sum_count(arr, end=10, start=0, keep=None):
+#     """
+#     Return indices where arr has the highest number of counts
 
-      arr: numpy array
-      n = number of samples to draw
-    """
-    values = arr.sum(1).sum(1)
-    return list(pd.Series(np.arange(len(arr))[values > np.percentile(values, percentile)]).sample(n).index)
+#     Args:
+#       arr: can be an array or a list of arrays
+#       start: Where to start returning the values
+#       end: where to stop
+#     """
+#     if keep is None:
+#         keep = np.arange(len(arr))
+#     assert end > start
+#     return pd.Series(arr.sum(1).sum(1))[keep].sort_values(ascending=False).index[start:end]
+
+
+# def random_larger(arr, n=10, percentile=50):
+#     """Randomly sample the values larger than a certain quantile
+
+#       arr: numpy array
+#       n = number of samples to draw
+#     """
+#     values = arr.sum(1).sum(1)
+#     return list(pd.Series(np.arange(len(arr))[values > np.percentile(values, percentile)]).sample(n).index)

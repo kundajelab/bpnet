@@ -4,3 +4,7 @@ recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 
 recursive-include docs *.md *.rst conf.py Makefile make.bat *.jpg *.png *.gif
+
+include bpnet/logging.conf
+recursive-include bpnet/premade *
+recursive-include bpnet/templates *
