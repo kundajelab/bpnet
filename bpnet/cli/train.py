@@ -248,7 +248,7 @@ def _track_stats(tracks):
      help='Path to the interval bed file. If not specified, files specified in dataspec.yml will be used')
 @arg('--sample', type=int,
      help='Specifies the number of randomly selected intervals on which the stats are computed.')
-@arg('--peak_width',
+@arg('--peak-width',
      help='Resize all intervals to that specific width using interval center as an anchorpoint.')
 def dataspec_stats(dataspec,
                    intervals=None,
