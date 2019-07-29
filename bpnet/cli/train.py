@@ -5,7 +5,7 @@ import json
 import sys
 import os
 import yaml
-from argh.decorators import aliases, named
+from argh.decorators import aliases, named, arg
 from uuid import uuid4
 from fs.osfs import OSFS
 import numpy as np
@@ -224,6 +224,83 @@ def log_gin_config(output_dir, cometml_experiment=None, wandb_run=None):
         wandb_run.config.update({k.replace(".", "/"): v for k, v in gin_config_dict.items()})
 
 
+def _track_stats(tracks):
+    """Compute the statistics of different tracks
+    """
+    stats = {}
+    for k, x in track_stats.items():
+        total = x.sum(axis=(-1, -2))
+        stats[k] = {"per-base max": x.max(),
+                    "per-base fraction of 0": np.mean(x == 0),
+                    "per-base mean": np.mean(x),
+                    "per-base median": np.median(x),
+                    "total mean": np.mean(total),
+                    "total median": np.median(total),
+                    "total max": total.max(),
+                    "total fraction of 0": np.mean(total == 0)
+                    }
+    return stats
+
+
+@arg('dataspec',
+     help='dataspec.yaml file')
+@arg('--intervals',
+     help='Path to the interval bed file. If not specified, files specified in dataspec.yml will be used')
+@arg('--sample',
+     help='Subset the intervals to `sample` randomly sampled ones.')
+@arg('--peak_width',
+     help='Resize all intervals to that specific width using interval center as an anchorpoint.')
+def dataspec_stats(dataspec,
+                   intervals=None,
+                   sample=None,
+                   peak_width=1000):
+    """Compute the stats about the tracks
+    """
+    import random
+    from pybedtools import BedTool
+    from bpnet.preproc import resize_interval
+    from genomelake.extractors import FastaExtractor
+
+    ds = DataSpec.load(dataspec)
+
+    if intervals is None:
+        intervals = list(BedTool(intervals))
+    else:
+        intervals = []
+        for task, task_spec in ds.task_specs.items():
+            if task_spec.peaks is not None:
+                intervals.append(list(BedTool(task_spec.peaks)))
+
+    if sample is not None and sample < len(intervals):
+        logger.info(f"Using only {sample} randomly sampled intervals instead of {len(intervals)}")
+        intervals = random.sample(intervals, k=sample)
+
+    # resize the intervals
+    intervals = [resize_interval(interval, peak_width) for interval in intervals]
+
+    base_freq = FastaExtractor(ds.fasta_file)(intervals).mean(axis=(0, 1))
+
+    count_stats = _track_stats(ds.load_counts(intervals, progbar=True))
+    bias_count_stats = _track_stats(ds.load_bias_counts(intervals, progbar=True))
+
+    print("")
+    print("Base frequencies")
+    for i, base in enumerate(['A', 'C', 'G', 'T']):
+        print(f"- {base}: {base_freq[i]}")
+    print("")
+    print("Count stats")
+    for task, stats in count_stats.items():
+        print(f"- {task}")
+        for stat_key, stat_value in stats.items():
+            print(f"  {stat_key}: {stat_value}")
+    print("")
+    print("Bias stats")
+    for task, stats in bias_count_stats.items():
+        print(f"- {task}")
+        for stat_key, stat_value in stats.items():
+            print(f"  {stat_key}: {stat_value}")
+
+
 @gin.configurable
 def train(output_dir,
           model=gin.REQUIRED,
@@ -252,7 +329,7 @@ def train(output_dir,
           gpu=None,
           memfrac_gpu=None,
           cometml_experiment=None,
-          wandb_run=None
+          wandb_run=None,
           ):
     """Main entry point to configure in the gin config
 
@@ -408,6 +485,43 @@ def _get_premade_path(premade, raise_error=False):
 
 
 @named('train')
+@arg('dataspec',
+     help='dataspec.yaml file')
+@arg('output_dir',
+     help='where to store the results. Note: a subdirectory `run_id` will be created in `output_dir`.')
+@arg('--premade',
+     help='pre-made config file to use (e.g. use the default architecture). See TODO - X for available premade models.')
+@arg('--config',
+     help='gin config file path(s) specifying the model architecture and the loss etc.'
+     ' They override the premade model. Single model example: config.gin. Multiple file example: data.gin,model.gin')
+@arg('--override',
+     help='semi-colon separated list of additional gin-bindings to use')
+@arg('--gpu',
+     help='which gpu to use. Example: gpu=1')
+@arg('--memfrac-gpu',
+     help='what fraction of the GPU memory to use')
+@arg('--num-workers',
+     help='number of workers to use in parallel for loading the data the model')
+@arg('--vmtouch',
+     help='if True, use vmtouch to load the files in dataspec into Linux page cache')
+@arg('--in-memory',
+     help='if True, load the entire dataset into the memory first')
+@arg('--wandb-project',
+     help='path to the wandb (https://www.wandb.com/) project name `<entity>/<project>`. '
+     'Example: Avsecz/test. This will track and upload your metrics. '
+     'Make sure you have specified the following environemnt variable: TODO. If not specified, wandb will not be used')
+@arg('--cometml-project',
+     help='path to the comet.ml (https://www.comet.ml/) project specified as <username>/<project>.'
+     ' This will track and upload your metrics. Make sure you have specified the following environemnt '
+     'variable: TODO. If not specified, cometml will not get used')
+@arg('--run-id',
+     help='manual run id. If not specified, it will be either randomly generated or re-used from wandb or comet.ml.')
+@arg('--note-params',
+     help='take note of additional key=value pairs. Example: --note-params note="my custom note",feature_set=this')
+@arg('--force-overwrite',
+     help='if True, the output directory will be overwritten')
+@arg('--skip-evaluation',
+     help='if True, model evaluation will be skipped')
 def bpnet_train(dataspec,
                 output_dir,
                 premade='bpnet9',
@@ -426,41 +540,12 @@ def bpnet_train(dataspec,
                 skip_evaluation=False):
     """Train a model using gin-config
 
-    Args:
-      dataspec: dataspec.yaml file
-      output_dir: where to store the results. Note: a subdirectory `run_id`
-        will be created in `output_dir`.
-      premade: pre-made config file to use (e.g. use the default architecture). See TODO - X for available premade models.
-      config(optional): gin config file path(s) specifying the model architecture and the loss etc. They override the premade model
-        single model example: config.gin
-        mutltiple file example: data.gin,model.gin
-      override: semi-colon separated list of additional gin-bindings to use
-
-      gpu: which gpu to use. Example: gpu=1
-      memfrac_gpu: what fraction of the GPU's memory to use
-      num_workers: number of workers to use in parallel for loading the data the model
-      vmtouch: if True, use vmtouch to load the files in dataspec into Linux page cache
-      in_memory: if True, load the entire dataset into the memory first
-      wandb_project: path to the wandb (https://www.wandb.com/) project name `<entity>/<project>`. Example: Avsecz/test.
-        This will track and upload your metrics. Make sure you have specified the following environemnt variable: TODO.
-        If not specified, wandb will not be used
-      cometml_project: path to the comet.ml (https://www.comet.ml/) project specified as <username>/<project>.
-        This will track and upload your metrics. Make sure you have specified the following environemnt variable: TODO.
-        If not specified, cometml will not get used
-      run_id: manual run id. If not specified, it will be either randomly
-        generated or re-used from wandb or comet.ml.
-      note_params: take note of additional key=value pairs.
-        Example: --note-params note='my custom note',feature_set=this
-      force_overwrite: if True, the output directory will be overwritten
-      skip_evaluation: if True, model evaluation will be skipped
-
-
-    Output:
+    Output files:
       train.log - log file
       model.h5 - Keras model HDF5 file
       seqmodel.pkl - Serialized SeqModel. This is the main trained model.
       eval-report.ipynb/.html - evaluation report containing training loss curves and some example model predictions.
-        You can specify your own ipynb using --eval-report=my-notebook.ipynb.
+        You can specify your own ipynb using `--override='eval_report_template.name="my-template.ipynb"'`.
       model.gin -> copied from the input
       dataspec.yaml -> copied from the input
     """
