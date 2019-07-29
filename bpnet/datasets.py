@@ -422,9 +422,6 @@ def bpnet_data(dataspec,
                exclude_chr=[],
                augment_interval=True,
                interval_augmentation_shift=200,
-               # TODO - make vmtouch optional
-               # TODO - allow the dataset to be cached into memory
-               vmtouch=True,
                tasks=None):
     """BPNet default data-loader
 
@@ -439,9 +436,6 @@ def bpnet_data(dataspec,
         assert vc not in exclude_chr
 
     dataspec = DataSpec.load(dataspec)
-    if vmtouch:
-        # use vmtouch to load all file to memory
-        dataspec.touch_all_files()
 
     if tasks is None:
         tasks = list(dataspec.task_specs)
@@ -506,8 +500,7 @@ def bpnet_data_gw(dataspec,
                   tasks=None,
                   valid_chr=['chr2', 'chr3', 'chr4'],
                   test_chr=['chr1', 'chr8', 'chr9'],
-                  exclude_chr=[],
-                  vmtouch=True):
+                  exclude_chr=[]):
     """Genome-wide bpnet data
     """
     # NOTE = only chromosomes from chr1-22 and chrX and chrY are considered here
@@ -520,9 +513,6 @@ def bpnet_data_gw(dataspec,
         assert vc not in exclude_chr
 
     dataspec = DataSpec.load(dataspec)
-    if vmtouch:
-        # use vmtouch to load all file to memory
-        dataspec.touch_all_files()
 
     # get the list of all chromosomes from the fasta file
     all_chr = _chrom_names(dataspec.fasta_file)

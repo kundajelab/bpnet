@@ -68,6 +68,9 @@ bpnet_data.seq_width = %seq_width
 train.train_epoch_frac = 1.0
 train.valid_epoch_frac = 1.0
 
+train.eval_report = @eval_report_template()
+eval_report_template.name = 'basepair-template.ipynb'
+
 # ============================================
 # Macros 
 augment_interval = True

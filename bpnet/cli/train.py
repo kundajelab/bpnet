@@ -10,8 +10,11 @@ from uuid import uuid4
 from fs.osfs import OSFS
 import numpy as np
 from tqdm import tqdm
+import keras.backend as K
 from bpnet.cli.schemas import DataSpec
+from bpnet.data import NumpyDataset
 from bpnet.utils import (create_tf_session, write_json,
+                         render_ipynb,
                          Logger, NumpyAwareJSONEncoder,
                          dict_prefix_key, kv_string2dict)
 
@@ -44,6 +47,28 @@ def add_file_logging(output_dir, logger, name='stdout'):
     fh.setLevel(logging.INFO)
     logger.addHandler(fh)
     return log
+
+
+@gin.configurable
+def eval_report_template(name, raise_error=True):
+    """Evaluation report template found in ../templates/
+    """
+    import inspect
+    filename = inspect.getframeinfo(inspect.currentframe()).filename
+    this_dir = os.path.dirname(os.path.abspath(filename))
+    template_file = os.path.join(this_dir, '../templates/', name)
+    if not os.path.exists(template_file):
+        if raise_error:
+            # list all file
+            available_template_files = [f for f in os.listdir(os.path.dirname(template_file))
+                                        if f.endswith('.ipynb')]
+            template_str = "\n".join(available_template_files)
+            raise FileNotFoundError(
+                f"Template {name} doesn't exist. Available templates:\n{template_str}"
+            )
+        else:
+            return None
+    return template_file
 
 
 def start_experiment(output_dir,
@@ -207,9 +232,9 @@ def train(output_dir,
           eval_train=False,
           eval_skip=[],
           trainer_cls=SeqModelTrainer,
+          eval_report=None,
           # shared
           batch_size=256,
-          num_workers=8,
           # train-specific
           epochs=100,
           early_stop_patience=4,
@@ -221,6 +246,11 @@ def train(output_dir,
           stratified_sampler_p=None,
           tensorboard=True,
           seed=None,
+          # specified by bpnet_train
+          in_memory=False,
+          num_workers=8,
+          gpu=None,
+          memfrac_gpu=None,
           cometml_experiment=None,
           wandb_run=None
           ):
@@ -231,6 +261,7 @@ def train(output_dir,
       data: tuple of (train, valid) Datasets
       eval_train: if True, also compute the evaluation metrics for the final model
         on the training set
+      eval_report: path to the ipynb report file. Use the default one. If set to empty string, the report will not be generated.
       eval_skip List[str]: datasets to skip during evaluation
       seed: random seed to use (in numpy and tensorflow)
     """
@@ -238,6 +269,11 @@ def train(output_dir,
     log_gin_config(output_dir, cometml_experiment, wandb_run)
 
     train_dataset, valid_dataset = data[0], data[1]
+
+    if eval_report is not None:
+        eval_report = os.path.abspath(os.path.expanduser(eval_report))
+        if not os.path.exists(eval_report):
+            raise ValueError(f"Evaluation report {eval_report} doesn't exist")
 
     if seed is not None:
         # Set the random seed
@@ -273,7 +309,33 @@ def train(output_dir,
                                                                     p_vec=stratified_sampler_p,
                                                                     verbose=True)
 
-    tr = trainer_cls(model, train_dataset, valid_dataset, output_dir, cometml_experiment, wandb_run)
+    num_workers_orig = num_workers  # remember the old number of workers before overwriting it
+    if in_memory:
+        # load the training datasets to memory
+        logger.info("Loading the training data into memory")
+        train_dataset = NumpyDataset(train_dataset.load_all(batch_size=batch_size,
+                                                            num_workers=num_workers))
+        logger.info("Loading the validation data into memory")
+        if isinstance(valid_dataset, list):
+            # appropriately handle the scenario where multiple
+            # validation data may be provided as a list of (name, Dataset) tuples
+            valid_dataset = [(k, NumpyDataset(data.load_all(batch_size=batch_size,
+                                                            num_workers=num_workers)))
+                             for k, data in valid_dataset]
+        else:
+            # only a single Dataset was provided
+            valid_dataset = NumpyDataset(valid_dataset.load_all(batch_size=batch_size,
+                                                                num_workers=num_workers))
+
+        num_workers = 1  # don't use multi-processing any more
+
+    tr = trainer_cls(model,
+                     train_dataset,
+                     valid_dataset,
+                     output_dir,
+                     cometml_experiment,
+                     wandb_run)
+
     tr.train(batch_size=batch_size,
              epochs=epochs,
              early_stop_patience=early_stop_patience,
@@ -292,24 +354,43 @@ def train(output_dir,
     print("Final metrics: ")
     print(json.dumps(final_metrics, cls=NumpyAwareJSONEncoder, indent=2))
 
-    # upload files to comet.ml
+    if eval_report is not None:
+        logger.info("Running the evaluation report")
+        # Release the GPU
+        K.clear_session()
+
+        if num_workers_orig != num_workers:
+            # recover the original number of workers
+            num_workers = num_workers_orig
+
+        # Run the jupyter notebook
+        render_ipynb(eval_report,
+                     os.path.join(output_dir, os.path.basename(eval_report)),
+                     params=dict(output_dir=output_dir,
+                                 gpu=gpu,
+                                 memfrac_gpu=memfrac_gpu,
+                                 in_memory=in_memory,
+                                 num_workers=num_workers))
+
+    # upload all files in output_dir to comet.ml
+    # Note: wandb does this automatically
     if cometml_experiment is not None:
         logger.info("Uploading files to comet.ml")
         for f in tqdm(list(OSFS(output_dir).walk.files())):
             # [1:] removes trailing slash
             cometml_experiment.log_asset(file_path=os.path.join(output_dir, f[1:]),
                                          file_name=f[1:])
+
     return final_metrics
 
 
-def get_premade_path(premade, raise_error=False):
+def _get_premade_path(premade, raise_error=False):
     """Get the pre-made file from ../premade/ directory
     """
     import inspect
     filename = inspect.getframeinfo(inspect.currentframe()).filename
     this_dir = os.path.dirname(os.path.abspath(filename))
     premade_dir = os.path.join(this_dir, "../premade/")
-    # TODO - generalize this to multiple files?
     premade_file = os.path.join(premade_dir, premade + '.gin')
     if not os.path.exists(premade_file):
         if raise_error:
@@ -329,12 +410,14 @@ def get_premade_path(premade, raise_error=False):
 @named('train')
 def bpnet_train(dataspec,
                 output_dir,
-                premade='bpnet9',  # TODO - make the premade model optional?
+                premade='bpnet9',
                 config=None,
                 override='',
-                eval_report='../templates/basepair-template.ipynb',  # TODO specify the correct path
                 gpu=0,
                 memfrac_gpu=0.45,
+                num_workers=8,
+                vmtouch=False,
+                in_memory=False,
                 wandb_project="",
                 cometml_project="",
                 run_id=None,
@@ -352,9 +435,12 @@ def bpnet_train(dataspec,
         single model example: config.gin
         mutltiple file example: data.gin,model.gin
       override: semi-colon separated list of additional gin-bindings to use
-      eval_report: path to the ipynb report file. Use the default one. If set to None or none, then the report will not be generated.
+
       gpu: which gpu to use. Example: gpu=1
       memfrac_gpu: what fraction of the GPU's memory to use
+      num_workers: number of workers to use in parallel for loading the data the model
+      vmtouch: if True, use vmtouch to load the files in dataspec into Linux page cache
+      in_memory: if True, load the entire dataset into the memory first
       wandb_project: path to the wandb (https://www.wandb.com/) project name `<entity>/<project>`. Example: Avsecz/test.
         This will track and upload your metrics. Make sure you have specified the following environemnt variable: TODO.
         If not specified, wandb will not be used
@@ -386,6 +472,14 @@ def bpnet_train(dataspec,
                                                      force_overwrite=force_overwrite)
     # parse and validate the dataspec
     ds = DataSpec.load(dataspec)
+    if vmtouch:
+        import shutil
+        if shutil.which('vmtouch') is None:
+            logger.warn("vmtouch is currently not installed. "
+                        "--vmtouch disabled. Please install vmtouch to enable it")
+        else:
+            # use vmtouch to load all file to memory
+            dataspec.touch_all_files()
 
     # --------------------------------------------
     # Parse the config file
@@ -398,7 +492,7 @@ def bpnet_train(dataspec,
     if premade in ['none', 'None', '']:
         logger.info(f"premade model not specified")
     else:
-        gin_files.append(get_premade_path(premade, raise_error=True))
+        gin_files.append(_get_premade_path(premade, raise_error=True))
         logger.info(f"Using the following premade model: {premade}")
 
     if config is not None:
@@ -460,4 +554,11 @@ def bpnet_train(dataspec,
                                                      gin_files=gin_files,
                                                      gpu=gpu), prefix='cli/'))
 
-    return train(output_dir=output_dir, cometml_experiment=cometml_experiment, wandb_run=wandb_run)
+    return train(output_dir=output_dir,
+                 cometml_experiment=cometml_experiment,
+                 wandb_run=wandb_run,
+                 num_workers=num_workers,
+                 in_memory=in_memory,
+                 # to execute the sub-notebook
+                 memfrac_gpu=memfrac_gpu,
+                 gpu=gpu)
