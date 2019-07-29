@@ -129,7 +129,7 @@ class TsvReader:
             n_int = len(self.df)
             center = (self.df[1] + self.df[2]) // 2
             valid_seqs = ((center > self.resize_width // 2 + 1) &
-                          (center < self.df[0].map(chromosome_lens) - self.resize_width // 2 - 1))
+                          (center < self.df[0].map(chromosome_lens).astype(int) - self.resize_width // 2 - 1))
             self.df = self.df[valid_seqs]
 
             if len(self.df) != n_int:

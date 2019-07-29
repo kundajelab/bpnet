@@ -228,7 +228,7 @@ def _track_stats(tracks):
     """Compute the statistics of different tracks
     """
     stats = {}
-    for k, x in track_stats.items():
+    for k, x in tracks.items():
         total = x.sum(axis=(-1, -2))
         stats[k] = {"per-base max": x.max(),
                     "per-base fraction of 0": np.mean(x == 0),
@@ -246,8 +246,8 @@ def _track_stats(tracks):
      help='dataspec.yaml file')
 @arg('--intervals',
      help='Path to the interval bed file. If not specified, files specified in dataspec.yml will be used')
-@arg('--sample',
-     help='Subset the intervals to `sample` randomly sampled ones.')
+@arg('--sample', type=int,
+     help='Specifies the number of randomly selected intervals on which the stats are computed.')
 @arg('--peak_width',
      help='Resize all intervals to that specific width using interval center as an anchorpoint.')
 def dataspec_stats(dataspec,
@@ -263,20 +263,21 @@ def dataspec_stats(dataspec,
 
     ds = DataSpec.load(dataspec)
 
-    if intervals is None:
+    if intervals is not None:
         intervals = list(BedTool(intervals))
     else:
         intervals = []
         for task, task_spec in ds.task_specs.items():
             if task_spec.peaks is not None:
-                intervals.append(list(BedTool(task_spec.peaks)))
+                intervals += list(BedTool(task_spec.peaks))
 
     if sample is not None and sample < len(intervals):
-        logger.info(f"Using only {sample} randomly sampled intervals instead of {len(intervals)}")
+        logger.info(f"Using {sample} randomly sampled intervals instead of {len(intervals)}")
         intervals = random.sample(intervals, k=sample)
 
     # resize the intervals
-    intervals = [resize_interval(interval, peak_width) for interval in intervals]
+    intervals = [resize_interval(interval, peak_width, ignore_strand=True)
+                 for interval in intervals]
 
     base_freq = FastaExtractor(ds.fasta_file)(intervals).mean(axis=(0, 1))
 
@@ -284,7 +285,7 @@ def dataspec_stats(dataspec,
     bias_count_stats = _track_stats(ds.load_bias_counts(intervals, progbar=True))
 
     print("")
-    print("Base frequencies")
+    print("Base frequency")
     for i, base in enumerate(['A', 'C', 'G', 'T']):
         print(f"- {base}: {base_freq[i]}")
     print("")
@@ -564,11 +565,11 @@ def bpnet_train(dataspec,
                         "--vmtouch disabled. Please install vmtouch to enable it")
         else:
             # use vmtouch to load all file to memory
-            dataspec.touch_all_files()
+            ds.touch_all_files()
 
     # --------------------------------------------
     # Parse the config file
-    import gin.tf
+    # import gin.tf
     if gpu is not None:
         logger.info(f"Using gpu: {gpu}, memory fraction: {memfrac_gpu}")
         create_tf_session(gpu, per_process_gpu_memory_fraction=memfrac_gpu)

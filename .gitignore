@@ -111,3 +111,4 @@ venv.bak/
 /examples/data
 **/.snakemake/**
 *~
+examples/chip-nexus/output/*

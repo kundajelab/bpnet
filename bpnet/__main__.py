@@ -1,6 +1,6 @@
 import argh
 
-from bpnet.cli.train import bpnet_train dataspec_stats
+from bpnet.cli.train import bpnet_train, dataspec_stats
 
 # logging
 import pkg_resources
