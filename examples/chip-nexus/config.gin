@@ -1,0 +1,5 @@
+# exclude a large portion of the training set
+exclude_chr=["chrX","chrY","chr5","chr6","chr7","chr10","chr14","chr11","chr13","chr12","chr15"]
+valid_chr = ['chr2']
+test_chr = ['chr1', 'chr8', 'chr9',
+            'chr3', 'chr4']

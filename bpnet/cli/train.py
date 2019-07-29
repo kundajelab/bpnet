@@ -84,7 +84,6 @@ def start_experiment(output_dir,
     if cometml_project:
         logger.info("Using comet.ml")
         if Experiment is None:
-            from comet_ml import Experiment
             raise ImportError("Comet.ml could not be imported")
         workspace, project_name = cometml_project.split("/")
         cometml_experiment = Experiment(project_name=project_name, workspace=workspace)
@@ -162,8 +161,8 @@ def start_experiment(output_dir,
                indent=2)
 
     if cometml_experiment is not None:
-        cometml_experiment.log_multiple_params(note_params_dict)
-        cometml_experiment.log_multiple_params(dict(output_dir=output_dir), prefix='cli/')
+        cometml_experiment.log_parameters(note_params_dict)
+        cometml_experiment.log_parameters(dict(output_dir=output_dir), prefix='cli/')
 
         exp_url = f"https://www.comet.ml/{cometml_experiment.workspace}/{cometml_experiment.project_name}/{cometml_experiment.id}"
         logger.info("Comet.ml url: " + exp_url)
@@ -217,7 +216,7 @@ def log_gin_config(output_dir, cometml_experiment=None, wandb_run=None):
 
     if cometml_experiment is not None:
         # Skip any rows starting with import
-        cometml_experiment.log_multiple_params(gin_config_dict)
+        cometml_experiment.log_parameters(gin_config_dict)
 
     if wandb_run is not None:
         # This allows to display the metric on the dashboard
@@ -454,10 +453,7 @@ def train(output_dir,
     # Note: wandb does this automatically
     if cometml_experiment is not None:
         logger.info("Uploading files to comet.ml")
-        for f in tqdm(list(OSFS(output_dir).walk.files())):
-            # [1:] removes trailing slash
-            cometml_experiment.log_asset(file_path=os.path.join(output_dir, f[1:]),
-                                         file_name=f[1:])
+        cometml_experiment.log_asset_folder(folder=output_dir)
 
     return final_metrics
 
@@ -624,11 +620,11 @@ def bpnet_train(dataspec,
     # comet - log environment
     if cometml_experiment is not None:
         # log other parameters
-        cometml_experiment.log_multiple_params(dict(premade=premade,
-                                                    config=config,
-                                                    override=override,
-                                                    gin_files=gin_files,
-                                                    gpu=gpu), prefix='cli/')
+        cometml_experiment.log_parameters(dict(premade=premade,
+                                               config=config,
+                                               override=override,
+                                               gin_files=gin_files,
+                                               gpu=gpu), prefix='cli/')
 
     # wandb - log environment
     if wandb_run is not None:

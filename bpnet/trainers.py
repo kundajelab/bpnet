@@ -134,7 +134,7 @@ class SeqModelTrainer:
             dfh = pd.read_csv(self.history_path)
             m = dict(dfh.iloc[dfh.val_loss.idxmin()])
             if self.cometml_experiment is not None:
-                self.cometml_experiment.log_multiple_metrics(m, prefix="best-epoch/")
+                self.cometml_experiment.log_metrics(m, prefix="best-epoch/")
             if self.wandb_run is not None:
                 self.wandb_run.summary.update(flatten(dict_prefix_key(m, prefix="best-epoch/"), separator='/'))
         except FileNotFoundError as e:
@@ -189,7 +189,7 @@ class SeqModelTrainer:
             logger.info("Saved metrics to {}".format(self.evaluation_path))
 
         if self.cometml_experiment is not None:
-            self.cometml_experiment.log_multiple_metrics(flatten(metric_res, separator='/'), prefix="eval/")
+            self.cometml_experiment.log_metrics(flatten(metric_res, separator='/'), prefix="eval/")
 
         if self.wandb_run is not None:
             self.wandb_run.summary.update(flatten(dict_prefix_key(metric_res, prefix="eval/"), separator='/'))
