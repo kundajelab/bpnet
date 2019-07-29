@@ -21,7 +21,7 @@ from bpnet.modisco.results import resize_seqlets
 # backcompatibility
 from bpnet.modisco.pattern_instances import (dfi2seqlets, profile_features,
                                              dfi_filter_valid, annotate_profile)
-from kipoi.data_utils import get_dataset_item
+from kipoi_utils.data_utils import get_dataset_item
 
 # TODO - add `stacked_seqlet_tracks` to Profile `attrs` and pickle it to `patterns.pkl`
 #   - make sure you shift and rc the seqlet when extracting it

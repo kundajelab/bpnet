@@ -7,7 +7,7 @@ from keras.optimizers import Adam
 from collections import OrderedDict, defaultdict
 from copy import deepcopy
 from keras.models import Model
-from kipoi.data_utils import numpy_collate_concat
+from kipoi_utils.data_utils import numpy_collate_concat
 from bpnet.data import numpy_minibatch, nested_numpy_minibatch
 from bpnet.utils import flatten, fnmatch_any, _listify
 from bpnet.functions import mean

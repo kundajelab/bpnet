@@ -16,7 +16,7 @@ from bpnet.modisco.results import ModiscoResult
 from bpnet.modisco.score import find_instances, labelled_seqlets2df, append_pattern_loc
 from bpnet.modisco.utils import load_imp_scores
 from bpnet.functions import mean
-from kipoi.utils import unique_list
+from kipoi_utils.utils import unique_list
 from scipy.spatial.distance import correlation
 from concise.utils.helper import write_json, read_json
 from bpnet.data import numpy_minibatch

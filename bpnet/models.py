@@ -97,7 +97,7 @@ def bpnet_model(tasks,
                                      ))
         else:
             heads.append(ProfileHead(target_name='{task}/profile',
-                                     net=DeConv1D(n_tasks=2,
+                                     net=DeConv1D(n_tasks=tracks_per_task,
                                                   filters=filters,
                                                   tconv_kernel_size=tconv_kernel_size,
                                                   padding=padding,
@@ -119,7 +119,7 @@ def bpnet_model(tasks,
     # Count regression
     if c_loss_weight > 0:
         heads.append(ScalarHead(target_name='{task}/counts',
-                                net=GlobalAvgPoolFCN(n_tasks=2,
+                                net=GlobalAvgPoolFCN(n_tasks=tracks_per_task,
                                                      n_splines=c_splines,
                                                      batchnorm=batchnorm),
                                 activation=None,

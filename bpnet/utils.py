@@ -6,7 +6,7 @@ import subprocess
 import numpy as np
 import pandas as pd
 import papermill as pm  # Render the ipython notebook
-from kipoi.external.flatten_json import flatten, unflatten
+from kipoi_utils.external.flatten_json import flatten, unflatten
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

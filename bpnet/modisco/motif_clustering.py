@@ -12,7 +12,7 @@ from collections import OrderedDict
 from bpnet.modisco.table import pattern_url
 from bpnet.utils import dict_suffix_key
 from joblib import Parallel, delayed
-from kipoi.utils import unique_list
+from kipoi_utils.utils import unique_list
 import pandas as pd
 import numpy as np
 from bpnet.modisco.utils import shorten_pattern

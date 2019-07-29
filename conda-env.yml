@@ -1,4 +1,4 @@
-name: basepair
+name: bpnet
 channels:
 - bioconda
 - pytorch
@@ -22,6 +22,7 @@ dependencies:
 - python-snappy
 
 - nb_conda
+- pip
 - pip:
   # in-house packages
   - urllib3==1.24.1

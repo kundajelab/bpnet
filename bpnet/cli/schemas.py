@@ -9,9 +9,9 @@ from copy import deepcopy
 import os
 from collections import OrderedDict
 import related
-from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
-from kipoi.external.related.fields import AnyField
-from kipoi.external.related.fields import StrSequenceField
+from kipoi_utils.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
+from kipoi_utils.external.related.fields import AnyField
+from kipoi_utils.external.related.fields import StrSequenceField
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -21,7 +21,7 @@ logger.addHandler(logging.NullHandler())
 class TaskSpec(RelatedConfigMixin):
     task = related.StringField()
     # Bigwig file paths to tracks (e.g. ChIP-nexus read counts for positive and negative strand)
-    tracks = related.StrSequenceField()
+    tracks = StrSequenceField(str)
     peaks = related.StringField(None, required=False)
 
     # if True the tracks will be simply added together

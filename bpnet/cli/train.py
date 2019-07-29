@@ -411,7 +411,13 @@ def bpnet_train(dataspec,
     # infer differnet hyper-parameters from the dataspec file
     if len(ds.bias_specs) > 0:
         use_bias = True
-        n_bias_tracks = len(ds.bias_specs)
+        if len(ds.bias_specs) > 1:
+            # TODO - allow multiple bias track
+            # - split the heads separately
+            raise ValueError("Only a single bias track is currently supported")
+
+        bias = [v for k, v in ds.bias_specs.items()][0]
+        n_bias_tracks = len(bias.tracks)
     else:
         use_bias = False
         n_bias_tracks = 0

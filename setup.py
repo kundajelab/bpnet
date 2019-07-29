@@ -38,10 +38,11 @@ requirements = [
     "joblib",
     "cloudpickle",  # - remove?
     "kipoi",
+    "kipoi-utils>=0.3.0",
     "kipoiseq",
 
-    "papermill",
-    "nbconvert",
+    # "papermill",
+    # "nbconvert",
     "vdom>=0.6",
 
     # utils

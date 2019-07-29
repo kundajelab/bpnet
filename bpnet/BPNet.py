@@ -1,5 +1,6 @@
 import os
-from kipoi.data_utils import get_dataset_item, numpy_collate_concat
+from kipoi_utils.data_utils import get_dataset_item, numpy_collate_concat
+from kipoi_utils.utils import unique_list
 import keras.backend as K
 import matplotlib.ticker as ticker
 from bpnet.functions import softmax
@@ -12,7 +13,6 @@ from bpnet.data import numpy_minibatch, nested_numpy_minibatch
 from bpnet.plots import plot_bpnet_prediction
 from tqdm import tqdm
 from bpnet.utils import flatten_list
-from kipoi.utils import unique_list
 from concise.utils.plot import seqlogo
 from bpnet.functions import mean
 from concise.preprocessing import encodeDNA

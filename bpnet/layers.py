@@ -225,6 +225,7 @@ class DeConv1D:
 
 class MovingAverages:
     """Layer to compute moving averages at multiple resolutions
+    followed by a conv layer
     """
 
     def __init__(self, window_sizes):
@@ -247,7 +248,8 @@ class MovingAverages:
                                           trainable=False)
                 out.append(conv(x))
         # (batch, seqlen, len(window_sizes))
-        return kl.concatenate(out)
+        binp = kl.concatenate(out)
+        return kl.Conv1D(1, kernel_size=1, use_bias=False)(binp)
 
 
 AVAILABLE = []

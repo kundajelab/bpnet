@@ -4,9 +4,7 @@ import matplotlib.pyplot as plt
 from bpnet.utils import read_pkl
 from keras.models import load_model
 from bpnet.utils import _listify, create_tf_session
-from bpnet.datasets import chip_exo_nexus
 from bpnet.stats import permute_array
-from bpnet.cli.schemas import DataSpec, HParams
 from bpnet.functions import softmax, mean
 from concise.utils.helper import write_json
 import os

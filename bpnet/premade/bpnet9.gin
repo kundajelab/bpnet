@@ -53,7 +53,6 @@ bpnet_data.valid_chr = %valid_chr
 bpnet_data.test_chr = %test_chr
 bpnet_data.include_metadata = False
 bpnet_data.tasks = %tasks
-bpnet_data.taskname_first = True  # so that the output labels will be "{task}/profile"
 bpnet_data.exclude_chr = %exclude_chr
 bpnet_data.augment_interval = %augment_interval
 bpnet_data.interval_augmentation_shift = 200

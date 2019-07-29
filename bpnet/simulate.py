@@ -10,10 +10,10 @@ import random
 from concise.preprocessing import encodeDNA
 from bpnet.plot.tracks import plot_tracks
 from bpnet.plot.csi import SeqMutationTree, SeqNode
-from kipoi.data_utils import get_dataset_item, numpy_collate_concat
+from kipoi_utils.data_utils import get_dataset_item, numpy_collate_concat
 from bpnet.functions import mean, softmax
 from tqdm import tqdm
-from kipoi.utils import unique_list
+from kipoi_utils.utils import unique_list
 import matplotlib.pyplot as plt
 from bpnet.modisco.results import Seqlet
 

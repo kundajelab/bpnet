@@ -1,7 +1,7 @@
 import numpy as np
-from kipoi.external.torch.sampler import BatchSampler
+from kipoi_utils.external.torch.sampler import BatchSampler
 import collections
-from kipoi.data_utils import get_dataset_lens, get_dataset_item, numpy_collate_concat
+from kipoi_utils.data_utils import get_dataset_lens, get_dataset_item, numpy_collate_concat
 from copy import deepcopy
 from bpnet.utils import flatten, unflatten
 from collections import OrderedDict
@@ -9,7 +9,6 @@ import pandas as pd
 from tqdm import tqdm
 from kipoi.writers import HDF5BatchWriter
 from kipoi.readers import HDF5Reader
-# from kipoi.data import Dataset
 
 from kipoi.data import BaseDataLoader
 try:
@@ -19,8 +18,8 @@ except:
     # use the Kipoi dataloader as a fall-back strategy
     from kipoi.data import DataLoader
 import abc
-from kipoi.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
-                              DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
+from kipoi_utils.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
+                                    DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
 
 
 def to_numpy(data):

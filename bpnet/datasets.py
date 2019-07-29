@@ -16,18 +16,18 @@ from kipoi.data import Dataset
 #    from kipoi.data import Dataset
 
 from kipoi.metadata import GenomicRanges
-from bpnet.config import get_data_dir, valid_chr, test_chr
 from bpnet.utils import to_list
 from bpnet.cli.schemas import DataSpec
 from bpnet.preproc import bin_counts, keep_interval, moving_average, IntervalAugmentor
+from bpnet.extractors import _chrom_sizes, _chrom_names
 from concise.utils.helper import get_from_module
 from tqdm import tqdm
 from concise.preprocessing import encodeDNA
 from random import Random
 import joblib
-from bpnet.preproc import resize_interval, AppendTotalCounts, AppendCounts
-from genomelake.extractors import FastaExtractor, BigwigExtractor, ArrayExtractor, _chrom_sizes, _chrom_names
-from kipoi.data_utils import get_dataset_item
+from bpnet.preproc import resize_interval
+from genomelake.extractors import FastaExtractor, BigwigExtractor, ArrayExtractor
+from kipoi_utils.data_utils import get_dataset_item
 from kipoiseq.dataloaders.sequence import BedDataset
 import gin
 import logging
@@ -270,7 +270,7 @@ class StrandedProfile(Dataset):
                                             ).df.iloc[:, :3].assign(task=task)
                                   for task, task_spec in self.ds.task_specs.items()
                                   if task_spec.peaks is not None])
-            assert list(self.dfm.columns)[:4] == ["chrom", "start", "end", "task"]
+            assert list(self.dfm.columns)[:4] == [0, 1, 2, "task"]
             if self.shuffle:
                 self.dfm = self.dfm.sample(frac=1)
             self.tsv = None
@@ -360,7 +360,7 @@ class StrandedProfile(Dataset):
 
         # Add total number of counts
         for task in self.tasks:
-            cuts[f'{task}/counts'] = self.total_count_transform(cuts[f'{task}/counts'].sum(0))
+            cuts[f'{task}/counts'] = self.total_count_transform(cuts[f'{task}/profile'].sum(0))
 
         if len(self.ds.bias_specs) > 0:
             # Extract the bias tracks
@@ -425,14 +425,11 @@ def bpnet_data(dataspec,
                # TODO - make vmtouch optional
                # TODO - allow the dataset to be cached into memory
                vmtouch=True,
-               tasks=None,
-               profile_bias_pool_size=None):
+               tasks=None):
     """BPNet default data-loader
 
     Args:
       tasks: specify a subset of the tasks to use in the dataspec.yml. If None, all tasks will be specified.
-      profile_bias_pool_size: transform the bias track by aggregating it in a
-         sliding window fashion with window sizes of 1 bp (no aggregation) and 50 bp
     """
     from bpnet.metrics import BPNetMetric, PeakPredictionProfileMetric, pearson_spearman
     # test and valid shouldn't be in the valid or test sets
@@ -469,8 +466,7 @@ def bpnet_data(dataspec,
                             shuffle=shuffle,
                             track_transform=track_transform,
                             total_count_transform=total_count_transform,
-                            interval_transformer=interval_transformer,
-                            profile_bias_pool_size=profile_bias_pool_size),
+                            interval_transformer=interval_transformer),
             [('valid-peaks', StrandedProfile(dataspec,
                                              peak_width,
                                              intervals_file=intervals_file,
@@ -481,8 +477,7 @@ def bpnet_data(dataspec,
                                              interval_transformer=interval_transformer,
                                              shuffle=shuffle,
                                              track_transform=track_transform,
-                                             total_count_transform=total_count_transform,
-                                             profile_bias_pool_size=profile_bias_pool_size)),
+                                             total_count_transform=total_count_transform)),
              ('train-peaks', StrandedProfile(dataspec, peak_width,
                                              intervals_file=intervals_file,
                                              seq_width=seq_width,
@@ -494,8 +489,7 @@ def bpnet_data(dataspec,
                                              interval_transformer=interval_transformer,
                                              shuffle=shuffle,
                                              track_transform=track_transform,
-                                             total_count_transform=total_count_transform,
-                                             profile_bias_pool_size=profile_bias_pool_size)),
+                                             total_count_transform=total_count_transform)),
              ])
 
 
@@ -513,8 +507,7 @@ def bpnet_data_gw(dataspec,
                   valid_chr=['chr2', 'chr3', 'chr4'],
                   test_chr=['chr1', 'chr8', 'chr9'],
                   exclude_chr=[],
-                  vmtouch=True,
-                  profile_bias_pool_size=None):
+                  vmtouch=True):
     """Genome-wide bpnet data
     """
     # NOTE = only chromosomes from chr1-22 and chrX and chrY are considered here
@@ -548,8 +541,7 @@ def bpnet_data_gw(dataspec,
                             excl_chromosomes=valid_chr + test_chr + exclude_chr,
                             shuffle=shuffle,
                             track_transform=track_transform,
-                            total_count_transform=total_count_transform,
-                            profile_bias_pool_size=profile_bias_pool_size)
+                            total_count_transform=total_count_transform)
 
     valid = [('train-valid-genome-wide',
               StrandedProfile(dataspec, peak_width,
@@ -561,8 +553,7 @@ def bpnet_data_gw(dataspec,
                               incl_chromosomes=valid_chr,
                               shuffle=shuffle,
                               track_transform=track_transform,
-                              total_count_transform=total_count_transform,
-                              profile_bias_pool_size=profile_bias_pool_size))]
+                              total_count_transform=total_count_transform))]
     if include_classes:
         # Only use binary classification for genome-wide evaluation
         valid = valid + [('valid-genome-wide',
@@ -575,8 +566,7 @@ def bpnet_data_gw(dataspec,
                                           incl_chromosomes=valid_chr,
                                           shuffle=shuffle,
                                           track_transform=track_transform,
-                                          total_count_transform=total_count_transform,
-                                          profile_bias_pool_size=profile_bias_pool_size))]
+                                          total_count_transform=total_count_transform))]
 
     # Add also the peak regions
     valid = valid + [
@@ -589,8 +579,7 @@ def bpnet_data_gw(dataspec,
                                         incl_chromosomes=valid_chr,
                                         shuffle=shuffle,
                                         track_transform=track_transform,
-                                        total_count_transform=total_count_transform,
-                                        profile_bias_pool_size=profile_bias_pool_size)),
+                                        total_count_transform=total_count_transform)),
         ('train-peaks', StrandedProfile(dataspec, peak_width,
                                         seq_width=seq_width,
                                         intervals_file=None,
@@ -602,8 +591,7 @@ def bpnet_data_gw(dataspec,
                                         excl_chromosomes=valid_chr + test_chr + exclude_chr,
                                         shuffle=shuffle,
                                         track_transform=track_transform,
-                                        total_count_transform=total_count_transform,
-                                        profile_bias_pool_size=profile_bias_pool_size)),
+                                        total_count_transform=total_count_transform)),
         # use the default metric for the peak sets
     ]
     return train, valid
@@ -668,7 +656,9 @@ class SeqClassification(Dataset):
 
 
 @gin.configurable
-def chrom_dataset(dataset_cls, valid_chr=valid_chr, holdout_chr=test_chr):
+def chrom_dataset(dataset_cls,
+                  valid_chr=['chr2', 'chr3', 'chr4'],
+                  holdout_chr=['chr1', 'chr8', 'chr9']):
     return (dataset_cls(excl_chromosomes=valid_chr + holdout_chr),
             dataset_cls(incl_chromosomes=valid_chr))
 

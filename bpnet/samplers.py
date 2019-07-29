@@ -3,8 +3,8 @@ Module implementing different samplers for the chipnexus data
 """
 import pandas as pd
 import numpy as np
-from kipoi.external.torch.sampler import Sampler
-from kipoi.data_utils import iterable_cycle
+from kipoi_utils.external.torch.sampler import Sampler
+from kipoi_utils.data_utils import iterable_cycle
 import warnings
 import gin
 
