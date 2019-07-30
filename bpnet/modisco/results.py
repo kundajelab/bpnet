@@ -12,7 +12,7 @@ import numpy as np
 from pybedtools import BedTool, Interval
 from matplotlib.ticker import FormatStrFormatter
 import pandas as pd
-from bpnet.plots import show_figure
+from bpnet.plot.utils import show_figure
 from bpnet.modisco.utils import bootstrap_mean, nan_like, ic_scale
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -767,3 +767,32 @@ class Seqlet:
 def resize_seqlets(seqlets, resize_width, seqlen):
     return [s.resize(resize_width) for s in seqlets
             if s.valid_resize(resize_width, seqlen)]
+
+
+def labelled_seqlets2df(seqlets):
+    """Convert a list of sequences to a dataframe
+
+    Args:
+      seqlets: list of seqlets returned by find_instances
+
+    Returns:
+      pandas.DataFrame with one row per seqlet
+    """
+    def seqlet2row(seqlet):
+        """Convert a single seqlete to a pandas array
+        """
+        return OrderedDict([
+            ("example_idx", seqlet.coor.example_idx),
+            ("seqlet_start", seqlet.coor.start),
+            ("seqlet_end", seqlet.coor.end),
+            ("seqlet_is_revcomp", seqlet.coor.is_revcomp),
+            ("seqlet_score", seqlet.coor.score),
+            ("metacluster", seqlet.metacluster),
+            ("pattern", seqlet.pattern),
+            ("percnormed_score", seqlet.score_result.percnormed_score),
+            ("score", seqlet.score_result.score),
+            ("offset", seqlet.score_result.offset),
+            ("revcomp", seqlet.score_result.revcomp),
+        ])
+
+    return pd.DataFrame([seqlet2row(seqlet) for seqlet in seqlets])

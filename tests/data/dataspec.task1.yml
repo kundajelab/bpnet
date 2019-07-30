@@ -1,0 +1,7 @@
+fasta_file: dummy/dummy.fa
+task_specs:
+  Task1:
+    tracks:
+      - dummy/dummy.pos.bw
+      - dummy/dummy.neg.bw
+    peaks: dummy/peaks.bed

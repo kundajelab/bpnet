@@ -5,6 +5,7 @@ import json
 import sys
 import os
 import yaml
+import shutil
 from argh.decorators import aliases, named, arg
 from uuid import uuid4
 from fs.osfs import OSFS
@@ -15,6 +16,7 @@ from bpnet.cli.schemas import DataSpec
 from bpnet.data import NumpyDataset
 from bpnet.utils import (create_tf_session, write_json,
                          render_ipynb,
+                         related_dump_yaml,
                          Logger, NumpyAwareJSONEncoder,
                          dict_prefix_key, kv_string2dict)
 
@@ -76,6 +78,7 @@ def start_experiment(output_dir,
                      wandb_project="",
                      run_id=None,
                      note_params="",
+                     extra_kwargs=None,
                      force_overwrite=False):
     """Start a model training experiment. This will create a new output directory
     and setup the experiment management handles
@@ -140,7 +143,6 @@ def start_experiment(output_dir,
         if force_overwrite:
             logger.info(f"config.gin already exists in the output "
                         "directory {output_dir}. Removing the whole directory.")
-            import shutil
             shutil.rmtree(output_dir)
         else:
             raise ValueError(f"Output directory {output_dir} shouldn't exist!")
@@ -188,7 +190,41 @@ def start_experiment(output_dir,
                    indent=2)
         wandb_run.config.update(dict_prefix_key(dict(output_dir=output_dir), prefix='cli/'))
 
-    return cometml_experiment, wandb_run
+    return cometml_experiment, wandb_run, output_dir
+
+
+def gin2dict(gin_config_str):
+    # parse the gin config string to dictionary
+    gin_config_lines = [x for x in gin_config_str.split("\n")
+                        if not x.startswith("import")]
+    gin_config_str = "\n".join(gin_config_lines)
+
+    # insert macros
+    macros = []
+    track = False
+    for line in gin_config_lines:
+        if line.startswith("# Macros"):
+            track = True
+        if " = %" in line:
+            track = False
+            break
+        if track:
+            macros.append(line)
+    gin_macro_dict = yaml.load("\n".join(macros).replace("@", "").replace(" = %", ": ").replace(" = ", ": "))
+    lines = []
+
+    for linei in gin_config_lines:
+        if " = %" in linei:
+            k, v = linei.split(" = %")
+            lines.append(f"{k} = {gin_macro_dict[v]}")
+        else:
+            lines.append(linei)
+
+    gin_config_dict = yaml.load("\n".join(lines)
+                                .replace("@", "")
+                                .replace(" = %", ": ")
+                                .replace(" = ", ": "))
+    return gin_config_dict
 
 
 def log_gin_config(output_dir, cometml_experiment=None, wandb_run=None):
@@ -202,13 +238,8 @@ def log_gin_config(output_dir, cometml_experiment=None, wandb_run=None):
     print("-" * 52)
     with open(os.path.join(output_dir, "config.gin"), "w") as f:
         f.write(gin_config_str)
-    # parse the gin config string to dictionary
-    gin_config_str = "\n".join([x for x in gin_config_str.split("\n")
-                                if not x.startswith("import")])
-    gin_config_dict = yaml.load(gin_config_str
-                                .replace("@", "")
-                                .replace(" = %", ": ")
-                                .replace(" = ", ": "))
+
+    gin_config_dict = gin2dict(gin_config_str)
     write_json(gin_config_dict,
                os.path.join(output_dir, "config.gin.json"),
                sort_keys=True,
@@ -443,7 +474,7 @@ def train(output_dir,
         # Run the jupyter notebook
         render_ipynb(eval_report,
                      os.path.join(output_dir, os.path.basename(eval_report)),
-                     params=dict(output_dir=output_dir,
+                     params=dict(model_dir=os.path.abspath(output_dir),
                                  gpu=gpu,
                                  memfrac_gpu=memfrac_gpu,
                                  in_memory=in_memory,
@@ -517,8 +548,6 @@ def _get_premade_path(premade, raise_error=False):
      help='take note of additional key=value pairs. Example: --note-params note="my custom note",feature_set=this')
 @arg('--force-overwrite',
      help='if True, the output directory will be overwritten')
-@arg('--skip-evaluation',
-     help='if True, model evaluation will be skipped')
 def bpnet_train(dataspec,
                 output_dir,
                 premade='bpnet9',
@@ -533,8 +562,7 @@ def bpnet_train(dataspec,
                 cometml_project="",
                 run_id=None,
                 note_params="",
-                force_overwrite=False,
-                skip_evaluation=False):
+                force_overwrite=False):
     """Train a model using gin-config
 
     Output files:
@@ -546,16 +574,40 @@ def bpnet_train(dataspec,
       model.gin -> copied from the input
       dataspec.yaml -> copied from the input
     """
-    cometml_experiment, wandb_run = start_experiment(output_dir=output_dir,
-                                                     cometml_project=cometml_project,
-                                                     wandb_project=wandb_project,
-                                                     run_id=run_id,
-                                                     note_params=note_params,
-                                                     force_overwrite=force_overwrite)
+    cometml_experiment, wandb_run, output_dir = start_experiment(output_dir=output_dir,
+                                                                 cometml_project=cometml_project,
+                                                                 wandb_project=wandb_project,
+                                                                 run_id=run_id,
+                                                                 note_params=note_params,
+                                                                 force_overwrite=force_overwrite)
+    # remember the executed command
+    write_json({
+        "dataspec": dataspec,
+        "output_dir": output_dir,
+        "premade": premade,
+        "config": config,
+        "override": override,
+        "gpu": gpu,
+        "memfrac_gpu": memfrac_gpu,
+        "num_workers": num_workers,
+        "vmtouch": vmtouch,
+        "in_memory": in_memory,
+        "wandb_project": wandb_project,
+        "cometml_project": cometml_project,
+        "run_id": run_id,
+        "note_params": note_params,
+        "force_overwrite": note_params},
+        os.path.join(output_dir, 'bpnet-train.kwargs.json'),
+        indent=2)
+
+    # copy dataspec.yml and configgin file over
+    if config is not None:
+        shutil.copyfile(config, os.path.join(output_dir, 'config.gin'))
+
     # parse and validate the dataspec
     ds = DataSpec.load(dataspec)
+    related_dump_yaml(ds.abspath(), os.path.join(output_dir, 'dataspec.yml'))
     if vmtouch:
-        import shutil
         if shutil.which('vmtouch') is None:
             logger.warn("vmtouch is currently not installed. "
                         "--vmtouch disabled. Please install vmtouch to enable it")

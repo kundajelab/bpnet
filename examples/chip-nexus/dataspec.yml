@@ -1,26 +1,26 @@
-fasta_file: ../data/mm10_no_alt_analysis_set_ENCODE.fasta
+fasta_file: ../data/mm10.subset.fa
 task_specs:
   Oct4:
     tracks:
-      - ../data/chip-nexus/Oct4/counts.pos.bw
-      - ../data/chip-nexus/Oct4/counts.neg.bw
-    peaks: ../data/chip-nexus/Oct4/idr-optimal-set.summit.bed.gz
+      - ../data/chip-nexus/Oct4/counts.pos.subset.bw
+      - ../data/chip-nexus/Oct4/counts.neg.subset.bw
+    peaks: ../data/chip-nexus/Oct4/idr-optimal-set.summit.subset.bed.gz
   Sox2:
     tracks:
-      - ../data/chip-nexus/Sox2/counts.pos.bw
-      - ../data/chip-nexus/Sox2/counts.neg.bw
-    peaks: ../data/chip-nexus/Sox2/idr-optimal-set.summit.bed.gz
+      - ../data/chip-nexus/Sox2/counts.pos.subset.bw
+      - ../data/chip-nexus/Sox2/counts.neg.subset.bw
+    peaks: ../data/chip-nexus/Sox2/idr-optimal-set.summit.subset.bed.gz
   Nanog:
     tracks:
-      - ../data/chip-nexus/Nanog/counts.pos.bw
-      - ../data/chip-nexus/Nanog/counts.neg.bw
-    peaks: ../data/chip-nexus/Nanog/idr-optimal-set.summit.bed.gz
+      - ../data/chip-nexus/Nanog/counts.pos.subset.bw
+      - ../data/chip-nexus/Nanog/counts.neg.subset.bw
+    peaks: ../data/chip-nexus/Nanog/idr-optimal-set.summit.subset.bed.gz
 
 bias_specs:
   input:
     tracks:
-      - ../data/chip-nexus/patchcap/counts.pos.bw
-      - ../data/chip-nexus/patchcap/counts.neg.bw
+      - ../data/chip-nexus/patchcap/counts.pos.subset.bw
+      - ../data/chip-nexus/patchcap/counts.neg.subset.bw
     tasks:
       - Oct4
       - Sox2

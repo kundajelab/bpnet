@@ -10,7 +10,6 @@ from collections import OrderedDict
 from bpnet.plot.tracks import plot_tracks, filter_tracks
 from bpnet.extractors import extract_seq
 from bpnet.data import numpy_minibatch, nested_numpy_minibatch
-from bpnet.plots import plot_bpnet_prediction
 from tqdm import tqdm
 from bpnet.utils import flatten_list
 from concise.utils.plot import seqlogo

@@ -29,6 +29,8 @@ def bpnet_model(tasks,
                 batchnorm=False,
                 use_bias=False,
                 n_bias_tracks=2,
+                profile_metric=None,
+                count_metric=None,
                 profile_bias_window_sizes=[1, 50],
                 seqlen=None,
                 skip_type='residual'):
@@ -73,6 +75,19 @@ def bpnet_model(tasks,
     assert c_loss_weight >= 0
     assert b_loss_weight >= 0
 
+    # import ipdb
+    # ipdb.set_trace()
+
+    # TODO is it possible to re-instantiate the class to get rid of gin train?
+
+    if profile_metric is None:
+        print("Using the default profile prediction metric")
+        profile_metric = default_peak_pred_metric
+
+    if count_metric is None:
+        print("Using the default regression prediction metrics")
+        count_metric = RegressionMetrics()
+
     # Heads -------------------------------------------------
     heads = []
     # Profile prediction
@@ -93,7 +108,7 @@ def bpnet_model(tasks,
                                      bias_input='bias/{task}/profile',
                                      bias_shape=(None, n_bias_tracks),
                                      bias_net=MovingAverages(window_sizes=profile_bias_window_sizes),
-                                     metric=default_peak_pred_metric
+                                     metric=profile_metric
                                      ))
         else:
             heads.append(ProfileHead(target_name='{task}/profile',
@@ -111,8 +126,8 @@ def bpnet_model(tasks,
                                      use_bias=use_bias,
                                      bias_shape=(None, n_bias_tracks),
                                      bias_net=MovingAverages(window_sizes=profile_bias_window_sizes),
-                                     metric=BPNetMetricSingleProfile(count_metric=RegressionMetrics(),
-                                                                     profile_metric=default_peak_pred_metric)
+                                     metric=BPNetMetricSingleProfile(count_metric=count_metric,
+                                                                     profile_metric=profile_metric)
                                      ))
             c_loss_weight = 0  # don't need to use the other count loss
 
@@ -128,7 +143,7 @@ def bpnet_model(tasks,
                                 bias_input='bias/{task}/counts',
                                 use_bias=use_bias,
                                 bias_shape=(n_bias_tracks, ),
-                                metric=RegressionMetrics(),
+                                metric=count_metric,
                                 ))
 
     # Binary classification

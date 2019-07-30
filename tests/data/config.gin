@@ -1,0 +1,13 @@
+# exclude a large portion of the training set
+exclude_chr=[]
+valid_chr = ['chr2']
+test_chr = []
+seq_width = 200
+n_dil_layers = 1
+train.epochs = 1
+train.batch_size = 4
+
+PeakPredictionProfileMetric.pos_min_threshold = 0.015
+PeakPredictionProfileMetric.neg_max_threshold = 0.015
+
+bpnet_data.interval_augmentation_shift = 100

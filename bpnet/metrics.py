@@ -6,7 +6,6 @@ from keras.models import load_model
 from bpnet.utils import _listify, create_tf_session
 from bpnet.stats import permute_array
 from bpnet.functions import softmax, mean
-from concise.utils.helper import write_json
 import os
 import json
 from tqdm import tqdm
@@ -14,7 +13,6 @@ import matplotlib
 import pandas as pd
 import numpy as np
 from collections import OrderedDict
-import concise
 import gin
 
 logger = logging.getLogger(__name__)
@@ -404,6 +402,7 @@ class MetricsAggregated:
 class MetricsConcise:
 
     def __init__(self, metrics):
+        import concise
         self.metrics_dict = OrderedDict([(m, concise.eval_metrics.get(m))
                                          for m in metrics])
 

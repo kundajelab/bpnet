@@ -7,6 +7,7 @@ requirements = [
     "argh",
     "attr",
     "related",
+    "cloudpickle",
 
     "concise",
     "deepexplain",
@@ -41,8 +42,10 @@ requirements = [
     "kipoi-utils>=0.3.0",
     "kipoiseq",
 
-    # "papermill",
-    # "nbconvert",
+    "papermill",
+    "jupyter_client",
+    "ipykernel",
+    "nbconvert",
     "vdom>=0.6",
 
     # utils

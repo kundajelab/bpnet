@@ -9,12 +9,10 @@ from collections import OrderedDict
 from tqdm import tqdm
 from pathlib import Path
 from bpnet.utils import write_pkl, related_dump_yaml, render_ipynb, remove_exists, add_file_logging, create_tf_session
-from bpnet.cli.schemas import DataSpec, HParams, ModiscoHParams
+from bpnet.cli.schemas import DataSpec, ModiscoHParams
 from bpnet.cli.imp_score import ImpScoreFile
 # ImpScoreFile
 from bpnet.modisco.results import ModiscoResult
-from bpnet.modisco.score import find_instances, labelled_seqlets2df, append_pattern_loc
-from bpnet.modisco.utils import load_imp_scores
 from bpnet.functions import mean
 from kipoi_utils.utils import unique_list
 from scipy.spatial.distance import correlation
@@ -577,62 +575,6 @@ def load_modisco_results(modisco_dir):
     return mr, tasks, grad_type
 
 
-def modisco_score(modisco_dir,
-                  imp_scores,
-                  output_tsv,
-                  output_seqlets_pkl=None,
-                  seqlet_len=25,
-                  n_cores=1,
-                  method="rank",
-                  trim_pattern=False):
-    """Find seqlet instances using modisco
-    """
-    add_file_logging(os.path.dirname(output_tsv), logger, 'modisco-score')
-    mr, tasks, grad_type = load_modisco_results(modisco_dir)
-
-    # load importance scores we want to score
-    d = HDF5Reader.load(imp_scores)
-    if 'hyp_imp' not in d:
-        # backcompatibility
-        d['hyp_imp'] = d['grads']
-
-    if isinstance(d['inputs'], dict):
-        one_hot = d['inputs']['seq']
-    else:
-        one_hot = d['inputs']
-    hypothetical_contribs = {f"{task}/{gt}": mean(d['hyp_imp'][task][gt]) for task in tasks
-                             for gt in grad_type.split(",")}
-    contrib_scores = {f"{task}/{gt}": hypothetical_contribs[f"{task}/{gt}"] * one_hot
-                      for task in tasks
-                      for gt in grad_type.split(",")}
-
-    seqlets = find_instances(mr,
-                             tasks,
-                             contrib_scores,
-                             hypothetical_contribs,
-                             one_hot,
-                             seqlet_len=seqlet_len,
-                             n_cores=n_cores,
-                             method=method,
-                             trim_pattern=trim_pattern)
-    if len(seqlets) == 0:
-        print("ERROR: no seqlets found!!")
-        return [], None
-
-    if output_seqlets_pkl:
-        write_pkl(seqlets, output_seqlets_pkl)
-    df = labelled_seqlets2df(seqlets)
-
-    dfm = pd.DataFrame(d['metadata']['range'])
-    dfm.columns = ["example_" + v for v in dfm.columns]
-
-    df = df.merge(dfm, left_on="example_idx", how='left', right_on="example_id")
-
-    df.to_csv(output_tsv, sep='\t')
-
-    return seqlets, df
-
-
 def modisco_centroid_seqlet_matches(modisco_dir, imp_scores, output_dir,
                                     trim_frac=0.08, n_jobs=1,
                                     impsf=None):
@@ -752,62 +694,65 @@ def modisco_cluster_patterns(modisco_dir, output_dir):
                              output_dir=str(output_dir)))
 
 
-def modisco_instances_to_bed(modisco_h5, instances_parq, imp_score_h5, output_dir, trim_frac=0.08):
-    from bpnet.modisco.pattern_instances import load_instances
+# TODO - reimplement or remove
+#         - just make it part of the main export function (?)
+# def modisco_instances_to_bed(modisco_h5, instances_parq, imp_score_h5, output_dir, trim_frac=0.08):
+#     from bpnet.modisco.pattern_instances import load_instances
 
-    add_file_logging(output_dir, logger, 'modisco-instances-to-bed')
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+#     add_file_logging(output_dir, logger, 'modisco-instances-to-bed')
+#     output_dir = Path(output_dir)
+#     output_dir.mkdir(parents=True, exist_ok=True)
 
-    mr = ModiscoResult(modisco_h5)
-    mr.open()
+#     mr = ModiscoResult(modisco_h5)
+#     mr.open()
 
-    print("load task_id")
-    d = HDF5Reader(imp_score_h5)
-    d.open()
-    if 'hyp_imp' not in d.f.keys():
-        # backcompatibility
-        d['hyp_imp'] = d['grads']
+#     print("load task_id")
+#     d = HDF5Reader(imp_score_h5)
+#     d.open()
+#     if 'hyp_imp' not in d.f.keys():
+#         # backcompatibility
+#         d['hyp_imp'] = d['grads']
 
-    id_hash = pd.DataFrame({"peak_id": d.f['/metadata/interval_from_task'][:],
-                            "example_idx": np.arange(d.f['/metadata/interval_from_task'].shape[0])})
+#     id_hash = pd.DataFrame({"peak_id": d.f['/metadata/interval_from_task'][:],
+#                             "example_idx": np.arange(d.f['/metadata/interval_from_task'].shape[0])})
 
-    # load the instances data frame
-    print("load all instances")
-    df = load_instances(instances_parq, motifs=None, dedup=True)
-    # import pdb
-    # pdb.set_trace()
-    df = df.merge(id_hash, on="example_idx")  # append peak_id
+#     # load the instances data frame
+#     print("load all instances")
+#     df = load_instances(instances_parq, motifs=None, dedup=True)
+#     # import pdb
+#     # pdb.set_trace()
+#     df = df.merge(id_hash, on="example_idx")  # append peak_id
 
-    patterns = df.pattern.unique().tolist()
-    pattern_pssms = {pattern: mr.get_pssm(*pattern.split("/"))
-                     for pattern in patterns}
-    append_pattern_loc(df, pattern_pssms, trim_frac=trim_frac)
+#     patterns = df.pattern.unique().tolist()
+#     pattern_pssms = {pattern: mr.get_pssm(*pattern.split("/"))
+#                      for pattern in patterns}
+#     # present in basepair.modisco.core.scan
+#     append_pattern_loc(df, pattern_pssms, trim_frac=trim_frac)
 
-    # write out the results
-    example_cols = ['example_chr', 'example_start', 'example_end', 'example_id', 'peak_id']
-    df_examples = df[example_cols].drop_duplicates().sort_values(["example_chr", "example_start"])
-    df_examples.to_csv(output_dir / "scored_regions.bed", sep='\t', header=False, index=False)
+#     # write out the results
+#     example_cols = ['example_chr', 'example_start', 'example_end', 'example_id', 'peak_id']
+#     df_examples = df[example_cols].drop_duplicates().sort_values(["example_chr", "example_start"])
+#     df_examples.to_csv(output_dir / "scored_regions.bed", sep='\t', header=False, index=False)
 
-    df["pattern_start_rel"] = df.pattern_start + df.example_start
-    df["pattern_end_rel"] = df.pattern_end + df.example_start
-    df["strand"] = df.revcomp.astype(bool).map({True: "-", False: "+"})
+#     df["pattern_start_rel"] = df.pattern_start + df.example_start
+#     df["pattern_end_rel"] = df.pattern_end + df.example_start
+#     df["strand"] = df.revcomp.astype(bool).map({True: "-", False: "+"})
 
-    # TODO - update this - ?
-    pattern_cols = ['example_chr', 'pattern_start_rel', 'pattern_end_rel',
-                    'example_id', 'percnormed_score', 'strand', 'peak_id', 'seqlet_score']
+#     # TODO - update this - ?
+#     pattern_cols = ['example_chr', 'pattern_start_rel', 'pattern_end_rel',
+#                     'example_id', 'percnormed_score', 'strand', 'peak_id', 'seqlet_score']
 
-    (output_dir / "README").write_text("score_regions.bed columns: " +
-                                       ", ".join(example_cols) + "\n" +
-                                       "metacluster_<>/pattern_<>.bed columns: " +
-                                       ", ".join(pattern_cols))
-    df_pattern = df[pattern_cols]
-    for pattern in df.pattern.unique():
-        out_path = output_dir / (pattern + ".bed.gz")
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        dfp = df_pattern[df.pattern == pattern].drop_duplicates().sort_values(["example_chr",
-                                                                               "pattern_start_rel"])
-        dfp.to_csv(out_path, compression='gzip', sep='\t', header=False, index=False)
+#     (output_dir / "README").write_text("score_regions.bed columns: " +
+#                                        ", ".join(example_cols) + "\n" +
+#                                        "metacluster_<>/pattern_<>.bed columns: " +
+#                                        ", ".join(pattern_cols))
+#     df_pattern = df[pattern_cols]
+#     for pattern in df.pattern.unique():
+#         out_path = output_dir / (pattern + ".bed.gz")
+#         out_path.parent.mkdir(parents=True, exist_ok=True)
+#         dfp = df_pattern[df.pattern == pattern].drop_duplicates().sort_values(["example_chr",
+#                                                                                "pattern_start_rel"])
+#         dfp.to_csv(out_path, compression='gzip', sep='\t', header=False, index=False)
 
 
 def modisco2bed(modisco_dir, output_dir, trim_frac=0.08):
@@ -852,125 +797,6 @@ def modisco_table(modisco_dir, imp_scores, output_dir, report_url=None, impsf=No
                             for pattern in data.mr.patterns()])
     write_pkl(profiles, Path(output_dir) / 'footprints.pkl')
     print("Done!")
-
-
-def modisco_score_single_binary(modisco_dir,
-                                output_tsv,
-                                output_seqlets_pkl=None,
-                                seqlet_len=25,
-                                n_cores=1,
-                                method="rank",
-                                trim_pattern=False):
-    """
-    Equivalent of modisco_score
-    """
-    import modisco
-    from modisco.tfmodisco_workflow import workflow
-
-    kwargs = read_json(os.path.join(modisco_dir, "kwargs.json"))
-    d = HDF5Reader.load(kwargs['imp_scores'])  # deeplift hdffile
-    if isinstance(d['inputs'], dict):
-        one_hot = d['inputs']['seq']
-    else:
-        one_hot = d['inputs']
-    tasks = list(d['grads'].keys())
-    grad_type = list(d['grads'][tasks[0]].keys())[0]
-    if kwargs.get("filter_npy", None) is not None:
-        included_samples = np.load(kwargs["filter_npy"])
-
-    hypothetical_contribs = {f"{task}": d['grads'][task]['deeplift']['hyp_contrib_scores'][included_samples] for task in tasks
-                             for gt in grad_type.split(",")}
-    contrib_scores = {f"{task}": d['grads'][task][gt]['contrib_scores'][included_samples] for task in tasks
-                      for gt in grad_type.split(",")}
-
-    print(tasks)
-    track_set = workflow.prep_track_set(task_names=tasks, contrib_scores=contrib_scores,
-                                        hypothetical_contribs=hypothetical_contribs, one_hot=one_hot[included_samples])
-
-    with h5py.File(os.path.join(modisco_dir, "results.hdf5"), "r") as grp:
-        mr = workflow.TfModiscoResults.from_hdf5(grp, track_set=track_set)
-
-    seqlets = find_instances(mr, tasks, contrib_scores, hypothetical_contribs, one_hot[included_samples],
-                             seqlet_len=seqlet_len, n_cores=n_cores, method=method, trim_pattern=trim_pattern)
-
-    if output_seqlets_pkl:
-        write_pkl(seqlets, output_seqlets_pkl)
-    df = labelled_seqlets2df(seqlets)
-
-    dfm = pd.DataFrame(d['metadata']['range'])
-    dfm.columns = ["example_" + v for v in dfm.columns]
-    dfm['example_id'] = d['metadata']['interval_from_task']
-
-    df = df.merge(dfm, left_on="example_idx", how='left', right_on="example_id")
-
-    df.to_csv(output_tsv, sep='\t')
-
-    return seqlets, df
-
-def modisco_score2_single_binary(modisco_dir,
-                                 output_file,
-                                 imp_scores=None,
-                                 trim_frac=0.08,
-                                 n_jobs=20):
-    """
-    Equivalent of modisco_score2
-    """
-    import modisco
-    from modisco.tfmodisco_workflow import workflow
-
-    cm_path = os.path.join(modisco_dir, 'centroid_seqlet_matches.csv')
-    dfm_norm = pd.read_csv(cm_path)
-    mr = ModiscoResult(os.path.join(modisco_dir, "results.hdf5"))
-    mr.open()
-    tasks = mr.tasks()
-
-    kwargs = read_json(os.path.join(modisco_dir, "kwargs.json"))
-    d = HDF5Reader.load(kwargs['imp_scores'])  # deeplift hdffile
-    if isinstance(d['inputs'], dict):
-        one_hot = d['inputs']['seq']
-    else:
-        one_hot = d['inputs']
-    tasks = list(d['grads'].keys())
-    grad_type = list(d['grads'][tasks[0]].keys())[0]
-    if kwargs.get("filter_npy", None) is not None:
-        included_samples = np.load(kwargs["filter_npy"])
-
-    hyp_contrib = {f"{task}": d['grads'][task]['deeplift']['hyp_contrib_scores'][included_samples] for task in tasks
-                   for gt in grad_type.split(",")}
-    contrib = {f"{task}": d['grads'][task][gt]['contrib_scores'][included_samples] for task in tasks
-               for gt in grad_type.split(",")}
-    seq = one_hot[included_samples]
-    ranges = pd.DataFrame({"chrom": d['metadata']['range']['chr'][:][included_samples],
-                           "start": d['metadata']['range']['start'][:][included_samples],
-                           "end": d['metadata']['range']['end'][:][included_samples],
-                           "strand": d['metadata']['range']['strand'][:][included_samples],
-                           "idx": np.arange(len(included_samples)),
-                           "interval_from_task": d['metadata']['interval_from_task'][:][included_samples],
-                           })
-
-    print("Scanning for patterns")
-    dfl = []
-    mr_patterns = mr.patterns()  # [:2]
-    for pattern_name in tqdm(mr_patterns):
-        pattern = mr.get_pattern(pattern_name).trim_seq_ic(trim_frac)
-        match, importance = pattern.scan_importance(contrib, hyp_contrib, tasks,
-                                                    n_jobs=n_jobs, verbose=False)
-        seq_match = pattern.scan_seq(seq, n_jobs=n_jobs, verbose=False)
-        dfm = pattern.get_instances(tasks, match, importance, seq_match,
-                                    norm_df=dfm_norm[dfm_norm.pattern == pattern_name],
-                                    verbose=False, plot=False)
-        dfl.append(dfm)
-
-    print("Merging")
-    # merge and write the results
-    dfp = pd.concat(dfl)
-    print("Append ranges")
-    ranges.columns = ["example_" + v for v in ranges.columns]
-    dfp = dfp.merge(ranges, on="example_idx", how='left')
-    dfp.info()
-    dfp.to_parquet(output_file)
-
-    return None
 
 
 def modisco_centroid_seqlet_matches2(modisco_dir, imp_scores, output_dir=None, trim_frac=0.08, n_jobs=1, data_class='profile'):

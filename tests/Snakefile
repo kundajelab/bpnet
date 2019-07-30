@@ -5,8 +5,9 @@ from bpnet.cli.schemas import DataSpec
 
 base_url = 'http://mitra.stanford.edu/kundaje/avsec/chipnexus/paper/data'
 
-dataspecs = ['chip-nexus/dataspec.yml',
-             'chip-seq/dataspec.yml']
+dataspecs = ['models/dataspec.yml']
+
+SUBSET = 'subset'
 
 # download all the required files by the DataSpec to ./data
 rule all:
@@ -14,19 +15,8 @@ rule all:
         [os.path.normpath(os.path.join('data', f))
          for ds in dataspecs
          for f in DataSpec.load(ds).list_all_files(include_peaks=True)],
-        "data/mm10.subset.fa"
-
-rule chip_nexus:
-    input:
-        [os.path.normpath(os.path.join('data', f))
-         for f in DataSpec.load('chip-nexus/dataspec.yml').list_all_files(include_peaks=True)]
-
-
-rule chip_seq:
-    input:
-        [os.path.normpath(os.path.join('data', f))
-         for f in DataSpec.load('chip-nexus/dataspec.yml').list_all_files(include_peaks=True)]
-
+        f"data/mm10.{SUBSET}.fa",
+        f"data/chip-nexus/peaks.{SUBSET}.1kb.bed.gz"
 
 # -----------------------
 
@@ -46,11 +36,13 @@ rule download_fasta:
     """Download an individual file
     """
     output:
-        f = 'data/mm10.subset.fa.gz'
+        f = f'data/mm10.{SUBSET}.fa.gz'
     params:
-        base_url = base_url
+        base_url = base_url,
+        SUBSET = SUBSET
     shell:
-        "wget {params.base_url}/mm10.subset.fa.gz -O {output.f}"
+        "wget {params.base_url}/mm10.{params.SUBSET}.fa.gz -O {output.f}"
+
 
 # extract the fasta file
 

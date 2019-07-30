@@ -8,9 +8,8 @@ import os
 import warnings
 from kipoi.readers import HDF5Reader
 from kipoi.writers import HDF5BatchWriter
-from bpnet.BPNet import BPNet, BiasModel
 from bpnet.seqmodel import SeqModel
-from bpnet.cli.schemas import DataSpec, HParams, ModiscoHParams
+from bpnet.cli.schemas import DataSpec, ModiscoHParams
 from bpnet.functions import mean
 from bpnet.preproc import onehot_dinucl_shuffle
 from bpnet.utils import add_file_logging, fnmatch_any, create_tf_session
@@ -18,134 +17,6 @@ import h5py
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-
-def imp_score(model_dir,
-              output_file,
-              method="grad",
-              split='all',
-              batch_size=512,
-              num_workers=10,
-              h5_chunk_size=512,
-              max_batches=-1,
-              shuffle_seq=False,
-              memfrac=0.45,
-              exclude_chr='',
-              overwrite=False,
-              gpu=None):
-    """Run importance scores for a BPNet model
-
-    Args:
-      model_dir: path to the model directory
-      output_file: output file path (HDF5 format)
-      method: which importance scoring method to use ('grad', 'deeplift' or 'ism')
-      split: for which dataset split to compute the importance scores
-      h5_chunk_size: hdf5 chunk size.
-      exclude_chr: comma-separated list of chromosomes to exclude
-      overwrite: if True, overwrite the output directory
-      gpu (int): which GPU to use locally. If None, GPU is not used
-    """
-    add_file_logging(os.path.dirname(output_file), logger, 'modisco-score')
-    if gpu is not None:
-        create_tf_session(gpu, per_process_gpu_memory_fraction=memfrac)
-    else:
-        # Don't use any GPU's
-        os.environ['CUDA_VISIBLE_DEVICES'] = ''
-
-    if os.path.exists(output_file):
-        if overwrite:
-            os.remove(output_file)
-        else:
-            raise ValueError(f"File exists {output_file}. Use overwrite=True to overwrite it")
-
-    if exclude_chr:
-        exclude_chr = exclude_chr.split(",")
-    else:
-        exclude_chr = []
-    # load the config files
-    logger.info("Loading the config files")
-    model_dir = Path(model_dir)
-    hp = HParams.load(model_dir / "hparams.yaml")
-    ds = DataSpec.load(model_dir / "dataspec.yaml")
-    tasks = list(ds.task_specs)
-    # validate that the correct dataset was used
-    if hp.data.name != 'get_StrandedProfile_datasets':
-        logger.warn("hp.data.name != 'get_StrandedProfile_datasets'")
-
-    if split == 'valid':
-        assert len(exclude_chr) == 0
-        incl_chromosomes = hp.data.kwargs['valid_chr']
-        excl_chromosomes = None
-    elif split == 'test':
-        assert len(exclude_chr) == 0
-        incl_chromosomes = hp.data.kwargs['test_chr']
-        excl_chromosomes = None
-    elif split == 'train':
-        assert len(exclude_chr) == 0
-        incl_chromosomes = None
-        excl_chromosomes = hp.data.kwargs['valid_chr'] + hp.data.kwargs['test_chr'] + hp.data.kwargs.get('exclude_chr', [])
-    elif split == 'all':
-        incl_chromosomes = None
-        excl_chromosomes = hp.data.kwargs.get('exclude_chr', []) + exclude_chr
-        logger.info("Excluding chromosomes: {excl_chromosomes}")
-    else:
-        raise ValueError("split needs to be from {train,valid,test,all}")
-
-    logger.info("Creating the dataset")
-    from bpnet.datasets import StrandedProfile
-    seq_len = hp.data.kwargs['peak_width']
-    dl_valid = StrandedProfile(ds,
-                               incl_chromosomes=incl_chromosomes,
-                               excl_chromosomes=excl_chromosomes,
-                               peak_width=seq_len,
-                               shuffle=False,
-                               target_transformer=None)
-
-    bpnet = BPNet.from_mdir(model_dir)
-
-    # # setup the bias model
-    # if [task for task, task_spec in ds.task_specs.items() if task_spec.bias_model]:
-    #     bm = BiasModel(ds)
-    # else:
-    # bm = lambda x: x
-
-    writer = HDF5BatchWriter(output_file, chunk_size=h5_chunk_size)
-    for i, batch in enumerate(tqdm(dl_valid.batch_iter(batch_size=batch_size, num_workers=num_workers))):
-        if max_batches > 0:
-            logging.info(f"max_batches: {max_batches} exceeded. Stopping the computation")
-            if i > max_batches:
-                break
-        # append the bias model predictions
-        # (batch['inputs'], batch['targets']) = bm((batch['inputs'], batch['targets']))
-
-        # store the original batch containing 'inputs' and 'targets'
-        wdict = batch
-
-        if shuffle_seq:
-            # Di-nucleotide shuffle the sequences
-            if 'seq' in batch['inputs']:
-                batch['inputs']['seq'] = onehot_dinucl_shuffle(batch['inputs']['seq'])
-            else:
-                batch['inputs'] = onehot_dinucl_shuffle(batch['inputs'])
-
-        # loop through all tasks, pred_summary and strands
-        for task_i, task in enumerate(tasks):
-            for pred_summary in ['count', 'weighted']:
-                # figure out the number of channels
-                nstrands = batch['targets'][f'profile/{task}'].shape[-1]
-                strand_hash = ["pos", "neg"]
-
-                for strand_i in range(nstrands):
-                    hyp_imp = bpnet.imp_score(batch['inputs'],
-                                              task=task,
-                                              strand=strand_hash[strand_i],
-                                              method=method,
-                                              pred_summary=pred_summary,
-                                              batch_size=None)  # don't second-batch
-                    # put importance scores to the dictionary
-                    wdict[f"/hyp_imp/{task}/{pred_summary}/{strand_i}"] = hyp_imp
-        writer.batch_write(wdict)
-    writer.close()
 
 
 def avail_imp_scores(model_dir):

@@ -31,11 +31,19 @@ def render_ipynb(template_ipynb, rendered_ipynb, params=dict()):
       render_ipynb: output ipython notebook path
       params: parameters used to execute the ipython notebook
     """
+    import jupyter_client
+
     os.makedirs(os.path.dirname(rendered_ipynb), exist_ok=True)
+    kernel_name = os.environ.get("CONDA_DEFAULT_ENV", 'python3')
+    if kernel_name not in jupyter_client.kernelspec.find_kernel_specs():
+        logger.info(f"Installing the ipython kernel for the current conda environment: {kernel_name}")
+        from ipykernel.kernelspec import install
+        install(user=True, kernel_name=kernel_name)
+
     pm.execute_notebook(
         template_ipynb,  # input template
         rendered_ipynb,
-        kernel_name="python3",  # default kernel
+        kernel_name=kernel_name,  # default kernel
         parameters=params
     )
     jupyter_nbconvert(rendered_ipynb)
@@ -68,14 +76,16 @@ def remove_exists(output_path, overwrite=False):
 
 
 def write_pkl(obj, fname, create_dirs=True, protocol=2):
+    import cloudpickle
     if create_dirs:
         if os.path.dirname(fname):
             os.makedirs(os.path.dirname(fname), exist_ok=True)
-    pickle.dump(obj, open(fname, 'wb'), protocol=protocol)
+    cloudpickle.dump(obj, open(fname, 'wb'), protocol=protocol)
 
 
 def read_pkl(fname):
-    return pickle.load(open(fname, 'rb'))
+    import cloudpickle
+    return cloudpickle.load(open(fname, 'rb'))
 
 
 def read_json(fname):
