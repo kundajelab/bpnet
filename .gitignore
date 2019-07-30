@@ -112,3 +112,5 @@ venv.bak/
 **/.snakemake/**
 *~
 examples/chip-nexus/output/*
+/tests/data/dummy/dummy.fa.fai
+/tests/data/output/*

@@ -650,10 +650,13 @@ def bpnet_train(dataspec,
         use_bias = False
         n_bias_tracks = 0
     tasks = list(ds.task_specs)
+    # TODO - handle multiple track widths?
+    tracks_per_task = [len(v.tracks) for k, v in ds.task_specs.items()][0]
     # figure out the right hyper-parameters
     dataspec_bindings = [f'dataspec="{dataspec}"',
                          f'use_bias={use_bias}',
                          f'n_bias_tracks={n_bias_tracks}',
+                         f'tracks_per_task={tracks_per_task}',
                          f'tasks={tasks}'
                          ]
 

@@ -223,6 +223,7 @@ class DeConv1D:
             return - 2 * (self.tconv_kernel_size // 2)
 
 
+@gin.configurable
 class MovingAverages:
     """Layer to compute moving averages at multiple resolutions
     followed by a conv layer
