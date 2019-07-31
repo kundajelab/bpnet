@@ -10,8 +10,8 @@ from tqdm import tqdm
 from pathlib import Path
 from bpnet.utils import write_pkl, related_dump_yaml, render_ipynb, remove_exists, add_file_logging, create_tf_session
 from bpnet.cli.schemas import DataSpec, ModiscoHParams
-from bpnet.cli.contrib import ContribScoreFile
-# ContribScoreFile
+from bpnet.cli.contrib import ContribFile
+# ContribFile
 from bpnet.modisco.results import ModiscoResult
 from bpnet.functions import mean
 from kipoi_utils.utils import unique_list
@@ -41,7 +41,7 @@ def load_included_samples(modisco_dir):
 
     kwargs = read_json(modisco_dir / "kwargs.json")
 
-    d = ContribScoreFile(kwargs["contrib_scores"])
+    d = ContribFile(kwargs["contrib_scores"])
     interval_from_task = d.get_ranges().interval_from_task
     n = len(d)
     d.close()
@@ -64,7 +64,7 @@ def load_ranges(modisco_dir):
     included_samples = load_included_samples(modisco_dir)
 
     kwargs = read_json(modisco_dir / "kwargs.json")
-    d = ContribScoreFile(kwargs["contrib_scores"], included_samples)
+    d = ContribFile(kwargs["contrib_scores"], included_samples)
     df = d.get_ranges()
     d.close()
     return df
@@ -101,7 +101,7 @@ def load_profiles(modisco_dir, contrib_scores):
     """
     modisco_dir = Path(modisco_dir)
     include_samples = load_included_samples(modisco_dir)
-    f = ContribScoreFile(contrib_scores, include_samples)
+    f = ContribFile(contrib_scores, include_samples)
     profiles = f.get_profiles()
     f.close()
     return profiles
@@ -352,7 +352,7 @@ def modisco_run(contrib_scores,
 
     if null_contrib_scores is not None:
         logger.info(f"Using null_contrib_scores: {null_contrib_scores}")
-        null_isf = ContribScoreFile(null_contrib_scores)
+        null_isf = ContribFile(null_contrib_scores)
         null_per_pos_scores = {f"{task}/{gt}": v.sum(axis=-1) for gt in contrib_type.split(",")
                                for task, v in null_isf.get_contrib(contrib_score=gt).items() if task in tasks}
     else:
@@ -402,7 +402,7 @@ def modisco_plot(modisco_dir,
       modisco_dir: modisco directory
       output_dir: Output directory for writing the results
       figsize: Output figure size
-      contribsf: [optional] modisco contribution score file (ContribScoreFile)
+      contribsf: [optional] modisco contribution score file (ContribFile)
     """
     plt.switch_backend('agg')
     add_file_logging(output_dir, logger, 'modisco-plot')
@@ -419,7 +419,7 @@ def modisco_plot(modisco_dir,
     if contribsf is not None:
         d = contribsf
     else:
-        d = ContribScoreFile.from_modisco_dir(modisco_dir)
+        d = ContribFile.from_modisco_dir(modisco_dir)
         logger.info("Loading the contribution scores")
         d.cache()  # load all
 
@@ -642,9 +642,9 @@ def modisco_score2(modisco_dir,
 
     if contrib_scores is not None:
         logger.info(f"Loading the contribution scores from: {contrib_scores}")
-        contrib = ContribScoreFile(contrib_scores, default_contrib_score=contribution)
+        contrib = ContribFile(contrib_scores, default_contrib_score=contribution)
     else:
-        contrib = ContribScoreFile.from_modisco_dir(modisco_dir, ignore_include_samples=ignore_filter)
+        contrib = ContribFile.from_modisco_dir(modisco_dir, ignore_include_samples=ignore_filter)
 
     seq, contrib, hyp_contrib, profile, ranges = contrib.get_all()
 
@@ -830,7 +830,7 @@ def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, contrib
       output_file: output file path for patterns.pkl
     """
     from bpnet.utils import read_pkl, write_pkl
-    from bpnet.cli.contrib import ContribScoreFile
+    from bpnet.cli.contrib import ContribFile
     from bpnet.modisco.core import StackedSeqletContrib
 
     logger.info("Loading patterns")
@@ -841,11 +841,11 @@ def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, contrib
     mr.open()
 
     if contribsf is None:
-        contrib_file = ContribScoreFile.from_modisco_dir(modisco_dir)
-        logger.info("Loading ContribScoreFile into memory")
+        contrib_file = ContribFile.from_modisco_dir(modisco_dir)
+        logger.info("Loading ContribFile into memory")
         contrib_file.cache()
     else:
-        logger.info("Using the provided ContribScoreFile")
+        logger.info("Using the provided ContribFile")
         contrib_file = contribsf
 
     logger.info("Extracting profile and contribution scores")
@@ -879,7 +879,7 @@ def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
       output_file: output file path for patterns.pkl
     """
     from bpnet.utils import read_pkl, write_pkl
-    from bpnet.cli.contrib import ContribScoreFile
+    from bpnet.cli.contrib import ContribFile
     from bpnet.modisco.core import StackedSeqletContrib
 
     logger.info("Loading patterns")
@@ -891,11 +891,11 @@ def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
                 for pname in mr.patterns()]
 
     if contribsf is None:
-        contrib_file = ContribScoreFile.from_modisco_dir(modisco_dir)
-        logger.info("Loading ContribScoreFile into memory")
+        contrib_file = ContribFile.from_modisco_dir(modisco_dir)
+        logger.info("Loading ContribFile into memory")
         contrib_file.cache()
     else:
-        logger.info("Using the provided ContribScoreFile")
+        logger.info("Using the provided ContribFile")
         contrib_file = contribsf
 
     logger.info("Extracting profile and contribution scores")
@@ -966,9 +966,9 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     if (not cr.set_cmd('modisco_plot').done()
         or not cr.set_cmd('modisco_cluster_patterns').done()
             or not cr.set_cmd('modisco_enrich_patterns').done()):
-        # load ContribScoreFile and pass it to all the functions
-        logger.info("Loading ContribScoreFile")
-        contribsf = ContribScoreFile.from_modisco_dir(modisco_dir)
+        # load ContribFile and pass it to all the functions
+        logger.info("Loading ContribFile")
+        contribsf = ContribFile.from_modisco_dir(modisco_dir)
         contribsf.cache()
     else:
         contribsf = None

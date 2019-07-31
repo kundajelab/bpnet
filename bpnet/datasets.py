@@ -348,6 +348,7 @@ class StrandedProfile(Dataset):
 
         # extract DNA sequence + one-hot encode it
         sequence = self.fasta_extractor([seq_interval])[0]
+        inputs = {"seq": sequence}
 
         # exctract the profile counts from the bigwigs
         cuts = {f"{task}/profile": _run_extractors(self.bw_extractors[task],
@@ -382,7 +383,7 @@ class StrandedProfile(Dataset):
             for task in self.tasks:
                 task_biases[f'bias/{task}/counts'] = self.total_count_transform(task_biases[f'bias/{task}/profile'].sum(0))
 
-            sequence = {"seq": sequence, **task_biases}
+            inputs = {**inputs, **task_biases}
 
         if self.include_classes:
             # Optionally, add binary labels from the additional columns in the tsv intervals file
@@ -390,7 +391,7 @@ class StrandedProfile(Dataset):
                        for i, task in enumerate(self.dfm_tasks) if task in self.tasks}
             cuts = {**cuts, **classes}
 
-        out = {"inputs": sequence,
+        out = {"inputs": inputs,
                "targets": cuts}
 
         if self.include_metadata:

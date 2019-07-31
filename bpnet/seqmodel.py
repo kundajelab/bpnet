@@ -165,18 +165,56 @@ class SeqModel:
                 # input_tensor = fModel.inputs[0]
                 self.contrib_fns["deeplift/" + name] = de.explain('deeplift',
                                                                   target_tensor,
+                                                                  # NOTE: deepexplain will always take
+                                                                  # the first element by definition
                                                                   input_tensor,
                                                                   x_subset)
 
         return self.contrib_fns[k]
 
-    def contrib_score(self, x, name, method='deeplift', batch_size=512, preact_only=False):
+    def _contrib_grad_fn(self, x, name, preact_only=True):
+        """Gradient contribution score tensors
+        """
+        k = f"grad/{name}"
+        if k in self.contrib_fns:
+            return self.contrib_fns[k]
+        from keras.models import load_model, Model
+        import keras.backend as K
+        import numpy as np
+        import tempfile
+
+        self.contrib_fns = {}
+
+        # get the interpretation tensors
+        intp_names, intp_tensors = list(zip(*self.get_intp_tensors(preact_only)))
+        if name not in intp_names:
+            raise ValueError(f"name {name} not in intp_names: {intp_names}")
+
+        input_tensor = self.model.inputs
+
+        if isinstance(x, list):
+            x_subset = [ix[:1] for ix in x]
+        elif isinstance(x, dict):
+            x_subset = [v[:1] for k, v in x.items()]
+        else:
+            x_subset = x[:1]
+
+        fModel = Model(inputs=input_tensor, outputs=intp_tensors)
+        target_tensors = fModel(input_tensor)
+        for name, target_tensor in zip(intp_names, target_tensors):
+            # input_tensor = fModel.inputs[0]
+            self.contrib_fns["grad/" + name] = K.function(input_tensor,
+                                                          K.gradients(target_tensor, input_tensor[0]))
+
+        return self.contrib_fns[k]
+
+    def contrib_score(self, x, name, method='grad', batch_size=512, preact_only=False):
         """Compute the contribution score
 
         Args:
           x: one-hot encoded DNA sequence
           name: which interepretation method to compute
-          method: which contribution score to use. Available: grad, ism, deeplift
+          method: which contribution score to use. Available: grad or deeplift
         """
         # Do we need bias?
         if not isinstance(x, dict) and not isinstance(x, list):
@@ -185,8 +223,10 @@ class SeqModel:
 
         if method == "deeplift":
             fn = self._contrib_deeplift_fn(x, name, preact_only=preact_only)
+        elif method == "grad":
+            fn = self._contrib_grad_fn(x, name, preact_only=preact_only)
         else:
-            raise ValueError("Please provide a valid contribution scoring method: grad, ism or deeplift")
+            raise ValueError("Please provide a valid contribution scoring method: grad, deeplift")
 
         def input_to_list(input_names, x):
             if isinstance(x, list):
@@ -204,13 +244,13 @@ class SeqModel:
             return numpy_collate_concat([fn(input_to_list(input_names, batch))[0]
                                          for batch in nested_numpy_minibatch(x, batch_size=batch_size)])
 
-    def contrib_score_all(self, seq, method='deeplift', batch_size=512, preact_only=True,
+    def contrib_score_all(self, seq, method='grad', batch_size=512, preact_only=True,
                           intp_pattern='*'):
         """Compute all contribution scores
 
         Args:
           seq: one-hot encoded DNA sequences
-          method: 'deeplift'
+          method: 'grad' or deeplift'
           aggregate_strands: if True, the average contribution scores across strands will be returned
           batch_size: batch size when computing the contribution scores
 

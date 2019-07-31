@@ -20,8 +20,11 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def avail_contrib_scores(model_dir):
-    """List the available interpretation targets
+@arg("model_dir",
+     help='path to the model directory')
+def list_contrib(model_dir):
+    """List the available contribution scores for a particular model. This can be useful
+    in combination with `--contrib-wildcard` flag of the `bpnet contrib` command.
     """
     # don't use any gpu
     os.environ['CUDA_VISIBLE_DEVICES'] = ''
@@ -58,9 +61,32 @@ def avail_contrib_scores(model_dir):
 @arg("--max-regions",
      help="Compute the contribution scores only for the top `max-regions` instead of all the regions specified "
      "in the dataspec or the regions document.")
+@arg("--contrib-wildcard",
+     help="Wildcard of the contribution scores to compute. For example, */profile/wn computes"
+     "the profile contribution scores for all the tasks (*) using the wn normalization (see bpnet.heads.py)."
+     "*/counts/pre-act computes the total count contribution scores for all tasks w.r.t. the pre-activation output "
+     "of prediction heads. Multiple wildcards can be by comma-separating them.")
+@arg("--batch-size",
+     help='Batch size for computing the contribution scores')
+@arg('--gpu',
+     help='which gpu to use. Example: gpu=1')
+@arg('--memfrac-gpu',
+     help='what fraction of the GPU memory to use')
+@arg('--num-workers',
+     help='number of workers to use in parallel for loading the data the model')
+@arg('--storage-chunk-size',
+     help='Storage chunk size of the output HDF5 file')
+@arg('--exclude-chr',
+     help='Exclude regions from these chromsomes (comma separated).')
+@arg('--include-chr',
+     help='Include only regions from these chromsomes (comma separated).')
+@arg('--overwrite',
+     help='If True, the `output_file` will be overwritten.')
+@arg('--skip-bias',
+     help='If True, don\'t store the bias tracks in the output')
 def bpnet_contrib(model_dir,
                   output_file,
-                  method="deeplift",
+                  method="grad",
                   dataspec=None,
                   regions=None,
                   fasta_file=None,  # alternative to dataspec
@@ -70,25 +96,17 @@ def bpnet_contrib(model_dir,
                   # reference='zeroes', # Currently the only option
                   # peak_width=1000,  # automatically inferred from 'config.gin.json'
                   # seq_width=None,
-
-                  intp_pattern='*/profile/wn,*/counts/pre-act',  # specifies which contrib. scores to compute
+                  contrib_wildcard='*/profile/wn,*/counts/pre-act',  # specifies which contrib. scores to compute
                   batch_size=512,
+                  gpu=0,
                   memfrac_gpu=0.45,
                   num_workers=10,
-                  h5_chunk_size=512,
+                  storage_chunk_size=512,
                   exclude_chr='',
                   include_chr='',
                   overwrite=False,
-                  skip_bias=False,
-                  gpu=None):
+                  skip_bias=False):
     """Run contribution scores for a BPNet model
-
-      method: 
-      exclude_chr: comma-separated list of chromosomes to exclude
-      overwrite: if True, overwrite the output directory
-      skip_bias: if True, don't store the bias tracks in the output
-      gpu (int): which GPU to use locally. If None, GPU is not used
-      h5_chunk_size: hdf5 chunk size.
     """
     add_file_logging(os.path.dirname(output_file), logger, 'bpnet-contrib')
     if gpu is not None:
@@ -119,7 +137,7 @@ def bpnet_contrib(model_dir,
     # peak_width = int(peak_width)
 
     # Split
-    intp_patterns = intp_pattern.split(",")
+    contrib_wildcards = contrib_wildcard.split(",")
 
     # Allow chr inclusion / exclusion
     if exclude_chr:
@@ -140,7 +158,7 @@ def bpnet_contrib(model_dir,
         if regions is None:
             raise ValueError("fasta_file specified. Expecting regions to be specified as well")
         dl_valid = SeqClassification(fasta_file=fasta_file,
-                                     interval_file=regions,
+                                     intervals_file=regions,
                                      incl_chromosomes=include_chr,
                                      excl_chromosomes=exclude_chr,
                                      auto_resize_len=seq_width,
@@ -149,7 +167,7 @@ def bpnet_contrib(model_dir,
         if dataspec is None:
             logger.info("Using dataspec used to train the model")
             # Specify dataspec
-            dataspec = model_dir / "dataspec.yaml"
+            dataspec = model_dir / "dataspec.yml"
 
         ds = DataSpec.load(dataspec)
         dl_valid = StrandedProfile(ds,
@@ -157,9 +175,8 @@ def bpnet_contrib(model_dir,
                                    excl_chromosomes=exclude_chr,
                                    intervals_file=regions,
                                    peak_width=peak_width,
-                                   seq_width=seq_width,
-                                   taskname_first=True,  # Required to work nicely with contrib-score
-                                   target_transformer=None)
+                                   shuffle=False,
+                                   seq_width=seq_width)
 
     # Setup contribution score trimming (not required currently)
     if seq_width > peak_width:
@@ -181,7 +198,7 @@ def bpnet_contrib(model_dir,
     # get all possible interpretation names
     # make sure they match the specified glob
     intp_names = [name for name, _ in seqmodel.get_intp_tensors(preact_only=False)
-                  if fnmatch_any(name, intp_patterns)]
+                  if fnmatch_any(name, contrib_wildcards)]
     logger.info(f"Using the following interpretation targets:")
     for n in intp_names:
         print(n)
@@ -198,15 +215,14 @@ def bpnet_contrib(model_dir,
 
     max_batches = np.ceil(max_regions / batch_size)
 
-    writer = HDF5BatchWriter(output_file, chunk_size=h5_chunk_size)
+    writer = HDF5BatchWriter(output_file, chunk_size=storage_chunk_size)
     for i, batch in enumerate(tqdm(dl_valid.batch_iter(batch_size=batch_size,
                                                        shuffle=shuffle_regions,
                                                        num_workers=num_workers),
                                    total=max_batches)):
         # store the original batch containing 'inputs' and 'targets'
-        wdict = batch
         if skip_bias:
-            wdict['inputs'] = {'seq': wdict['inputs']['seq']}  # ignore all other inputs
+            batch['inputs'] = {'seq': batch['inputs']['seq']}  # ignore all other inputs
 
         if max_batches > 0:
             if i > max_batches:
@@ -225,23 +241,20 @@ def bpnet_contrib(model_dir,
             # put contribution scores to the dictionary
             # also trim the contribution scores appropriately so that
             # the output will always be w.r.t. the peak center
-            wdict[f"/hyp_contrib/{name}"] = hyp_contrib[:, trim_start:trim_end]
+            batch[f"/hyp_contrib/{name}"] = hyp_contrib[:, trim_start:trim_end]
 
         # trim the sequence as well
-        if isinstance(wdict['inputs'], dict):
-            # Trim the sequence
-            wdict['inputs']['seq'] = wdict['inputs']['seq'][:, trim_start:trim_end]
-        else:
-            wdict['inputs'] = wdict['inputs'][:, trim_start:trim_end]
+        # Trim the sequence
+        batch['inputs']['seq'] = batch['inputs']['seq'][:, trim_start:trim_end]
 
-        writer.batch_write(wdict)
+        writer.batch_write(batch)
     writer.close()
 
 
-class ContribScoreFile:
+class ContribFile:
     """Contribution score container file
 
-    Note: Use this class typically with `ContribScoreFile.from_modisco_dir()`
+    Note: Use this class typically with `ContribFile.from_modisco_dir()`
 
     Args:
       file_path: path to the hdf5 file
@@ -254,7 +267,7 @@ class ContribScoreFile:
 
     def __init__(self, file_path,
                  include_samples=None,
-                 default_contrib_score='weighted'):
+                 default_contrib_score='profile/wn'):
         self.file_path = file_path
         self.f = HDF5Reader(self.file_path)
         self.f.open()

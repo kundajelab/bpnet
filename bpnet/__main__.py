@@ -1,7 +1,7 @@
 import argh
 
 from bpnet.cli.train import bpnet_train, dataspec_stats
-from bpnet.cli.contrib import bpnet_contrib
+from bpnet.cli.contrib import bpnet_contrib, list_contrib
 
 # logging
 import pkg_resources
@@ -23,6 +23,7 @@ def main():
         bpnet_train,
         dataspec_stats,
         bpnet_contrib,
+        list_contrib,
         ipynb_render,
     ])
     argh.dispatch(parser)

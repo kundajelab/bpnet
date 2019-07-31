@@ -77,7 +77,7 @@ class ModiscoData:
     def load(cls, modisco_dir, contrib_scores_h5, contribsf=None):
         """Instantiate ModiscoData from tf-modisco run folder
         """
-        from bpnet.cli.contrib import ContribScoreFile
+        from bpnet.cli.contrib import ContribFile
         modisco_dir = Path(modisco_dir)
 
         # Load the contribution scores and the data
@@ -91,7 +91,7 @@ class ModiscoData:
             # Cache the results
             d = contribsf
         else:
-            d = ContribScoreFile.from_modisco_dir(modisco_dir)
+            d = ContribFile.from_modisco_dir(modisco_dir)
             d.cache()
         # load included samples
         # included_samples = load_included_samples(modisco_dir)

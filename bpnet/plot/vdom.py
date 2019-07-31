@@ -2,7 +2,7 @@
 """
 import pandas as pd
 from bpnet.plot.heatmaps import multiple_heatmap_stranded_profile, multiple_heatmap_contribution_profile, heatmap_sequence
-from bpnet.cli.contrib import ContribScoreFile
+from bpnet.cli.contrib import ContribFile
 from collections import OrderedDict
 from bpnet.plot.profiles import extract_signal, multiple_plot_stranded_profile, hist_position, bar_seqlets_per_example, box_counts
 from bpnet.functions import mean
@@ -227,7 +227,7 @@ def vdom_modisco(mr, figdir, total_counts, dfp=None, is_open=True, **kwargs):
                 if len(mr.patterns(metacluster)) > 0])
 
 
-def get_signal(seqlets, d: ContribScoreFile, tasks, resize_width=200):
+def get_signal(seqlets, d: ContribFile, tasks, resize_width=200):
     thr_one_hot = d.get_seq()
 
     if resize_width is None:
