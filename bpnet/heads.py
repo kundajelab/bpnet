@@ -226,7 +226,7 @@ class ProfileHead(BaseHeadWBias):
     """Deals with the case where the output are multiple tracks of
     total shape (L, C) (L = sequence length, C = number of channels)
 
-    Note: Since the importance score will be a single scalar, the
+    Note: Since the contribution score will be a single scalar, the
     interpretation method will have to aggregate both across channels
     as well as positions
     """
@@ -301,10 +301,10 @@ class ProfileHead(BaseHeadWBias):
         return graph.get_tensor_by_name(self.pre_act)
 
     @staticmethod
-    def profile_imp(p):
-        """Summarizing the profile for the importance scores
+    def profile_contrib(p):
+        """Summarizing the profile for the contribution scores
 
-        wn: Normalized importance (weighted sum of the importance scores)
+        wn: Normalized contribution (weighted sum of the contribution scores)
           where the weighted sum uses softmax(p) to weight it
         w2: Simple sum (p**2)
         w1: sum(p)
@@ -313,7 +313,7 @@ class ProfileHead(BaseHeadWBias):
         # Note: unfortunately we have to use the kl.Lambda boiler-plate
         # to be able to do Model(inp, outputs) in deep-explain code
 
-        # Normalized importance  - # TODO - update with tensorflow
+        # Normalized contribution  - # TODO - update with tensorflow
         wn = kl.Lambda(lambda p:
                        K.mean(K.sum(K.stop_gradient(tf.nn.softmax(p, dim=-2)) * p, axis=-2), axis=-1)
                        )(p)
@@ -353,8 +353,8 @@ class ProfileHead(BaseHeadWBias):
         postact = graph.get_tensor_by_name(self.post_act)
 
         # Contruct the profile summary ops
-        preact_tensors = self.profile_imp(preact)
-        postact_tensors = dict_prefix_key(self.profile_imp(postact), 'output_')
+        preact_tensors = self.profile_contrib(preact)
+        postact_tensors = dict_prefix_key(self.profile_contrib(postact), 'output_')
 
         if self.activation is None:
             # the post-activation doesn't

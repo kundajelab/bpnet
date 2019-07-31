@@ -1,9 +1,10 @@
-"""Module containing code for importance scoring
+"""Module containing code for contribution scoring
 """
 import numpy as np
 import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
+from argh.decorators import aliases, named, arg
 import os
 import warnings
 from kipoi.readers import HDF5Reader
@@ -12,14 +13,14 @@ from bpnet.seqmodel import SeqModel
 from bpnet.cli.schemas import DataSpec, ModiscoHParams
 from bpnet.functions import mean
 from bpnet.preproc import onehot_dinucl_shuffle
-from bpnet.utils import add_file_logging, fnmatch_any, create_tf_session
+from bpnet.utils import add_file_logging, fnmatch_any, create_tf_session, read_json
 import h5py
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def avail_imp_scores(model_dir):
+def avail_contrib_scores(model_dir):
     """List the available interpretation targets
     """
     # don't use any gpu
@@ -30,41 +31,68 @@ def avail_imp_scores(model_dir):
         print(name)
 
 
-def imp_score_seqmodel(model_dir,
-                       output_file,
-                       dataspec=None,
-                       peak_width=1000,
-                       seq_width=None,
-                       intp_pattern='*',  # specifies which imp. scores to compute
-                       # skip_trim=False,  # skip trimming the output
-                       method="deeplift",
-                       batch_size=512,
-                       max_batches=-1,
-                       shuffle_seq=False,
-                       memfrac=0.45,
-                       num_workers=10,
-                       h5_chunk_size=512,
-                       exclude_chr='',
-                       include_chr='',
-                       overwrite=False,
-                       skip_bias=False,
-                       gpu=None):
-    """Run importance scores for a BPNet model
+@named('contrib')
+@arg('--max-regions', type=int,
+     help='Maximum number of regions to score.')
+@arg("model_dir",
+     help='path to the model directory')
+@arg("output_file",
+     help='output file path (example: deeplift.imp-score.h5)')
+@arg("--method",
+     help="which contribution scoring method to use ('grad', 'deeplift' or 'ism')")
+@arg("--dataspec",
+     help="Dataspec yaml file path. If not specified, dataspec used to train the model will be used")
+@arg("--regions",
+     help="Regions BED3 file. If not specified, regions specified in the dataspec file will be used")
+@arg("--fasta-file",
+     help="Reference genome fasta file. If specified, the dataspec argument will be ignored and the "
+     "experimental track values will not be stored to the output file. Requires --regions to be specified. ")
+@arg("--fasta-file",
+     help="Reference genome fasta file. If specified, the dataspec argument will be ignored and the "
+     "experimental track values will not be stored to the output file. Requires --regions to be specified. ")
+@arg("--shuffle-seq",
+     help="Compute the contribution scores on the shufled DNA sequences. Used to generate the background or 'null' distribution "
+     "of the contribution scores used by TF-MoDISco.")
+@arg("--shuffle-regions",
+     help="Shuffle the order in which the regions are scores. Useful when using --max-regions.")
+@arg("--max-regions",
+     help="Compute the contribution scores only for the top `max-regions` instead of all the regions specified "
+     "in the dataspec or the regions document.")
+def bpnet_contrib(model_dir,
+                  output_file,
+                  method="deeplift",
+                  dataspec=None,
+                  regions=None,
+                  fasta_file=None,  # alternative to dataspec
+                  shuffle_seq=False,
+                  shuffle_regions=False,
+                  max_regions=None,
+                  # reference='zeroes', # Currently the only option
+                  # peak_width=1000,  # automatically inferred from 'config.gin.json'
+                  # seq_width=None,
 
-    Args:
-      model_dir: path to the model directory
-      output_file: output file path (HDF5 format)
-      method: which importance scoring method to use ('grad', 'deeplift' or 'ism')
-      split: for which dataset split to compute the importance scores
-      h5_chunk_size: hdf5 chunk size.
+                  intp_pattern='*/profile/wn,*/counts/pre-act',  # specifies which contrib. scores to compute
+                  batch_size=512,
+                  memfrac_gpu=0.45,
+                  num_workers=10,
+                  h5_chunk_size=512,
+                  exclude_chr='',
+                  include_chr='',
+                  overwrite=False,
+                  skip_bias=False,
+                  gpu=None):
+    """Run contribution scores for a BPNet model
+
+      method: 
       exclude_chr: comma-separated list of chromosomes to exclude
       overwrite: if True, overwrite the output directory
-      skip_bias: if True, don't store the bias tracks in teh output
+      skip_bias: if True, don't store the bias tracks in the output
       gpu (int): which GPU to use locally. If None, GPU is not used
+      h5_chunk_size: hdf5 chunk size.
     """
-    add_file_logging(os.path.dirname(output_file), logger, 'modisco-score-seqmodel')
+    add_file_logging(os.path.dirname(output_file), logger, 'bpnet-contrib')
     if gpu is not None:
-        create_tf_session(gpu, per_process_gpu_memory_fraction=memfrac)
+        create_tf_session(gpu, per_process_gpu_memory_fraction=memfrac_gpu)
     else:
         # Don't use any GPU's
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
@@ -75,13 +103,20 @@ def imp_score_seqmodel(model_dir,
         else:
             raise ValueError(f"File exists {output_file}. Use overwrite=True to overwrite it")
 
-    if seq_width is None:
-        logger.info("Using seq_width = peak_width")
-        seq_width = peak_width
+    config = read_json(os.path.join(model_dir, 'config.gin.json'))
+    seq_width = config['seq_width']
+    peak_width = config['seq_width']
 
-    # make sure these are int's
-    seq_width = int(seq_width)
-    peak_width = int(peak_width)
+    # NOTE - seq_width has to be the same for the input and the target
+    #
+    # infer from the command line
+    # if seq_width is None:
+    #     logger.info("Using seq_width = peak_width")
+    #     seq_width = peak_width
+
+    # # make sure these are int's
+    # seq_width = int(seq_width)
+    # peak_width = int(peak_width)
 
     # Split
     intp_patterns = intp_pattern.split(",")
@@ -99,23 +134,34 @@ def imp_score_seqmodel(model_dir,
     logger.info("Loading the config files")
     model_dir = Path(model_dir)
 
-    if dataspec is None:
-        # Specify dataspec
-        dataspec = model_dir / "dataspec.yaml"
-    ds = DataSpec.load(dataspec)
-
     logger.info("Creating the dataset")
-    from bpnet.datasets import StrandedProfile
-    dl_valid = StrandedProfile(ds,
-                               incl_chromosomes=include_chr,
-                               excl_chromosomes=exclude_chr,
-                               peak_width=peak_width,
-                               seq_width=seq_width,
-                               shuffle=False,
-                               taskname_first=True,  # Required to work nicely with imp-score
-                               target_transformer=None)
+    from bpnet.datasets import StrandedProfile, SeqClassification
+    if fasta_file is not None:
+        if regions is None:
+            raise ValueError("fasta_file specified. Expecting regions to be specified as well")
+        dl_valid = SeqClassification(fasta_file=fasta_file,
+                                     interval_file=regions,
+                                     incl_chromosomes=include_chr,
+                                     excl_chromosomes=exclude_chr,
+                                     auto_resize_len=seq_width,
+                                     )
+    else:
+        if dataspec is None:
+            logger.info("Using dataspec used to train the model")
+            # Specify dataspec
+            dataspec = model_dir / "dataspec.yaml"
 
-    # Setup importance score trimming
+        ds = DataSpec.load(dataspec)
+        dl_valid = StrandedProfile(ds,
+                                   incl_chromosomes=include_chr,
+                                   excl_chromosomes=exclude_chr,
+                                   intervals_file=regions,
+                                   peak_width=peak_width,
+                                   seq_width=seq_width,
+                                   taskname_first=True,  # Required to work nicely with contrib-score
+                                   target_transformer=None)
+
+    # Setup contribution score trimming (not required currently)
     if seq_width > peak_width:
         # Trim
         # make sure we can nicely trim the peak
@@ -140,15 +186,29 @@ def imp_score_seqmodel(model_dir,
     for n in intp_names:
         print(n)
 
+    if max_regions is not None:
+        if len(dl_valid) > max_regions:
+            logging.info(f"Using {max_regions} regions instead of the original {len(dl_valid)}")
+        else:
+            logging.info(f"--max-regions={max_regions} is larger than the dataset size: {len(dl_valid)}. "
+                         "Using the dataset size for max-regions")
+            max_regions = len(dl_valid)
+    else:
+        max_regions = len(dl_valid)
+
+    max_batches = np.ceil(max_regions / batch_size)
+
     writer = HDF5BatchWriter(output_file, chunk_size=h5_chunk_size)
-    for i, batch in enumerate(tqdm(dl_valid.batch_iter(batch_size=batch_size, num_workers=num_workers))):
+    for i, batch in enumerate(tqdm(dl_valid.batch_iter(batch_size=batch_size,
+                                                       shuffle=shuffle_regions,
+                                                       num_workers=num_workers),
+                                   total=max_batches)):
         # store the original batch containing 'inputs' and 'targets'
         wdict = batch
         if skip_bias:
             wdict['inputs'] = {'seq': wdict['inputs']['seq']}  # ignore all other inputs
 
         if max_batches > 0:
-            logging.info(f"max_batches: {max_batches} exceeded. Stopping the computation")
             if i > max_batches:
                 break
 
@@ -157,15 +217,15 @@ def imp_score_seqmodel(model_dir,
             batch['inputs']['seq'] = onehot_dinucl_shuffle(batch['inputs']['seq'])
 
         for name in intp_names:
-            hyp_imp = seqmodel.imp_score(batch['inputs']['seq'],
-                                         name=name,
-                                         method=method,
-                                         batch_size=None)  # don't second-batch
+            hyp_contrib = seqmodel.contrib_score(batch['inputs']['seq'],
+                                                 name=name,
+                                                 method=method,
+                                                 batch_size=None)  # don't second-batch
 
-            # put importance scores to the dictionary
-            # also trim the importance scores appropriately so that
+            # put contribution scores to the dictionary
+            # also trim the contribution scores appropriately so that
             # the output will always be w.r.t. the peak center
-            wdict[f"/hyp_imp/{name}"] = hyp_imp[:, trim_start:trim_end]
+            wdict[f"/hyp_contrib/{name}"] = hyp_contrib[:, trim_start:trim_end]
 
         # trim the sequence as well
         if isinstance(wdict['inputs'], dict):
@@ -178,23 +238,23 @@ def imp_score_seqmodel(model_dir,
     writer.close()
 
 
-class ImpScoreFile:
-    """Importance score container file
+class ContribScoreFile:
+    """Contribution score container file
 
-    Note: Use this class typically with `ImpScoreFile.from_modisco_dir()`
+    Note: Use this class typically with `ContribScoreFile.from_modisco_dir()`
 
     Args:
       file_path: path to the hdf5 file
       include_samples: boolean vector of the same length
         as the arrays in the hdf5 file denoting which samples
         to keep and which ones to omit
-      default_imp_score: which importance score should be the
+      default_contrib_score: which contribution score should be the
         default one
     """
 
     def __init__(self, file_path,
                  include_samples=None,
-                 default_imp_score='weighted'):
+                 default_contrib_score='weighted'):
         self.file_path = file_path
         self.f = HDF5Reader(self.file_path)
         self.f.open()
@@ -205,7 +265,7 @@ class ImpScoreFile:
         self.include_samples = include_samples
 
         self._hyp_contrib_cache = dict()
-        self.default_imp_score = default_imp_score
+        self.default_contrib_score = default_contrib_score
 
     @classmethod
     def from_modisco_dir(cls, modisco_dir, ignore_include_samples=False):
@@ -219,9 +279,9 @@ class ImpScoreFile:
                 # All are true, we can ignore that
                 include_samples = None
         kwargs = read_json(os.path.join(modisco_dir, "kwargs.json"))
-        return cls(kwargs["imp_scores"],
+        return cls(kwargs["contrib_scores"],
                    include_samples,
-                   default_imp_score=kwargs['grad_type'])
+                   default_contrib_score=kwargs['contrib_type'])
 
     def close(self):
         self.f.close()
@@ -230,7 +290,7 @@ class ImpScoreFile:
         self.close()
 
     def get_tasks(self):
-        key = '/hyp_imp/'
+        key = '/hyp_contrib/'
         if isinstance(self.data, dict):
             return [x.replace(key, "").split("/")[0]
                     for x in self.data.keys()
@@ -310,7 +370,7 @@ class ImpScoreFile:
             elif '/inputs/seq' in self.data:
                 return '/inputs/seq'
             else:
-                input_keys = [x.replace(key, "")
+                input_keys = [x.replace(x.split("/")[1], "")
                               for x in self.data.keys()
                               if x.startswith('/inputs')]
                 if len(input_keys) == 0:
@@ -329,43 +389,43 @@ class ImpScoreFile:
     def get_seqlen(self):
         return self.data[self._get_seq_key()].shape[1]
 
-    def contains_imp_score(self, imp_score):
-        """Test if it contains `imp_score` importance score
+    def contains_contrib_score(self, contrib_score):
+        """Test if it contains `contrib_score` contribution score
         """
         task = self.get_tasks()[0]
-        return len(self._data_subkeys(f'/hyp_imp/{task}/{imp_score}')) > 0
+        return len(self._data_subkeys(f'/hyp_contrib/{task}/{contrib_score}')) > 0
 
-    def get_hyp_contrib(self, imp_score=None, idx=None, pred_summary=None):
+    def get_hyp_contrib(self, contrib_score=None, idx=None, pred_summary=None):
         if pred_summary is not None:
-            warnings.warn("pred_summary is deprecated. Use `imp_score`")
-            imp_score = pred_summary
+            warnings.warn("pred_summary is deprecated. Use `contrib_score`")
+            contrib_score = pred_summary
 
-        imp_score = (imp_score if imp_score is not None
-                     else self.default_imp_score)
-        if imp_score in self._hyp_contrib_cache and idx is None:
-            return self._hyp_contrib_cache[imp_score]
+        contrib_score = (contrib_score if contrib_score is not None
+                         else self.default_contrib_score)
+        if contrib_score in self._hyp_contrib_cache and idx is None:
+            return self._hyp_contrib_cache[contrib_score]
         else:
-            # NOTE: this line averages any additional axes after {imp_score} like
+            # NOTE: this line averages any additional axes after {contrib_score} like
             # strands denoted with:
-            # /hyp_imp/{task}/{imp_score}/{strand}, where strand = 0 or 1
+            # /hyp_contrib/{task}/{contrib_score}/{strand}, where strand = 0 or 1
             out = {task: mean([self._subset(self.data[k], idx)
-                               for k in self._data_subkeys(f'/hyp_imp/{task}/{imp_score}')])
+                               for k in self._data_subkeys(f'/hyp_contrib/{task}/{contrib_score}')])
                    for task in self.get_tasks()
                    }
             if idx is None:
-                self._hyp_contrib_cache[imp_score] = out
+                self._hyp_contrib_cache[contrib_score] = out
             return out
 
-    def get_contrib(self, imp_score=None, idx=None, pred_summary=None):
+    def get_contrib(self, contrib_score=None, idx=None, pred_summary=None):
         if pred_summary is not None:
-            warnings.warn("pred_summary is deprecated. Use `imp_score`")
-            imp_score = pred_summary
+            warnings.warn("pred_summary is deprecated. Use `contrib_score`")
+            contrib_score = pred_summary
 
-        imp_score = (imp_score if imp_score is not None
-                     else self.default_imp_score)
+        contrib_score = (contrib_score if contrib_score is not None
+                         else self.default_contrib_score)
         seq = self.get_seq(idx=idx)
         return {task: hyp_contrib * seq
-                for task, hyp_contrib in self.get_hyp_contrib(imp_score, idx=idx).items()}
+                for task, hyp_contrib in self.get_hyp_contrib(contrib_score, idx=idx).items()}
 
     def cache(self):
         """Cache the data in memory
@@ -391,40 +451,40 @@ class ImpScoreFile:
                        attrs=dict()
                        )
 
-    def get_all(self, imp_score=None):
+    def get_all(self, contrib_score=None):
         return (self.get_seq(),
-                self.get_contrib(imp_score=imp_score),
-                self.get_hyp_contrib(imp_score=imp_score),
+                self.get_contrib(contrib_score=contrib_score),
+                self.get_hyp_contrib(contrib_score=contrib_score),
                 self.get_profiles(),
                 self.get_ranges())
 
-    def extract(self, seqlets, profile_width=None, imp_score=None, verbose=False, pred_summary=None):
+    def extract(self, seqlets, profile_width=None, contrib_score=None, verbose=False, pred_summary=None):
         """Extract multiple seqlets
         """
         if pred_summary is not None:
-            warnings.warn("pred_summary is deprecated. Use `imp_score`")
-            imp_score = pred_summary
-        from bpnet.modisco.core import StackedSeqletImp
+            warnings.warn("pred_summary is deprecated. Use `contrib_score`")
+            contrib_score = pred_summary
+        from bpnet.modisco.core import StackedSeqletContrib
 
-        imp_score = (imp_score if imp_score is not None
-                     else self.default_imp_score)
+        contrib_score = (contrib_score if contrib_score is not None
+                         else self.default_contrib_score)
         seq = self.get_seq()
-        hyp_contrib = self.get_hyp_contrib(imp_score=imp_score)
+        hyp_contrib = self.get_hyp_contrib(contrib_score=contrib_score)
         profile = self.get_profiles()
-        return StackedSeqletImp.from_seqlet_imps([
+        return StackedSeqletContrib.from_seqlet_contribs([
             self._extract(s, seq, hyp_contrib, profile, profile_width=profile_width)
             for s in tqdm(seqlets, disable=not verbose)
         ])
 
-    # StackedSeqletImp
-    def extract_dfi(self, dfi, profile_width=None, imp_score=None, verbose=False, pred_summary=None):
+    # StackedSeqletContrib
+    def extract_dfi(self, dfi, profile_width=None, contrib_score=None, verbose=False, pred_summary=None):
         """Extract multiple seqlets
         """
-        from bpnet.modisco.core import StackedSeqletImp
+        from bpnet.modisco.core import StackedSeqletContrib
         from bpnet.modisco.pattern_instances import dfi_row2seqlet, dfi_filter_valid
         if pred_summary is not None:
-            warnings.warn("pred_summary is deprecated. Use `imp_score`")
-            imp_score = pred_summary
+            warnings.warn("pred_summary is deprecated. Use `contrib_score`")
+            contrib_score = pred_summary
 
         if profile_width is not None:
             df_valid = dfi_filter_valid(dfi, profile_width=profile_width, seqlen=self.get_seqlen())
@@ -432,12 +492,12 @@ class ImpScoreFile:
                 print(f"Removed {len(dfi) - len(df_valid)}/{len(dfi)} instances at the boundaries")
             dfi = df_valid
 
-        imp_score = (imp_score if imp_score is not None
-                     else self.default_imp_score)
+        contrib_score = (contrib_score if contrib_score is not None
+                         else self.default_contrib_score)
         seq = self.get_seq()
-        hyp_contrib = self.get_hyp_contrib(imp_score=imp_score)
+        hyp_contrib = self.get_hyp_contrib(contrib_score=contrib_score)
         profile = self.get_profiles()
-        out = StackedSeqletImp.from_seqlet_imps([
+        out = StackedSeqletContrib.from_seqlet_contribs([
             self._extract(dfi_row2seqlet(dfi.iloc[i]),
                           seq,
                           hyp_contrib,

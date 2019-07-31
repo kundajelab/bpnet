@@ -602,12 +602,14 @@ class SeqClassification(Dataset):
                  fasta_file,
                  incl_chromosomes=None,
                  excl_chromosomes=None,
+                 auto_resize_len=None,
                  num_chr_fasta=False):
         self.num_chr_fasta = num_chr_fasta
         self.intervals_file = intervals_file
         self.fasta_file = fasta_file
         self.incl_chromosomes = incl_chromosomes
         self.excl_chromosomes = excl_chromosomes
+        self.auto_resize_len = auto_resize_len
 
         self.tsv = TsvReader(self.intervals_file,
                              num_chr=self.num_chr_fasta,
@@ -627,8 +629,9 @@ class SeqClassification(Dataset):
 
         interval, labels = self.tsv[idx]
 
-        # Intervals need to be 1000bp wide
-        assert interval.stop - interval.start == 1000
+        if self.auto_resize_len:
+            # automatically resize the sequence to cerat
+            interval = resize_interval(interval, self.auto_resize_len)
 
         # Run the fasta extractor
         seq = np.squeeze(self.fasta_extractor([interval]))
@@ -637,7 +640,15 @@ class SeqClassification(Dataset):
             "inputs": {"seq": seq},
             "targets": labels,
             "metadata": {
-                "ranges": GenomicRanges(interval.chrom, interval.start, interval.stop, str(idx))
+                "ranges": GenomicRanges(chr=interval.chrom,
+                                        start=interval.start,
+                                        end=interval.stop,
+                                        id=str(idx),
+                                        strand=(interval.strand
+                                                if interval.strand is not None
+                                                else "*"),
+                                        ),
+                "interval_from_task": ''
             }
         }
 

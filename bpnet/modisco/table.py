@@ -31,9 +31,9 @@ class ModiscoData:
     def __init__(self, mr, d, included_samples, tasks):
         self.mr = mr
         self.d = d
-        # if 'hyp_imp' not in self.d:
+        # if 'hyp_contrib' not in self.d:
         # backcompatibility
-        #    self.d['hyp_imp'] = self.d['grads']
+        #    self.d['hyp_contrib'] = self.d['grads']
         if included_samples is not None:
             warnings.warn("included_samples deprecated. use included_samples=None")
         self.included_samples = included_samples  # TODO - remove this
@@ -64,7 +64,7 @@ class ModiscoData:
 
             self.profile_wide[pattern] = {task: extract_signal(self.get_region_profile(task), wide_seqlets)
                                           for task in tasks}
-            # importance scores
+            # contribution scores
             self.grad_profile[pattern] = {task: extract_signal(self.get_region_grad(task, 'profile'),
                                                                seqlets)
                                           for task in tasks}
@@ -74,24 +74,24 @@ class ModiscoData:
             self.seq[pattern] = extract_signal(self.get_region_seq(), seqlets)
 
     @classmethod
-    def load(cls, modisco_dir, imp_scores_h5, impsf=None):
+    def load(cls, modisco_dir, contrib_scores_h5, contribsf=None):
         """Instantiate ModiscoData from tf-modisco run folder
         """
-        from bpnet.cli.imp_score import ImpScoreFile
+        from bpnet.cli.contrib import ContribScoreFile
         modisco_dir = Path(modisco_dir)
 
-        # Load the importance scores and the data
-        # d = HDF5Reader.load(imp_scores_h5)
+        # Load the contribution scores and the data
+        # d = HDF5Reader.load(contrib_scores_h5)
 
         # load modisco
         mr = ModiscoResult(modisco_dir / "modisco.h5")
         mr.open()
 
-        if impsf is not None:
+        if contribsf is not None:
             # Cache the results
-            d = impsf
+            d = contribsf
         else:
-            d = ImpScoreFile.from_modisco_dir(modisco_dir)
+            d = ContribScoreFile.from_modisco_dir(modisco_dir)
             d.cache()
         # load included samples
         # included_samples = load_included_samples(modisco_dir)
@@ -130,15 +130,15 @@ class ModiscoData:
 
     def get_region_grad(self, task, which='profile'):
         if which == 'profile':
-            return self.d.get_hyp_contrib()[task]  # expect the default importance score
+            return self.d.get_hyp_contrib()[task]  # expect the default contribution score
         elif which == 'counts':
-            if self.d.contains_imp_score('count'):
-                return self.d.get_hyp_contrib(imp_score='count')[task]
-            elif self.d.contains_imp_score('counts/pre-act'):
-                return self.d.get_hyp_contrib(imp_score='counts/pre-act')[task]
+            if self.d.contains_contrib_score('count'):
+                return self.d.get_hyp_contrib(contrib_score='count')[task]
+            elif self.d.contains_contrib_score('counts/pre-act'):
+                return self.d.get_hyp_contrib(contrib_score='counts/pre-act')[task]
             else:
-                warnings.warn("region counts not present. Returning the default importance scores")
-                return self.d.get_hyp_contrib()[task]  # expect the default importance score
+                warnings.warn("region counts not present. Returning the default contribution scores")
+                return self.d.get_hyp_contrib()[task]  # expect the default contribution score
         else:
             raise ValueError("which needs to be from {'profile', 'counts'}")
 
@@ -146,8 +146,8 @@ class ModiscoData:
         task_regions = self.d.get_ranges()['interval_from_task'].values == peak_task
         return np.arange(len(task_regions))[task_regions]
 
-    def get_imp(self, pattern, task, which='profile'):
-        """Get importance scores associated with the pattern
+    def get_contrib(self, pattern, task, which='profile'):
+        """Get contribution scores associated with the pattern
         """
         if which == 'profile':
             return self.grad_profile[pattern][task] * self.get_seq(pattern)
@@ -188,24 +188,24 @@ class ModiscoData:
 
         seq = self.get_seq(pattern_name)[:, i:j]
         # profile = {task: self.get_profile_wide(pattern_name, task) for task in tasks}
-        contrib = {task: self.get_imp(pattern_name, task, 'profile')[:, i:j]
+        contrib = {task: self.get_contrib(pattern_name, task, 'profile')[:, i:j]
                    for task in tasks}
 
-        match, importance = pattern.scan_importance(contrib, hyp_contrib=None, tasks=tasks,
-                                                    n_jobs=n_jobs, verbose=False, pad_mode=None)
+        match, contribution = pattern.scan_contribution(contrib, hyp_contrib=None, tasks=tasks,
+                                                        n_jobs=n_jobs, verbose=False, pad_mode=None)
         seq_match = pattern.scan_seq(seq, n_jobs=n_jobs, verbose=False, pad_mode=None)
 
-        dfm = pattern.get_instances(tasks, match, importance, seq_match, fdr=1, verbose=verbose, plot=verbose)
+        dfm = pattern.get_instances(tasks, match, contribution, seq_match, fdr=1, verbose=verbose, plot=verbose)
         dfm = dfm[dfm.seq_match > 0]
         return dfm
 
 
 DOC = OrderedDict([
     ("logo pwm", "sequence information content"),
-    ("logo imp", "average importance score logo"),
+    ("logo contrib", "average contribution score logo"),
     ("n seqlets", "total number of seqlets"),
     ("ic pwm mean", "average information content per base"),
-    ("<task> imp profile / counts", "Average per-base profile/total count prediction importance scores for <task>. Seqlets are trimmed to the core motif displayed in logo pwm (typically 10bp)"),
+    ("<task> contrib profile / counts", "Average per-base profile/total count prediction contribution scores for <task>. Seqlets are trimmed to the core motif displayed in logo pwm (typically 10bp)"),
     ("<task> footprint entropydiff", "average entropy difference compared to the uniform distribution (computed at non-trimmed seqlets regions, typically 40bp). More positive numbers represent stronger deviation from the uniform distribution"),
     ("<task> footprint max",
      "(max(pos) + max(neg))/2 where `pos` are the "
@@ -216,7 +216,7 @@ DOC = OrderedDict([
     ("<task> pos absmean", "Absolute value of the mean seqlet position with 0 being the region center"),
     ("<task> pos std", "Standard deviation of the position"),
     ("<task> pos unimodal", "If True, the distribution of positions is estimated to be uni-modal"),
-    ("<task> periodicity 10bp", "Strength of the 10bp periodicity in the profile importance scores. "
+    ("<task> periodicity 10bp", "Strength of the 10bp periodicity in the profile contribution scores. "
      "Measured as the fraction of the fourier power spectrum at 10bp."),
     ("consensus", "consensus sequence (tallest letters from logo pwm)"),
 ])
@@ -249,7 +249,7 @@ def pattern_features(pattern, data):
     return OrderedDict([
         ("pattern", shorten_pattern(pattern)),
         ("logo pwm", logo_pwm(pattern, data)),
-        ("logo imp", logo_imp(pattern, data)),
+        ("logo contrib", logo_contrib(pattern, data)),
         ("n seqlets", len(data.get_seqlets(pattern))),
         ("ic pwm mean", pwm_mean_ic(pattern, data)),
     ] +
@@ -272,8 +272,8 @@ def logo_pwm(pattern, data, width=80):
     return fig2vdom(fig).to_html().replace("<img", f"<img width={width}")  # hack
 
 
-def logo_imp(pattern, data, width=80):
-    arr = mean([data.get_imp(pattern, task, 'profile').mean(axis=0)
+def logo_contrib(pattern, data, width=80):
+    arr = mean([data.get_contrib(pattern, task, 'profile').mean(axis=0)
                 for task in data.get_tasks()])
 
     # trim array to match the pwm
@@ -311,7 +311,7 @@ def pattern_task_features(pattern, task, data):
         ]
 
     return format_feature_groups([
-        ("imp", task_imp(pattern, task, data)),
+        ("contrib", task_contrib(pattern, task, data)),
         ("footprint", task_footprint(pattern, task, data)),
         ("region", task_region(pattern, task, data)),
         ("pos", task_pos(pattern, task, data)),
@@ -319,22 +319,22 @@ def pattern_task_features(pattern, task, data):
     ], task)
 
 
-def task_imp(pattern, task, data):
-    """Average importance of pattern for task
+def task_contrib(pattern, task, data):
+    """Average contribution of pattern for task
     """
     i, j = data.get_trim_idx(pattern)
-    # TODO - adopt to the scenario where "counts" importance scores are not present
+    # TODO - adopt to the scenario where "counts" contribution scores are not present
     return OrderedDict([
         # 1. aggregate across channels (sum)
         # 2. aggregate accross examples
         # 3. trim to the pattern
-        ("profile", data.get_imp(pattern, task, 'profile').sum(axis=-1).mean(axis=0)[i:j].mean()),
-        ("counts", data.get_imp(pattern, task, 'counts').sum(axis=-1).mean(axis=0)[i:j].mean()),
+        ("profile", data.get_contrib(pattern, task, 'profile').sum(axis=-1).mean(axis=0)[i:j].mean()),
+        ("counts", data.get_contrib(pattern, task, 'counts').sum(axis=-1).mean(axis=0)[i:j].mean()),
     ])
 
 
 def task_footprint(pattern, task, data):
-    """Average importance of pattern for task
+    """Average contribution of pattern for task
     """
     from scipy.stats import entropy
     from scipy.signal import correlate
@@ -392,7 +392,7 @@ def dist_n_modes(values):
 
 
 def task_pos(pattern, task, data):
-    """Average importance of pattern for task
+    """Average contribution of pattern for task
     """
     task_idx = data.get_peak_task_idx(task)
     if len(task_idx) == 0:
@@ -421,7 +421,7 @@ def task_periodicity(pattern, task, data):
 
 # ----------------------
 def write_modisco_table(df, output_dir, report_url=None, prefix='pattern_table',
-                        exclude_when_writing=["logo pwm", "logo imp"], doc=DOC, write_csv=True):
+                        exclude_when_writing=["logo pwm", "logo contrib"], doc=DOC, write_csv=True):
     """Write the pattern table to as .html and .csv
     """
     from vdom.helpers import h2, h3, p, ul, ol, li, div, b

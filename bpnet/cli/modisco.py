@@ -10,8 +10,8 @@ from tqdm import tqdm
 from pathlib import Path
 from bpnet.utils import write_pkl, related_dump_yaml, render_ipynb, remove_exists, add_file_logging, create_tf_session
 from bpnet.cli.schemas import DataSpec, ModiscoHParams
-from bpnet.cli.imp_score import ImpScoreFile
-# ImpScoreFile
+from bpnet.cli.contrib import ContribScoreFile
+# ContribScoreFile
 from bpnet.modisco.results import ModiscoResult
 from bpnet.functions import mean
 from kipoi_utils.utils import unique_list
@@ -41,7 +41,7 @@ def load_included_samples(modisco_dir):
 
     kwargs = read_json(modisco_dir / "kwargs.json")
 
-    d = ImpScoreFile(kwargs["imp_scores"])
+    d = ContribScoreFile(kwargs["contrib_scores"])
     interval_from_task = d.get_ranges().interval_from_task
     n = len(d)
     d.close()
@@ -64,7 +64,7 @@ def load_ranges(modisco_dir):
     included_samples = load_included_samples(modisco_dir)
 
     kwargs = read_json(modisco_dir / "kwargs.json")
-    d = ImpScoreFile(kwargs["imp_scores"], included_samples)
+    d = ContribScoreFile(kwargs["contrib_scores"], included_samples)
     df = d.get_ranges()
     d.close()
     return df
@@ -96,12 +96,12 @@ def get_nonredundant_example_idx(ranges, width=200):
     return keep_idx
 
 
-def load_profiles(modisco_dir, imp_scores):
+def load_profiles(modisco_dir, contrib_scores):
     """Load profiles from a modisco dir
     """
     modisco_dir = Path(modisco_dir)
     include_samples = load_included_samples(modisco_dir)
-    f = ImpScoreFile(imp_scores, include_samples)
+    f = ContribScoreFile(contrib_scores, include_samples)
     profiles = f.get_profiles()
     f.close()
     return profiles
@@ -109,12 +109,12 @@ def load_profiles(modisco_dir, imp_scores):
 # --------------------------------------------
 
 
-def modisco_run(imp_scores,
+def modisco_run(contrib_scores,
                 output_dir,
-                null_imp_scores=None,
+                null_contrib_scores=None,
                 hparams=None,
                 override_hparams="",
-                grad_type="weighted",
+                contrib_type="weighted",
                 subset_tasks=None,
                 filter_subset_tasks=False,
                 filter_npy=None,
@@ -133,16 +133,16 @@ def modisco_run(imp_scores,
     Run modisco
 
     Args:
-      imp_scores: path to the hdf5 file of importance scores
-      null_imp_scores: Path to the null importance scores
-      grad_type: for which output to compute the importance scores
+      contrib_scores: path to the hdf5 file of contribution scores
+      null_contrib_scores: Path to the null contribution scores
+      contrib_type: for which output to compute the contribution scores
       hparams: None, modisco hyper - parameeters: either a path to modisco.yaml or
         a ModiscoHParams object
       override_hparams: hyper - parameters overriding the settings in the hparams file
       output_dir: output file directory
       filter_npy: path to a npy file containing a boolean vector used for subsetting
       exclude_chr: comma-separated list of chromosomes to exclude
-      seqmodel: If enabled, then the importance scores came from `imp-score-seqmodel`
+      seqmodel: If enabled, then the contribution scores came from `contrib-score-seqmodel`
       subset_tasks: comma-separated list of task names to use as a subset
       filter_subset_tasks: if True, run modisco only in the regions for that TF
       hparams: hyper - parameter file
@@ -150,11 +150,11 @@ def modisco_run(imp_scores,
       skip_dist_filter: if True, distances are not used to filter
       use_all_seqlets: if True, don't restrict the number of seqlets
       split: On which data split to compute the results
-      merge_task: if True, importance scores for the tasks will be merged
+      merge_task: if True, contribution scores for the tasks will be merged
       gpu: which gpu to use. If None, don't use any GPU's
 
-    Note: when using subset_tasks, modisco will run on all the importance scores. If you wish
-      to run it only for the importance scores for a particular task you should subset it to
+    Note: when using subset_tasks, modisco will run on all the contribution scores. If you wish
+      to run it only for the contribution scores for a particular task you should subset it to
       the peak regions of interest using `filter_npy`
     """
     plt.switch_backend('agg')
@@ -171,7 +171,7 @@ def modisco_run(imp_scores,
     import modisco.tfmodisco_workflow.workflow
 
     if seqmodel:
-        assert '/' in grad_type
+        assert '/' in contrib_type
 
     if subset_tasks == '':
         logger.warn("subset_tasks == ''. Not using subset_tasks")
@@ -208,13 +208,13 @@ def modisco_run(imp_scores,
         filter_npy = os.path.abspath(filter_npy)
 
     # save the hyper-parameters
-    write_json(dict(imp_scores=os.path.abspath(imp_scores),
-                    grad_type=grad_type,
+    write_json(dict(contrib_scores=os.path.abspath(contrib_scores),
+                    contrib_type=contrib_type,
                     output_dir=str(output_dir),
                     subset_tasks=subset_tasks,
                     filter_subset_tasks=filter_subset_tasks,
                     hparams=hparams,
-                    null_imp_scores=null_imp_scores,
+                    null_contrib_scores=null_contrib_scores,
                     # TODO - pack into hyper-parameters as well?
                     filter_npy=filter_npy,
                     exclude_chr=",".join(exclude_chr),
@@ -250,11 +250,11 @@ def modisco_run(imp_scores,
                       os.path.join(output_dir, "hparams.yaml"), verbose=True)
     print("-" * 40)
 
-    # TODO - replace with imp_scores
-    d = HDF5Reader.load(imp_scores)
-    if 'hyp_imp' not in d:
+    # TODO - replace with contrib_scores
+    d = HDF5Reader.load(contrib_scores)
+    if 'hyp_contrib' not in d:
         # backcompatibility
-        d['hyp_imp'] = d['grads']
+        d['hyp_contrib'] = d['grads']
 
     if seqmodel:
         tasks = list(d['targets'])
@@ -281,12 +281,12 @@ def modisco_run(imp_scores,
     # apply filters
     if not skip_dist_filter:
         print("Using profile prediction for the strand filtering")
-        grad_type_filtered = 'weighted'
-        distances = np.array([np.array([correlation(np.ravel(d['hyp_imp'][task][grad_type_filtered][0][i]),
-                                                    np.ravel(d['hyp_imp'][task][grad_type_filtered][1][i]))
+        contrib_type_filtered = 'weighted'
+        distances = np.array([np.array([correlation(np.ravel(d['hyp_contrib'][task][contrib_type_filtered][0][i]),
+                                                    np.ravel(d['hyp_contrib'][task][contrib_type_filtered][1][i]))
                                         for i in range(n)])
                               for task in tasks
-                              if len(d['hyp_imp'][task][grad_type_filtered]) == 2]).T.mean(axis=-1)  # average the distances across tasks
+                              if len(d['hyp_contrib'][task][contrib_type_filtered]) == 2]).T.mean(axis=-1)  # average the distances across tasks
 
         dist_filter = distances < max_strand_distance
         print(f"Fraction of sequences kept: {dist_filter.mean()}")
@@ -317,47 +317,47 @@ def modisco_run(imp_scores,
         chromosomes = d['metadata']['range']['chr']
         dist_filter = dist_filter & (~pd.Series(chromosomes).isin(exclude_chr)).values
     # -------------------------------------------------------------
-    # setup importance scores
+    # setup contribution scores
 
     if seqmodel:
         thr_one_hot = one_hot[dist_filter]
-        thr_hypothetical_contribs = {f"{task}/{gt}": d['hyp_imp'][task][gt.split("/")[0]][gt.split("/")[1]][dist_filter]
+        thr_hypothetical_contribs = {f"{task}/{gt}": d['hyp_contrib'][task][gt.split("/")[0]][gt.split("/")[1]][dist_filter]
                                      for task in tasks
-                                     for gt in grad_type.split(",")}
+                                     for gt in contrib_type.split(",")}
         thr_contrib_scores = {f"{task}/{gt}": thr_hypothetical_contribs[f"{task}/{gt}"] * thr_one_hot
                               for task in tasks
-                              for gt in grad_type.split(",")}
-        task_names = [f"{task}/{gt}" for task in tasks for gt in grad_type.split(",")]
+                              for gt in contrib_type.split(",")}
+        task_names = [f"{task}/{gt}" for task in tasks for gt in contrib_type.split(",")]
 
     else:
         if merge_tasks:
             thr_one_hot = np.concatenate([one_hot[dist_filter]
                                           for task in tasks
-                                          for gt in grad_type.split(",")])
-            thr_hypothetical_contribs = {"merged": np.concatenate([mean(d['hyp_imp'][task][gt])[dist_filter]
+                                          for gt in contrib_type.split(",")])
+            thr_hypothetical_contribs = {"merged": np.concatenate([mean(d['hyp_contrib'][task][gt])[dist_filter]
                                                                    for task in tasks
-                                                                   for gt in grad_type.split(",")])}
+                                                                   for gt in contrib_type.split(",")])}
 
             thr_contrib_scores = {"merged": thr_hypothetical_contribs['merged'] * thr_one_hot}
             task_names = ['merged']
         else:
             thr_one_hot = one_hot[dist_filter]
-            thr_hypothetical_contribs = {f"{task}/{gt}": mean(d['hyp_imp'][task][gt])[dist_filter]
+            thr_hypothetical_contribs = {f"{task}/{gt}": mean(d['hyp_contrib'][task][gt])[dist_filter]
                                          for task in tasks
-                                         for gt in grad_type.split(",")}
+                                         for gt in contrib_type.split(",")}
             thr_contrib_scores = {f"{task}/{gt}": thr_hypothetical_contribs[f"{task}/{gt}"] * thr_one_hot
                                   for task in tasks
-                                  for gt in grad_type.split(",")}
-            task_names = [f"{task}/{gt}" for task in tasks for gt in grad_type.split(",")]
+                                  for gt in contrib_type.split(",")}
+            task_names = [f"{task}/{gt}" for task in tasks for gt in contrib_type.split(",")]
 
-    if null_imp_scores is not None:
-        logger.info(f"Using null_imp_scores: {null_imp_scores}")
-        null_isf = ImpScoreFile(null_imp_scores)
-        null_per_pos_scores = {f"{task}/{gt}": v.sum(axis=-1) for gt in grad_type.split(",")
-                               for task, v in null_isf.get_contrib(imp_score=gt).items() if task in tasks}
+    if null_contrib_scores is not None:
+        logger.info(f"Using null_contrib_scores: {null_contrib_scores}")
+        null_isf = ContribScoreFile(null_contrib_scores)
+        null_per_pos_scores = {f"{task}/{gt}": v.sum(axis=-1) for gt in contrib_type.split(",")
+                               for task, v in null_isf.get_contrib(contrib_score=gt).items() if task in tasks}
     else:
         # default Null distribution. Requires modisco 5.0
-        logger.info(f"Using default null_imp_scores")
+        logger.info(f"Using default null_contrib_scores")
         null_per_pos_scores = modisco.coordproducers.LaplaceNullDist(num_to_samp=10000)
 
     # -------------------------------------------------------------
@@ -395,14 +395,14 @@ def modisco_plot(modisco_dir,
                  output_dir,
                  # filter_npy=None,
                  # ignore_dist_filter=False,
-                 figsize=(10, 10), impsf=None):
+                 figsize=(10, 10), contribsf=None):
     """Plot the results of a modisco run
 
     Args:
       modisco_dir: modisco directory
       output_dir: Output directory for writing the results
       figsize: Output figure size
-      impsf: [optional] modisco importance score file (ImpScoreFile)
+      contribsf: [optional] modisco contribution score file (ContribScoreFile)
     """
     plt.switch_backend('agg')
     add_file_logging(output_dir, logger, 'modisco-plot')
@@ -416,11 +416,11 @@ def modisco_plot(modisco_dir,
     # load modisco
     mr = ModiscoResult(f"{modisco_dir}/modisco.h5")
 
-    if impsf is not None:
-        d = impsf
+    if contribsf is not None:
+        d = contribsf
     else:
-        d = ImpScoreFile.from_modisco_dir(modisco_dir)
-        logger.info("Loading the importance scores")
+        d = ContribScoreFile.from_modisco_dir(modisco_dir)
+        logger.info("Loading the contribution scores")
         d.cache()  # load all
 
     thr_one_hot = d.get_seq()
@@ -434,15 +434,15 @@ def modisco_plot(modisco_dir,
 
     tasks = d.get_tasks()
 
-    # Count importance (if it exists)
-    if d.contains_imp_score("counts/pre-act"):
-        count_imp_score = "counts/pre-act"
-        thr_hypothetical_contribs['count'] = d.get_hyp_contrib(imp_score=count_imp_score)
-        thr_contrib_scores['count'] = d.get_contrib(imp_score=count_imp_score)
-    elif d.contains_imp_score("count"):
-        count_imp_score = "count"
-        thr_hypothetical_contribs['count'] = d.get_hyp_contrib(imp_score=count_imp_score)
-        thr_contrib_scores['count'] = d.get_contrib(imp_score=count_imp_score)
+    # Count contribution (if it exists)
+    if d.contains_contrib_score("counts/pre-act"):
+        count_contrib_score = "counts/pre-act"
+        thr_hypothetical_contribs['count'] = d.get_hyp_contrib(contrib_score=count_contrib_score)
+        thr_contrib_scores['count'] = d.get_contrib(contrib_score=count_contrib_score)
+    elif d.contains_contrib_score("count"):
+        count_contrib_score = "count"
+        thr_hypothetical_contribs['count'] = d.get_hyp_contrib(contrib_score=count_contrib_score)
+        thr_contrib_scores['count'] = d.get_contrib(contrib_score=count_contrib_score)
     else:
         # Don't do anything
         pass
@@ -450,12 +450,12 @@ def modisco_plot(modisco_dir,
     thr_hypothetical_contribs = OrderedDict(flatten(thr_hypothetical_contribs, separator='/'))
     thr_contrib_scores = OrderedDict(flatten(thr_contrib_scores, separator='/'))
 
-    #     # load importance scores
+    #     # load contribution scores
     #     modisco_kwargs = read_json(f"{modisco_dir}/kwargs.json")
-    #     d = HDF5Reader.load(modisco_kwargs['imp_scores'])
-    #     if 'hyp_imp' not in d:
+    #     d = HDF5Reader.load(modisco_kwargs['contrib_scores'])
+    #     if 'hyp_contrib' not in d:
     #         # backcompatibility
-    #         d['hyp_imp'] = d['grads']
+    #         d['hyp_contrib'] = d['grads']
     #     tasks = list(d['targets']['profile'])
 
     #     if isinstance(d['inputs'], dict):
@@ -467,15 +467,15 @@ def modisco_plot(modisco_dir,
 
     #     included_samples = load_included_samples(modisco_dir)
 
-    #     grad_type = "count,weighted"  # always plot both importance scores
+    #     contrib_type = "count,weighted"  # always plot both contribution scores
 
-    #     thr_hypothetical_contribs = OrderedDict([(f"{gt}/{task}", mean(d['hyp_imp'][task][gt])[included_samples])
+    #     thr_hypothetical_contribs = OrderedDict([(f"{gt}/{task}", mean(d['hyp_contrib'][task][gt])[included_samples])
     #                                              for task in tasks
-    #                                              for gt in grad_type.split(",")])
+    #                                              for gt in contrib_type.split(",")])
     #     thr_one_hot = one_hot[included_samples]
     #     thr_contrib_scores = OrderedDict([(f"{gt}/{task}", thr_hypothetical_contribs[f"{gt}/{task}"] * thr_one_hot)
     #                                       for task in tasks
-    #                                       for gt in grad_type.split(",")])
+    #                                       for gt in contrib_type.split(",")])
     #     tracks = OrderedDict([(task, d['targets']['profile'][task][included_samples]) for task in tasks])
     # -------------------------------------------------
 
@@ -490,7 +490,7 @@ def modisco_plot(modisco_dir,
     plot_profiles(all_seqlets,
                   thr_one_hot,
                   tracks=tracks,
-                  importance_scores=thr_contrib_scores,
+                  contribution_scores=thr_contrib_scores,
                   legend=False,
                   flip_neg=True,
                   rotate_y=0,
@@ -506,7 +506,7 @@ def modisco_plot(modisco_dir,
     plot_profiles(all_seqlets,
                   thr_one_hot,
                   tracks={},
-                  importance_scores=thr_hypothetical_contribs,
+                  contribution_scores=thr_hypothetical_contribs,
                   legend=False,
                   flip_neg=True,
                   rotate_y=0,
@@ -540,29 +540,29 @@ def load_modisco_results(modisco_dir):
     import modisco
     from modisco.tfmodisco_workflow import workflow
     modisco_kwargs = read_json(f"{modisco_dir}/kwargs.json")
-    grad_type = modisco_kwargs['grad_type']
+    contrib_type = modisco_kwargs['contrib_type']
 
     # load used strand distance filter
     included_samples = HDF5Reader.load(f"{modisco_dir}/strand_distances.h5")['included_samples']
 
-    # load importance scores
-    d = HDF5Reader.load(modisco_kwargs['imp_scores'])
-    if 'hyp_imp' not in d:
+    # load contribution scores
+    d = HDF5Reader.load(modisco_kwargs['contrib_scores'])
+    if 'hyp_contrib' not in d:
         # backcompatibility
-        d['hyp_imp'] = d['grads']
+        d['hyp_contrib'] = d['grads']
 
     tasks = list(d['targets']['profile'])
     if isinstance(d['inputs'], dict):
         one_hot = d['inputs']['seq']
     else:
         one_hot = d['inputs']
-    thr_hypothetical_contribs = {f"{task}/{gt}": mean(d['hyp_imp'][task][gt])[included_samples]
+    thr_hypothetical_contribs = {f"{task}/{gt}": mean(d['hyp_contrib'][task][gt])[included_samples]
                                  for task in tasks
-                                 for gt in grad_type.split(",")}
+                                 for gt in contrib_type.split(",")}
     thr_one_hot = one_hot[included_samples]
     thr_contrib_scores = {f"{task}/{gt}": thr_hypothetical_contribs[f"{task}/{gt}"] * thr_one_hot
                           for task in tasks
-                          for gt in grad_type.split(",")}
+                          for gt in contrib_type.split(",")}
 
     track_set = modisco.tfmodisco_workflow.workflow.prep_track_set(
         task_names=tasks,
@@ -572,12 +572,12 @@ def load_modisco_results(modisco_dir):
 
     with h5py.File(os.path.join(modisco_dir, "modisco.h5"), "r") as grp:
         mr = workflow.TfModiscoResults.from_hdf5(grp, track_set=track_set)
-    return mr, tasks, grad_type
+    return mr, tasks, contrib_type
 
 
-def modisco_centroid_seqlet_matches(modisco_dir, imp_scores, output_dir,
+def modisco_centroid_seqlet_matches(modisco_dir, contrib_scores, output_dir,
                                     trim_frac=0.08, n_jobs=1,
-                                    impsf=None):
+                                    contribsf=None):
     """Write pattern matches to .csv
     """
     from bpnet.modisco.table import ModiscoData
@@ -585,7 +585,7 @@ def modisco_centroid_seqlet_matches(modisco_dir, imp_scores, output_dir,
     add_file_logging(output_dir, logger, 'centroid-seqlet-matches')
 
     logger.info("Loading required data")
-    data = ModiscoData.load(modisco_dir, imp_scores, impsf=impsf)
+    data = ModiscoData.load(modisco_dir, contrib_scores, contribsf=contribsf)
 
     logger.info("Generating the table")
     df = data.get_centroid_seqlet_matches(trim_frac=trim_frac, n_jobs=n_jobs)
@@ -595,8 +595,8 @@ def modisco_centroid_seqlet_matches(modisco_dir, imp_scores, output_dir,
 def modisco_score2(modisco_dir,
                    output_file,
                    trim_frac=0.08,
-                   imp_scores=None,
-                   importance=None,
+                   contrib_scores=None,
+                   contribution=None,
                    ignore_filter=False,
                    n_jobs=20):
     """Modisco score instances
@@ -606,9 +606,9 @@ def modisco_score2(modisco_dir,
       output_file: output file path for the tsv file. If the suffix is
         tsv.gz, then also gzip the file
       trim_frac: how much to trim the pattern when scanning
-      imp_scores: hdf5 file of importance scores (contains `importance` score)
-        if None, then load the default importance scores from modisco
-      importance: which importance scores to use
+      contrib_scores: hdf5 file of contribution scores (contains `contribution` score)
+        if None, then load the default contribution scores from modisco
+      contribution: which contribution scores to use
       n_jobs: number of parallel jobs to use
 
     Writes a gzipped tsv file(tsv.gz)
@@ -616,15 +616,15 @@ def modisco_score2(modisco_dir,
     add_file_logging(os.path.dirname(output_file), logger, 'modisco-score2')
     modisco_dir = Path(modisco_dir)
     modisco_kwargs = read_json(f"{modisco_dir}/kwargs.json")
-    if importance is None:
-        importance = modisco_kwargs['grad_type']
+    if contribution is None:
+        contribution = modisco_kwargs['contrib_type']
 
     # Centroid matches
     cm_path = modisco_dir / 'centroid_seqlet_matches.csv'
     if not cm_path.exists():
         logger.info(f"Generating centroid matches to {cm_path.resolve()}")
         modisco_centroid_seqlet_matches(modisco_dir,
-                                        imp_scores,
+                                        contrib_scores,
                                         modisco_dir,
                                         trim_frac=trim_frac,
                                         n_jobs=n_jobs)
@@ -635,27 +635,27 @@ def modisco_score2(modisco_dir,
     mr.open()
     tasks = mr.tasks()
 
-    # HACK prune the tasks of importance (in case it's present)
-    tasks = [t.replace(f"/{importance}", "") for t in tasks]
+    # HACK prune the tasks of contribution (in case it's present)
+    tasks = [t.replace(f"/{contribution}", "") for t in tasks]
 
     logger.info(f"Using tasks: {tasks}")
 
-    if imp_scores is not None:
-        logger.info(f"Loading the importance scores from: {imp_scores}")
-        imp = ImpScoreFile(imp_scores, default_imp_score=importance)
+    if contrib_scores is not None:
+        logger.info(f"Loading the contribution scores from: {contrib_scores}")
+        contrib = ContribScoreFile(contrib_scores, default_contrib_score=contribution)
     else:
-        imp = ImpScoreFile.from_modisco_dir(modisco_dir, ignore_include_samples=ignore_filter)
+        contrib = ContribScoreFile.from_modisco_dir(modisco_dir, ignore_include_samples=ignore_filter)
 
-    seq, contrib, hyp_contrib, profile, ranges = imp.get_all()
+    seq, contrib, hyp_contrib, profile, ranges = contrib.get_all()
 
     logger.info("Scanning for patterns")
     dfl = []
     for pattern_name in tqdm(mr.patterns()):
         pattern = mr.get_pattern(pattern_name).trim_seq_ic(trim_frac)
-        match, importance = pattern.scan_importance(contrib, hyp_contrib, tasks,
-                                                    n_jobs=n_jobs, verbose=False)
+        match, contribution = pattern.scan_contribution(contrib, hyp_contrib, tasks,
+                                                        n_jobs=n_jobs, verbose=False)
         seq_match = pattern.scan_seq(seq, n_jobs=n_jobs, verbose=False)
-        dfm = pattern.get_instances(tasks, match, importance, seq_match,
+        dfm = pattern.get_instances(tasks, match, contribution, seq_match,
                                     norm_df=dfm_norm[dfm_norm.pattern == pattern_name],
                                     verbose=False, plot=False)
         dfl.append(dfm)
@@ -696,7 +696,7 @@ def modisco_cluster_patterns(modisco_dir, output_dir):
 
 # TODO - reimplement or remove
 #         - just make it part of the main export function (?)
-# def modisco_instances_to_bed(modisco_h5, instances_parq, imp_score_h5, output_dir, trim_frac=0.08):
+# def modisco_instances_to_bed(modisco_h5, instances_parq, contrib_score_h5, output_dir, trim_frac=0.08):
 #     from bpnet.modisco.pattern_instances import load_instances
 
 #     add_file_logging(output_dir, logger, 'modisco-instances-to-bed')
@@ -707,11 +707,11 @@ def modisco_cluster_patterns(modisco_dir, output_dir):
 #     mr.open()
 
 #     print("load task_id")
-#     d = HDF5Reader(imp_score_h5)
+#     d = HDF5Reader(contrib_score_h5)
 #     d.open()
-#     if 'hyp_imp' not in d.f.keys():
+#     if 'hyp_contrib' not in d.f.keys():
 #         # backcompatibility
-#         d['hyp_imp'] = d['grads']
+#         d['hyp_contrib'] = d['grads']
 
 #     id_hash = pd.DataFrame({"peak_id": d.f['/metadata/interval_from_task'][:],
 #                             "example_idx": np.arange(d.f['/metadata/interval_from_task'].shape[0])})
@@ -771,7 +771,7 @@ def modisco2bed(modisco_dir, output_dir, trim_frac=0.08):
     r.close()
 
 
-def modisco_table(modisco_dir, imp_scores, output_dir, report_url=None, impsf=None):
+def modisco_table(modisco_dir, contrib_scores, output_dir, report_url=None, contribsf=None):
     """Write the pattern table to as .html and .csv
     """
     plt.switch_backend('agg')
@@ -779,7 +779,7 @@ def modisco_table(modisco_dir, imp_scores, output_dir, report_url=None, impsf=No
     from bpnet.modisco.motif_clustering import hirearchically_reorder_table
     add_file_logging(output_dir, logger, 'modisco-table')
     print("Loading required data")
-    data = ModiscoData.load(modisco_dir, imp_scores, impsf=impsf)
+    data = ModiscoData.load(modisco_dir, contrib_scores, contribsf=contribsf)
 
     print("Generating the table")
     df = modisco_table(data)
@@ -799,7 +799,7 @@ def modisco_table(modisco_dir, imp_scores, output_dir, report_url=None, impsf=No
     print("Done!")
 
 
-def modisco_centroid_seqlet_matches2(modisco_dir, imp_scores, output_dir=None, trim_frac=0.08, n_jobs=1, data_class='profile'):
+def modisco_centroid_seqlet_matches2(modisco_dir, contrib_scores, output_dir=None, trim_frac=0.08, n_jobs=1, data_class='profile'):
     """Write pattern matches to .csv
     """
     from bpnet.modisco.table import ModiscoData, ModiscoDataSingleBinary
@@ -809,7 +809,7 @@ def modisco_centroid_seqlet_matches2(modisco_dir, imp_scores, output_dir=None, t
 
     logger.info("Loading required data")
     if(data_class == 'profile'):
-        data = ModiscoData.load(modisco_dir, imp_scores)
+        data = ModiscoData.load(modisco_dir, contrib_scores)
     else:
         data = ModiscoDataSingleBinary.load(modisco_dir)
 
@@ -821,8 +821,8 @@ def modisco_centroid_seqlet_matches2(modisco_dir, imp_scores, output_dir=None, t
     return None
 
 
-def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, impsf=None):
-    """Add stacked_seqlet_imp to pattern `attrs`
+def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, contribsf=None):
+    """Add stacked_seqlet_contrib to pattern `attrs`
 
     Args:
       patterns_pkl: patterns.pkl file path
@@ -830,8 +830,8 @@ def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, impsf=N
       output_file: output file path for patterns.pkl
     """
     from bpnet.utils import read_pkl, write_pkl
-    from bpnet.cli.imp_score import ImpScoreFile
-    from bpnet.modisco.core import StackedSeqletImp
+    from bpnet.cli.contrib import ContribScoreFile
+    from bpnet.modisco.core import StackedSeqletContrib
 
     logger.info("Loading patterns")
     modisco_dir = Path(modisco_dir)
@@ -840,15 +840,15 @@ def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, impsf=N
     mr = ModiscoResult(modisco_dir / 'modisco.h5')
     mr.open()
 
-    if impsf is None:
-        imp_file = ImpScoreFile.from_modisco_dir(modisco_dir)
-        logger.info("Loading ImpScoreFile into memory")
-        imp_file.cache()
+    if contribsf is None:
+        contrib_file = ContribScoreFile.from_modisco_dir(modisco_dir)
+        logger.info("Loading ContribScoreFile into memory")
+        contrib_file.cache()
     else:
-        logger.info("Using the provided ImpScoreFile")
-        imp_file = impsf
+        logger.info("Using the provided ContribScoreFile")
+        contrib_file = contribsf
 
-    logger.info("Extracting profile and importance scores")
+    logger.info("Extracting profile and contribution scores")
     extended_patterns = []
     for p in tqdm(patterns):
         p = p.copy()
@@ -858,9 +858,9 @@ def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, impsf=N
 
         # keep only valid seqlets
         valid_seqlets = [s for s in seqlets
-                         if s.valid_resize(profile_width, imp_file.get_seqlen() + 1)]
-        # extract the importance scores
-        p.attrs['stacked_seqlet_imp'] = imp_file.extract(valid_seqlets, profile_width=profile_width)
+                         if s.valid_resize(profile_width, contrib_file.get_seqlen() + 1)]
+        # extract the contribution scores
+        p.attrs['stacked_seqlet_contrib'] = contrib_file.extract(valid_seqlets, profile_width=profile_width)
 
         p.attrs['n_seqlets'] = mr.n_seqlets(*p.name.split("/"))
         extended_patterns.append(p)
@@ -868,10 +868,10 @@ def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, impsf=N
     write_pkl(extended_patterns, output_file)
 
 
-def modisco_export_patterns(modisco_dir, output_file, impsf=None):
+def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
     """Export patterns to a pkl file. Don't cluster them
 
-    Adds `stacked_seqlet_imp` and `n_seqlets` to pattern `attrs`
+    Adds `stacked_seqlet_contrib` and `n_seqlets` to pattern `attrs`
 
     Args:
       patterns_pkl: patterns.pkl file path
@@ -879,8 +879,8 @@ def modisco_export_patterns(modisco_dir, output_file, impsf=None):
       output_file: output file path for patterns.pkl
     """
     from bpnet.utils import read_pkl, write_pkl
-    from bpnet.cli.imp_score import ImpScoreFile
-    from bpnet.modisco.core import StackedSeqletImp
+    from bpnet.cli.contrib import ContribScoreFile
+    from bpnet.modisco.core import StackedSeqletContrib
 
     logger.info("Loading patterns")
     modisco_dir = Path(modisco_dir)
@@ -890,15 +890,15 @@ def modisco_export_patterns(modisco_dir, output_file, impsf=None):
     patterns = [mr.get_pattern(pname)
                 for pname in mr.patterns()]
 
-    if impsf is None:
-        imp_file = ImpScoreFile.from_modisco_dir(modisco_dir)
-        logger.info("Loading ImpScoreFile into memory")
-        imp_file.cache()
+    if contribsf is None:
+        contrib_file = ContribScoreFile.from_modisco_dir(modisco_dir)
+        logger.info("Loading ContribScoreFile into memory")
+        contrib_file.cache()
     else:
-        logger.info("Using the provided ImpScoreFile")
-        imp_file = impsf
+        logger.info("Using the provided ContribScoreFile")
+        contrib_file = contribsf
 
-    logger.info("Extracting profile and importance scores")
+    logger.info("Extracting profile and contribution scores")
     extended_patterns = []
     for p in tqdm(patterns):
         p = p.copy()
@@ -906,10 +906,10 @@ def modisco_export_patterns(modisco_dir, output_file, impsf=None):
         # get the shifted seqlets
         valid_seqlets = mr._get_seqlets(p.name)
 
-        # extract the importance scores
-        sti = imp_file.extract(valid_seqlets, profile_width=None)
+        # extract the contribution scores
+        sti = contrib_file.extract(valid_seqlets, profile_width=None)
         sti.dfi = mr.get_seqlet_intervals(p.name, as_df=True)
-        p.attrs['stacked_seqlet_imp'] = sti
+        p.attrs['stacked_seqlet_contrib'] = sti
         p.attrs['n_seqlets'] = mr.n_seqlets(*p.name.split("/"))
         extended_patterns.append(p)
 
@@ -943,9 +943,9 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     from bpnet.utils import ConditionalRun
 
     modisco_dir = Path(modisco_dir)
-    # figure out the importance scores used
+    # figure out the contribution scores used
     kwargs = read_json(modisco_dir / "kwargs.json")
-    imp_scores = kwargs["imp_scores"]
+    contrib_scores = kwargs["contrib_scores"]
 
     mr = ModiscoResult(f"{modisco_dir}/modisco.h5")
     mr.open()
@@ -966,18 +966,18 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     if (not cr.set_cmd('modisco_plot').done()
         or not cr.set_cmd('modisco_cluster_patterns').done()
             or not cr.set_cmd('modisco_enrich_patterns').done()):
-        # load ImpScoreFile and pass it to all the functions
-        logger.info("Loading ImpScoreFile")
-        impsf = ImpScoreFile.from_modisco_dir(modisco_dir)
-        impsf.cache()
+        # load ContribScoreFile and pass it to all the functions
+        logger.info("Loading ContribScoreFile")
+        contribsf = ContribScoreFile.from_modisco_dir(modisco_dir)
+        contribsf.cache()
     else:
-        impsf = None
+        contribsf = None
     # --------------------------------------------
     # Basic reports
     if not cr.set_cmd('modisco_plot').done():
         modisco_plot(modisco_dir,
                      modisco_dir / 'plots',
-                     figsize=(10, 10), impsf=impsf)
+                     figsize=(10, 10), contribsf=contribsf)
         cr.write()
     sync.append("plots")
 
@@ -987,7 +987,7 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     sync.append("results.html")
 
     if not cr.set_cmd('modisco_table').done():
-        modisco_table(modisco_dir, imp_scores, modisco_dir, report_url=None, impsf=impsf)
+        modisco_table(modisco_dir, contrib_scores, modisco_dir, report_url=None, contribsf=contribsf)
         cr.write()
     sync.append("footprints.pkl")
     sync.append("pattern_table.*")
@@ -1002,7 +1002,7 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     if not cr.set_cmd('modisco_enrich_patterns').done():
         modisco_enrich_patterns(modisco_dir / 'patterns.pkl',
                                 modisco_dir,
-                                modisco_dir / 'patterns.pkl', impsf=impsf)
+                                modisco_dir / 'patterns.pkl', contribsf=contribsf)
         cr.write()
     # sync.append("patterns.pkl")
 
@@ -1013,19 +1013,19 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     # Finding new instances
     if scan_instances:
         if not cr.set_cmd('modisco_centroid_seqlet_matches').done():
-            modisco_centroid_seqlet_matches(modisco_dir, imp_scores, modisco_dir,
+            modisco_centroid_seqlet_matches(modisco_dir, contrib_scores, modisco_dir,
                                             trim_frac=trim_frac,
                                             n_jobs=n_jobs,
-                                            impsf=impsf)
+                                            contribsf=contribsf)
             cr.write()
 
-        # TODO - this would not work with the per-TF importance score file....
+        # TODO - this would not work with the per-TF contribution score file....
         if not cr.set_cmd('modisco_score2').done():
             modisco_score2(modisco_dir,
                            modisco_dir / 'instances.parq',
                            trim_frac=trim_frac,
-                           imp_scores=None,  # Use the default one
-                           importance=None,  # Use the default one
+                           contrib_scores=None,  # Use the default one
+                           contribution=None,  # Use the default one
                            n_jobs=n_jobs)
             cr.write()
     # TODO - update the pattern table -> compute the fraction of other motifs etc
@@ -1042,7 +1042,7 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     # if not cr.set_cmd('modisco_instances_to_bed').done():
     #     modisco_instances_to_bed(str(modisco_dir / 'modisco.h5'),
     #                              instances_parq=str(modisco_dir / 'instances.parq'),
-    #                              imp_score_h5=imp_scores,
+    #                              contrib_score_h5=contrib_scores,
     #                              output_dir=str(modisco_dir / 'instances_bed/'),
     #                              )
     #     cr.write()

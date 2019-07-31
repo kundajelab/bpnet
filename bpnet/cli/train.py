@@ -274,14 +274,14 @@ def _track_stats(tracks):
 
 @arg('dataspec',
      help='dataspec.yaml file')
-@arg('--intervals',
+@arg('--regions',
      help='Path to the interval bed file. If not specified, files specified in dataspec.yml will be used')
 @arg('--sample', type=int,
-     help='Specifies the number of randomly selected intervals on which the stats are computed.')
+     help='Specifies the number of randomly selected regions on which the stats are computed.')
 @arg('--peak-width',
-     help='Resize all intervals to that specific width using interval center as an anchorpoint.')
+     help='Resize all regions to that specific width using interval center as an anchorpoint.')
 def dataspec_stats(dataspec,
-                   intervals=None,
+                   regions=None,
                    sample=None,
                    peak_width=1000):
     """Compute the stats about the tracks
@@ -293,26 +293,26 @@ def dataspec_stats(dataspec,
 
     ds = DataSpec.load(dataspec)
 
-    if intervals is not None:
-        intervals = list(BedTool(intervals))
+    if regions is not None:
+        regions = list(BedTool(regions))
     else:
-        intervals = []
+        regions = []
         for task, task_spec in ds.task_specs.items():
             if task_spec.peaks is not None:
-                intervals += list(BedTool(task_spec.peaks))
+                regions += list(BedTool(task_spec.peaks))
 
-    if sample is not None and sample < len(intervals):
-        logger.info(f"Using {sample} randomly sampled intervals instead of {len(intervals)}")
-        intervals = random.sample(intervals, k=sample)
+    if sample is not None and sample < len(regions):
+        logger.info(f"Using {sample} randomly sampled regions instead of {len(regions)}")
+        regions = random.sample(regions, k=sample)
 
-    # resize the intervals
-    intervals = [resize_interval(interval, peak_width, ignore_strand=True)
-                 for interval in intervals]
+    # resize the regions
+    regions = [resize_interval(interval, peak_width, ignore_strand=True)
+               for interval in regions]
 
-    base_freq = FastaExtractor(ds.fasta_file)(intervals).mean(axis=(0, 1))
+    base_freq = FastaExtractor(ds.fasta_file)(regions).mean(axis=(0, 1))
 
-    count_stats = _track_stats(ds.load_counts(intervals, progbar=True))
-    bias_count_stats = _track_stats(ds.load_bias_counts(intervals, progbar=True))
+    count_stats = _track_stats(ds.load_counts(regions, progbar=True))
+    bias_count_stats = _track_stats(ds.load_bias_counts(regions, progbar=True))
 
     print("")
     print("Base frequency")

@@ -86,7 +86,7 @@ def multiple_heatmap_stranded_profile(signal_dict, figsize=(20, 20), sort_idx=No
     return fig
 
 
-def heatmap_importance_profile(signal, ax=None, figsize=(5, 20), aspect=0.2, sort_idx=None, tick_step=25):
+def heatmap_contribution_profile(signal, ax=None, figsize=(5, 20), aspect=0.2, sort_idx=None, tick_step=25):
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
 
@@ -106,8 +106,8 @@ def heatmap_importance_profile(signal, ax=None, figsize=(5, 20), aspect=0.2, sor
     ax.set_xlabel("Position")
 
 
-def multiple_heatmap_importance_profile(signal_dict, sort_idx=None,
-                                        figsize=(20, 20), **kwargs):
+def multiple_heatmap_contribution_profile(signal_dict, sort_idx=None,
+                                          figsize=(20, 20), **kwargs):
     """Plot a dictionary of profiles
     """
     tasks = list(signal_dict.keys())
@@ -119,8 +119,8 @@ def multiple_heatmap_importance_profile(signal_dict, sort_idx=None,
         sort_idx = np.arange([x for x in signal_dict.values()][0].shape[0])
 
     for i, (task, ax) in enumerate(zip(tasks, axes)):
-        heatmap_importance_profile(signal_dict[task][sort_idx],
-                                   ax=ax, **kwargs)
+        heatmap_contribution_profile(signal_dict[task][sort_idx],
+                                     ax=ax, **kwargs)
         # --------------------
         ax.set_title(task)
     fig.subplots_adjust(wspace=0)  # no space between plots

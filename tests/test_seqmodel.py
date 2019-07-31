@@ -81,7 +81,7 @@ def test_interpret_wo_bias():
     )
     m.model.fit(inputs, targets)
 
-    o = m.imp_score_all(seqs)
+    o = m.contrib_score_all(seqs)
     assert 'a/profile/wn' in o
     assert o['a/profile/wn'].shape == seqs.shape
     assert 'a/profile/wn' in o

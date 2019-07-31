@@ -86,7 +86,7 @@ def profile_sim_metrics(ref, alt, pc=0):
     return d
 
 
-def imp_sim_metrics(ref, alt, motif, seqlen):
+def contrib_sim_metrics(ref, alt, motif, seqlen):
     start, end = motif_coords(motif, seqlen // 2)
     return alt[start:end].sum(), alt[start:end].sum() / ref[start:end].sum()
 
@@ -99,32 +99,32 @@ def get_scores(ref_pred, alt_pred, tasks, motif, seqlen, center_coords):
         d[task] = flatten({"profile": profile_sim_metrics(ref_pred['profile'][task][cstart:cend],
                                                           alt_pred['profile'][task][cstart:cend])}, "/")
 
-        # importance scores - use the central motif region
-        if 'imp' in ref_pred:
-            for imp_score in ref_pred["imp"][task]:
-                imp, imp_frac = imp_sim_metrics(ref_pred["imp"][task][imp_score],
-                                                alt_pred["imp"][task][imp_score], motif, seqlen)
-                d[task] = {f"imp/{imp_score}": imp, f"imp/{imp_score}_frac": imp_frac, **d[task]}
+        # contribution scores - use the central motif region
+        if 'contrib' in ref_pred:
+            for contrib_score in ref_pred["contrib"][task]:
+                contrib, contrib_frac = contrib_sim_metrics(ref_pred["contrib"][task][contrib_score],
+                                                            alt_pred["contrib"][task][contrib_score], motif, seqlen)
+                d[task] = {f"contrib/{contrib_score}": contrib, f"contrib/{contrib_score}_frac": contrib_frac, **d[task]}
     return d
 
 
 def generate_sim(bpnet, central_motif, side_motif, side_distances,
-                 center_coords=[450, 550], repeat=128, importance=['count', 'weighted'], correct=False):
+                 center_coords=[450, 550], repeat=128, contribution=['count', 'weighted'], correct=False):
     outl = []
     tasks = bpnet.tasks
     seqlen = bpnet.input_seqlen()
     # ref_preds = sim_pred(model, central_motif)
     ref_preds = unflatten(bpnet.sim_pred(central_motif,
                                          repeat=repeat,
-                                         importance=importance), "/")
+                                         contribution=contribution), "/")
     none_preds = unflatten(bpnet.sim_pred('', '', [],
-                                          repeat=repeat, importance=importance), "/")
+                                          repeat=repeat, contribution=contribution), "/")
 
     alt_profiles = []
     for dist in tqdm(side_distances):
         # alt_preds = sim_pred(model, central_motif, side_motif, [dist])
         alt_preds = unflatten(bpnet.sim_pred(central_motif, side_motif, [dist],
-                                             repeat=repeat, importance=importance), "/")
+                                             repeat=repeat, contribution=contribution), "/")
         if correct:
             # Correct for the 'shoulder' effect
             #
@@ -134,7 +134,7 @@ def generate_sim(bpnet, central_motif, side_motif, side_distances,
             # - B : contains only side_motif
             # - 0 : doesn't contain any motif
             edge_only_preds = unflatten(bpnet.sim_pred('', side_motif, [dist],
-                                                       repeat=repeat, importance=importance), "/")
+                                                       repeat=repeat, contribution=contribution), "/")
 
             alt_preds_f = flatten(alt_preds, '/')
             # ref_preds_f = flatten(ref_preds, '/')
@@ -245,13 +245,13 @@ def plot_sim_motif_col(dfm, tasks, variables, motifs, subfigsize=(4, 2), alpha=0
         fig.legend(tasks, title="Tasks")
 
 
-def interactive_tracks(profiles, central_motif, side_motif, imp_score='weighted'):
-    def interactive_tracks_build_fn(profiles, central_motif, side_motif, imp_score):
+def interactive_tracks(profiles, central_motif, side_motif, contrib_score='weighted'):
+    def interactive_tracks_build_fn(profiles, central_motif, side_motif, contrib_score):
         p = {k: v['profile'] for k, v in profiles}
-        imp = {k: {task: v['imp'][task][imp_score].max(axis=-1) for task in v['imp']}
-               for k, v in profiles}
+        contrib = {k: {task: v['contrib'][task][contrib_score].max(axis=-1) for task in v['contrib']}
+                   for k, v in profiles}
         ymax = max([x.max() for t, v in profiles for x in v['profile'].values()])
-        ymax_imp = max([v.max() for x in imp.values() for v in x.values()])
+        ymax_contrib = max([v.max() for x in contrib.values() for v in x.values()])
         cstart, cend = motif_coords(central_motif, 500)
 
         def fn(dist):
@@ -259,20 +259,20 @@ def interactive_tracks(profiles, central_motif, side_motif, imp_score='weighted'
             sstart, send = motif_coords(side_motif, position)
             seqlets = [Seqlet(None, cstart, cend, "center", ""),
                        Seqlet(None, sstart, send, "side", "")]
-            # TODO - add also importance scores
-            du = {"p": p[position], "imp": imp[position]}
+            # TODO - add also contribution scores
+            du = {"p": p[position], "contrib": contrib[position]}
 
             # TODO - order them correctly
             d = OrderedDict([(f"{prefix}/{task}", du[prefix][task])
                              for task in p[position]
-                             for prefix in ['p', 'imp']])
+                             for prefix in ['p', 'contrib']])
 
             ylims = []
             for k in d:
                 if k.startswith("p"):
                     ylims.append((0, ymax))
                 else:
-                    ylims.append((0, ymax_imp))
+                    ylims.append((0, ymax_contrib))
             plot_tracks(d,
                         seqlets,
                         title=dist, ylim=ylims)
@@ -282,7 +282,7 @@ def interactive_tracks(profiles, central_motif, side_motif, imp_score='weighted'
     positions, track = zip(*profiles)
     dist = [p - 500 for p in positions]
     return interactive(interactive_tracks_build_fn(profiles, central_motif,
-                                                   side_motif, imp_score=imp_score),
+                                                   side_motif, contrib_score=contrib_score),
                        dist=widgets.IntSlider(min=min(dist),
                                               max=max(dist),
                                               step=dist[1] - dist[0],

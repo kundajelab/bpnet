@@ -54,12 +54,12 @@ def append_logo_cluster(pattern_table, patterns, cluster_order, cluster,
         major_pattern = patterns_nte_dict[max_seqlets]
 
         # align w.r.t. the thing used for clustering
-        logo_imp = [patterns_nte_dict[p].align(major_pattern, track=align_track).resize(logo_len).vdom_plot('contrib', as_html=True, **kwargs)
-                    for p in dfg.index]
+        logo_contrib = [patterns_nte_dict[p].align(major_pattern, track=align_track).resize(logo_len).vdom_plot('contrib', as_html=True, **kwargs)
+                        for p in dfg.index]
         logo_seq = [patterns_nte_dict[p].align(major_pattern, track=align_track).resize(logo_len).vdom_plot('seq', as_html=True, **kwargs)
                     for p in dfg.index]
 
-        dfg['logo_imp'] = logo_imp
+        dfg['logo_contrib'] = logo_contrib
         dfg['logo_seq'] = logo_seq
         out.append(dfg)
 
@@ -103,8 +103,8 @@ def df_minmax_scale(df):
 
 def log_cols(df, tasks):
     for task in tasks:
-        df[f'{task} imp counts'] = np.log(1 + df[f'{task} imp counts'])
-        df[f'{task} imp profile'] = np.log(1 + df[f'{task} imp profile'])
+        df[f'{task} contrib counts'] = np.log(1 + df[f'{task} contrib counts'])
+        df[f'{task} contrib profile'] = np.log(1 + df[f'{task} contrib profile'])
         df[f'{task} footprint max'] = np.log(1 + df[f'{task} footprint max'])
         df[f'{task} region counts'] = np.log(1 + df[f'{task} region counts'])
     return df
@@ -213,8 +213,8 @@ def motif_table_long(df, tasks, index_cols=[]):
 
     # omit some columns
 
-    dfl['imp counts'] = np.log(1 + dfl['imp counts'])
-    dfl['imp profile'] = np.log(1 + dfl['imp profile'])
+    dfl['contrib counts'] = np.log(1 + dfl['contrib counts'])
+    dfl['contrib profile'] = np.log(1 + dfl['contrib profile'])
     dfl['footprint max'] = np.log(dfl['footprint max'])
     dfl['region counts'] = np.log(1 + dfl['region counts'])
     dfl = dfl.reset_index()
@@ -237,9 +237,9 @@ def hirearchically_reorder_table(df, tasks):
     assert np.all(dfx.index == df.pattern)
 
     # cluster
-    x_imp = x.fillna(x.mean()).values  # fill missing values with mean values
-    row_linkage = linkage(x_imp, method='weighted', optimal_ordering=True)
-    col_linkage = linkage(x_imp.T, method='weighted', optimal_ordering=True)
+    x_contrib = x.fillna(x.mean()).values  # fill missing values with mean values
+    row_linkage = linkage(x_contrib, method='weighted', optimal_ordering=True)
+    col_linkage = linkage(x_contrib.T, method='weighted', optimal_ordering=True)
 
     # get the indices
     rows_idx = list(leaves_list(row_linkage))
@@ -341,7 +341,7 @@ def align_clustered_patterns(patterns, cluster_order, cluster,
     """Align clustered patterns
 
     In addition to normal features under p.attrs['features'] it adds
-    logo_imp, logo_seq, profile scores and the directness score
+    logo_contrib, logo_seq, profile scores and the directness score
 
     Args:
       patterns: list of patterns
@@ -403,7 +403,7 @@ def create_pattern_table(patterns,
     """Creates the pattern table given a list of patterns
 
     In addition to normal features under p.attrs['features'] it adds
-    logo_imp, logo_seq, profile scores and the directness score
+    logo_contrib, logo_seq, profile scores and the directness score
 
     Args:
       patterns: list of patterns with 'profile' and attrs['features'] and attrs['motif_freq'] features
@@ -429,7 +429,7 @@ def create_pattern_table(patterns,
         d['cluster'] = p.attrs['cluster']
 
         # Add seqlogos
-        d['logo_imp'] = p.resize(logo_len).vdom_plot('contrib', as_html=True, **seqlogo_kwargs)
+        d['logo_contrib'] = p.resize(logo_len).vdom_plot('contrib', as_html=True, **seqlogo_kwargs)
         d['logo_seq'] = p.resize(logo_len).vdom_plot('seq', as_html=True, **seqlogo_kwargs)
 
         for t in p.tasks():
@@ -443,7 +443,7 @@ def create_pattern_table(patterns,
                            )
 
             # Add directness score
-            d[t + "/d"] = 2 * d[t + " imp profile"] - d[t + " imp counts"]
+            d[t + "/d"] = 2 * d[t + " contrib profile"] - d[t + " contrib counts"]
         return d
 
     l = Parallel(n_jobs=n_jobs)(delayed(extract_info)(i) for i in tqdm(range(len(patterns))))
@@ -559,7 +559,7 @@ def blank_ax(ax):
 #         pos2 = [pos1.x0, pos1.y0 + pos1.height * 0.4, pos1.width + extra_x, pos1.height * .5]
 #         ax.set_position(pos2)  # set a new position
 #         if i == 0:
-#             ax.set_title("Importance\nscore")
+#             ax.set_title("Contribution\nscore")
 
 #         # Text columns before
 #         if "/" in p.name:

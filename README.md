@@ -3,8 +3,28 @@
 - [ ] try to get rid of pybedtools entirely
   - [ ] replace with pyranges
 
+# Quick start
 
-# Dependencies
+## Train BPNet
+
+Train a model using an existing architecture [bpnet9](bpnet/premade/bpnet9.gin)
+
+```bash
+bpnet train --premade=bpnet9 dataspec.yml output_dir
+```
+
+Train a model by overriding some of the hyper-parameters:
+
+```bash
+bpnet train --premade=bpnet9 dataspec.yml --override='seq_width=200;n_dil_layers=3' output_dir
+```
+
+## Compute contribution scores
+
+
+
+
+## Dependencies
 
 modisco
 plotnine - hidden

@@ -17,10 +17,10 @@ logger.addHandler(logging.NullHandler())
 def export_bw_workflow(model_dir,
                        bed_file,
                        output_dir,
-                       imp_method='grad',
+                       contrib_method='grad',
                        # pred_summary='weighted',
                        batch_size=512,
-                       scale_importance=False,
+                       scale_contribution=False,
                        gpu=0):
     """
     Export model predictions to big-wig files
@@ -50,7 +50,7 @@ def export_bw_workflow(model_dir,
     bp.export_bw(intervals=intervals,
                  output_dir=output_dir,
                  # pred_summary=pred_summary,
-                 imp_method=imp_method,
+                 contrib_method=contrib_method,
                  batch_size=batch_size,
-                 scale_importance=scale_importance,
+                 scale_contribution=scale_contribution,
                  chromosomes=None)  # infer chromosomes from the fasta file

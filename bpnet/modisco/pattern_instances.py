@@ -237,8 +237,8 @@ def plot_coocurence_matrix(dfi, total_examples, signif_threshold=1e-5, ax=None):
 
 def construct_motif_pairs(dfi, motif_pair,
                           features=['match_weighted_p',
-                                    'imp_weighted_p',
-                                    'imp_weighted']):
+                                    'contrib_weighted_p',
+                                    'contrib_weighted']):
     """Construct motifs pair table
     """
     dfi_filtered = dfi.set_index('example_idx', drop=False)

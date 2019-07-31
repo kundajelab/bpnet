@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 from kipoi.readers import HDF5Reader
-from bpnet.cli.imp_score import ImpScoreFile
+from bpnet.cli.contrib import ContribScoreFile
 from bpnet.functions import mean
 import warnings
 

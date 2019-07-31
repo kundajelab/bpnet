@@ -95,7 +95,7 @@ def extract_signal(x, seqlets, rc_fn=lambda x: x[::-1, ::-1]):
 def plot_profiles(seqlets_by_pattern,
                   x,
                   tracks,
-                  importance_scores={},
+                  contribution_scores={},
                   figsize=(20, 2),
                   start_vec=None,
                   width=20,
@@ -116,7 +116,7 @@ def plot_profiles(seqlets_by_pattern,
     Args:
       x: one-hot-encoded sequence
       tracks: dictionary of profile tracks
-      importance_scores: optional dictionary of importance scores
+      contribution_scores: optional dictionary of contribution scores
 
     """
     import matplotlib.pyplot as plt
@@ -160,8 +160,8 @@ def plot_profiles(seqlets_by_pattern,
         # --------------
         # extract signal
         seqs = extract_signal(x, seqlets_by_pattern[pattern])[:, start_vec[i]:(start_vec[i] + width)]
-        ext_importance_scores = {s: extract_signal(imp, seqlets_by_pattern[pattern])[:, start_vec[i]:(start_vec[i] + width)]
-                                 for s, imp in importance_scores.items()}
+        ext_contribution_scores = {s: extract_signal(contrib, seqlets_by_pattern[pattern])[:, start_vec[i]:(start_vec[i] + width)]
+                                   for s, contrib in contribution_scores.items()}
         d_signal = d_signal_patterns[pattern]
         # --------------
         if only_idx is None:
@@ -172,10 +172,10 @@ def plot_profiles(seqlets_by_pattern,
         n = len(seqs)
         if n < n_limit:
             continue
-        fig, ax = plt.subplots(1 + len(importance_scores) + len(tracks),
+        fig, ax = plt.subplots(1 + len(contribution_scores) + len(tracks),
                                1, sharex=True,
                                figsize=figsize,
-                               gridspec_kw={'height_ratios': [1] * len(tracks) + [seq_height] * (1 + len(importance_scores))})
+                               gridspec_kw={'height_ratios': [1] * len(tracks) + [seq_height] * (1 + len(contribution_scores))})
 
         # signal
         ax[0].set_title(f"{pattern} ({n})")
@@ -191,19 +191,19 @@ def plot_profiles(seqlets_by_pattern,
                 ax[i].legend()
 
         # -----------
-        # importance scores (seqlogo)
+        # contribution scores (seqlogo)
         # -----------
-        # average the importance scores
+        # average the contribution scores
         if only_idx is None:
-            norm_importance_scores = {k: v.mean(axis=0)
-                                      for k, v in ext_importance_scores.items()}
+            norm_contribution_scores = {k: v.mean(axis=0)
+                                        for k, v in ext_contribution_scores.items()}
         else:
-            norm_importance_scores = {k: v[only_idx]
-                                      for k, v in ext_importance_scores.items()}
+            norm_contribution_scores = {k: v[only_idx]
+                                        for k, v in ext_contribution_scores.items()}
 
-        max_scale = max([np.maximum(v, 0).sum(axis=-1).max() for v in norm_importance_scores.values()])
-        min_scale = min([np.minimum(v, 0).sum(axis=-1).min() for v in norm_importance_scores.values()])
-        for k, (imp_score_name, logo) in enumerate(norm_importance_scores.items()):
+        max_scale = max([np.maximum(v, 0).sum(axis=-1).max() for v in norm_contribution_scores.values()])
+        min_scale = min([np.minimum(v, 0).sum(axis=-1).min() for v in norm_contribution_scores.values()])
+        for k, (contrib_score_name, logo) in enumerate(norm_contribution_scores.items()):
             ax_id = len(tracks) + k
 
             # Trim the pattern if necessary
@@ -215,8 +215,8 @@ def plot_profiles(seqlets_by_pattern,
             # style
             simple_yaxis_format(ax[ax_id])
             strip_axis(ax[ax_id])
-            # ax[ax_id].set_ylabel(imp_score_name)
-            ax[ax_id].set_ylabel(imp_score_name, rotation=rotate_y, ha='right', labelpad=5)  # va='bottom',
+            # ax[ax_id].set_ylabel(contrib_score_name)
+            ax[ax_id].set_ylabel(contrib_score_name, rotation=rotate_y, ha='right', labelpad=5)  # va='bottom',
 
         # -----------
         # information content (seqlogo)
@@ -248,7 +248,7 @@ def plot_profiles(seqlets_by_pattern,
 def plot_profiles_single(seqlet,
                          x,
                          tracks,
-                         importance_scores={},
+                         contribution_scores={},
                          figsize=(20, 2),
                          legend=True,
                          rotate_y=90,
@@ -260,7 +260,7 @@ def plot_profiles_single(seqlet,
     Args:
       x: one-hot-encoded sequence
       tracks: dictionary of profile tracks
-      importance_scores: optional dictionary of importance scores
+      contribution_scores: optional dictionary of contribution scores
 
     """
     import matplotlib.pyplot as plt
@@ -269,12 +269,12 @@ def plot_profiles_single(seqlet,
     # --------------
     # extract signal
     seq = seqlet.extract(x)
-    ext_importance_scores = {s: seqlet.extract(imp) for s, imp in importance_scores.items()}
+    ext_contribution_scores = {s: seqlet.extract(contrib) for s, contrib in contribution_scores.items()}
 
-    fig, ax = plt.subplots(1 + len(importance_scores) + len(tracks),
+    fig, ax = plt.subplots(1 + len(contribution_scores) + len(tracks),
                            1, sharex=True,
                            figsize=figsize,
-                           gridspec_kw={'height_ratios': [1] * len(tracks) + [seq_height] * (1 + len(importance_scores))})
+                           gridspec_kw={'height_ratios': [1] * len(tracks) + [seq_height] * (1 + len(contribution_scores))})
 
     # signal
     for i, (k, signal) in enumerate(tracks.items()):
@@ -288,11 +288,11 @@ def plot_profiles_single(seqlet,
             ax[i].legend()
 
     # -----------
-    # importance scores (seqlogo)
+    # contribution scores (seqlogo)
     # -----------
-    max_scale = max([np.maximum(v, 0).sum(axis=-1).max() for v in ext_importance_scores.values()])
-    min_scale = min([np.minimum(v, 0).sum(axis=-1).min() for v in ext_importance_scores.values()])
-    for k, (imp_score_name, logo) in enumerate(ext_importance_scores.items()):
+    max_scale = max([np.maximum(v, 0).sum(axis=-1).max() for v in ext_contribution_scores.values()])
+    min_scale = min([np.minimum(v, 0).sum(axis=-1).min() for v in ext_contribution_scores.values()])
+    for k, (contrib_score_name, logo) in enumerate(ext_contribution_scores.items()):
         ax_id = len(tracks) + k
         # plot
         ax[ax_id].set_ylim([min_scale, max_scale])
@@ -302,8 +302,8 @@ def plot_profiles_single(seqlet,
         # style
         simple_yaxis_format(ax[ax_id])
         strip_axis(ax[ax_id])
-        # ax[ax_id].set_ylabel(imp_score_name)
-        ax[ax_id].set_ylabel(imp_score_name, rotation=rotate_y, ha='right', labelpad=5)  # va='bottom',
+        # ax[ax_id].set_ylabel(contrib_score_name)
+        ax[ax_id].set_ylabel(contrib_score_name, rotation=rotate_y, ha='right', labelpad=5)  # va='bottom',
 
     # -----------
     # information content (seqlogo)

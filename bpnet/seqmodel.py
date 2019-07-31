@@ -79,8 +79,8 @@ class SeqModel:
         self.model.compile(optimizer=optimizer,
                            loss=self.losses, loss_weights=self.loss_weights)
 
-        # start without any importance function
-        self.imp_fns = {}
+        # start without any contribution function
+        self.contrib_fns = {}
 
     def _get_input_tensor(self):
         return self.model.inputs[0]
@@ -122,12 +122,12 @@ class SeqModel:
                     intp_targets.append((head.get_target(task) + "/" + k, v))
         return intp_targets
 
-    def _imp_deeplift_fn(self, x, name, preact_only=True):
-        """Deeplift importance score tensors
+    def _contrib_deeplift_fn(self, x, name, preact_only=True):
+        """Deeplift contribution score tensors
         """
         k = f"deeplift/{name}"
-        if k in self.imp_fns:
-            return self.imp_fns[k]
+        if k in self.contrib_fns:
+            return self.contrib_fns[k]
 
         import deepexplain
         from deepexplain.tensorflow.methods import DeepLIFTRescale
@@ -138,7 +138,7 @@ class SeqModel:
         import numpy as np
         import tempfile
 
-        self.imp_fns = {}
+        self.contrib_fns = {}
         with tempfile.NamedTemporaryFile(suffix='.pkl') as temp:
             self.model.save(temp.name)
             K.clear_session()
@@ -163,20 +163,20 @@ class SeqModel:
             target_tensors = fModel(input_tensor)
             for name, target_tensor in zip(intp_names, target_tensors):
                 # input_tensor = fModel.inputs[0]
-                self.imp_fns["deeplift/" + name] = de.explain('deeplift',
-                                                              target_tensor,
-                                                              input_tensor,
-                                                              x_subset)
+                self.contrib_fns["deeplift/" + name] = de.explain('deeplift',
+                                                                  target_tensor,
+                                                                  input_tensor,
+                                                                  x_subset)
 
-        return self.imp_fns[k]
+        return self.contrib_fns[k]
 
-    def imp_score(self, x, name, method='deeplift', batch_size=512, preact_only=False):
-        """Compute the importance score
+    def contrib_score(self, x, name, method='deeplift', batch_size=512, preact_only=False):
+        """Compute the contribution score
 
         Args:
           x: one-hot encoded DNA sequence
           name: which interepretation method to compute
-          method: which importance score to use. Available: grad, ism, deeplift
+          method: which contribution score to use. Available: grad, ism, deeplift
         """
         # Do we need bias?
         if not isinstance(x, dict) and not isinstance(x, list):
@@ -184,9 +184,9 @@ class SeqModel:
             x = {'seq': x, **self.neutral_bias_inputs(len(x), seqlen=seqlen)}
 
         if method == "deeplift":
-            fn = self._imp_deeplift_fn(x, name, preact_only=preact_only)
+            fn = self._contrib_deeplift_fn(x, name, preact_only=preact_only)
         else:
-            raise ValueError("Please provide a valid importance scoring method: grad, ism or deeplift")
+            raise ValueError("Please provide a valid contribution scoring method: grad, ism or deeplift")
 
         def input_to_list(input_names, x):
             if isinstance(x, list):
@@ -204,23 +204,23 @@ class SeqModel:
             return numpy_collate_concat([fn(input_to_list(input_names, batch))[0]
                                          for batch in nested_numpy_minibatch(x, batch_size=batch_size)])
 
-    def imp_score_all(self, seq, method='deeplift', batch_size=512, preact_only=True,
-                      intp_pattern='*'):
-        """Compute all importance scores
+    def contrib_score_all(self, seq, method='deeplift', batch_size=512, preact_only=True,
+                          intp_pattern='*'):
+        """Compute all contribution scores
 
         Args:
           seq: one-hot encoded DNA sequences
           method: 'deeplift'
-          aggregate_strands: if True, the average importance scores across strands will be returned
-          batch_size: batch size when computing the importance scores
+          aggregate_strands: if True, the average contribution scores across strands will be returned
+          batch_size: batch size when computing the contribution scores
 
         Returns:
           dictionary with keys: {task}/{head}/{interpretation_tensor}
-          and values with the same shape as `seq` corresponding to importance scores
+          and values with the same shape as `seq` corresponding to contribution scores
         """
         intp_patterns = _listify(intp_pattern)  # make sure it's a list
 
-        return {name: self.imp_score(seq, name, method=method, batch_size=batch_size, preact_only=preact_only)
+        return {name: self.contrib_score(seq, name, method=method, batch_size=batch_size, preact_only=preact_only)
                 for name, _ in self.get_intp_tensors(preact_only=preact_only)
                 if fnmatch_any(name, intp_patterns)}
         # TODO - add a filter for name

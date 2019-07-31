@@ -1,8 +1,8 @@
 """Vdom visualization for modisco
 """
 import pandas as pd
-from bpnet.plot.heatmaps import multiple_heatmap_stranded_profile, multiple_heatmap_importance_profile, heatmap_sequence
-from bpnet.cli.imp_score import ImpScoreFile
+from bpnet.plot.heatmaps import multiple_heatmap_stranded_profile, multiple_heatmap_contribution_profile, heatmap_sequence
+from bpnet.cli.contrib import ContribScoreFile
 from collections import OrderedDict
 from bpnet.plot.profiles import extract_signal, multiple_plot_stranded_profile, hist_position, bar_seqlets_per_example, box_counts
 from bpnet.functions import mean
@@ -117,10 +117,10 @@ def template_vdom_pattern(name, n_seqlets, trimmed_motif,
                            img(src=figures_url + "/profile_aggregated.png", width=840),
                            img(src=figures_url + "/profile_heatmap.png", width=840),
                            ),
-                   details(summary("Importance scores (profile)"),
+                   details(summary("Contribution scores (profile)"),
                            img(src=figures_url + "/contrib_profile.png", width=840),
                            ),
-                   details(summary("Importance scores (counts)"),
+                   details(summary("Contribution scores (counts)"),
                            img(src=figures_url + "/contrib_counts.png", width=840),
                            ),
                    *[details(summary(k), *v) for k, v in add_plots.items()],
@@ -227,7 +227,7 @@ def vdom_modisco(mr, figdir, total_counts, dfp=None, is_open=True, **kwargs):
                 if len(mr.patterns(metacluster)) > 0])
 
 
-def get_signal(seqlets, d: ImpScoreFile, tasks, resize_width=200):
+def get_signal(seqlets, d: ContribScoreFile, tasks, resize_width=200):
     thr_one_hot = d.get_seq()
 
     if resize_width is None:
@@ -249,10 +249,10 @@ def get_signal(seqlets, d: ImpScoreFile, tasks, resize_width=200):
                                                valid_seqlets).sum(axis=-1)
                           for task in tasks}
 
-    if d.contains_imp_score('count'):
+    if d.contains_contrib_score('count'):
         ex_contrib_counts = {task: extract_signal(d.get_contrib("count")[task],
                                                   valid_seqlets).sum(axis=-1) for task in tasks}
-    elif d.contains_imp_score('counts/pre-act'):
+    elif d.contains_contrib_score('counts/pre-act'):
         ex_contrib_counts = {task: extract_signal(d.get_contrib("counts/pre-act")[task],
                                                   valid_seqlets).sum(axis=-1) for task in tasks}
     else:
@@ -285,12 +285,12 @@ def vdm_heatmaps(seqlets, d, included_samples, tasks, pattern, top_n=None, pssm_
                        fig2vdom(multiple_heatmap_stranded_profile(ex_signal, sort_idx=sort_idx, figsize=(20, 20))),
                        open=opened
                        ),
-               details(summary("Importance scores (profile)"),
-                       fig2vdom(multiple_heatmap_importance_profile(ex_contrib_profile, sort_idx=sort_idx, figsize=(20, 20))),
+               details(summary("Contribution scores (profile)"),
+                       fig2vdom(multiple_heatmap_contribution_profile(ex_contrib_profile, sort_idx=sort_idx, figsize=(20, 20))),
                        open=opened
                        ),
-               details(summary("Importance scores (counts)"),
-                       fig2vdom(multiple_heatmap_importance_profile(ex_contrib_counts, sort_idx=sort_idx, figsize=(20, 20))),
+               details(summary("Contribution scores (counts)"),
+                       fig2vdom(multiple_heatmap_contribution_profile(ex_contrib_counts, sort_idx=sort_idx, figsize=(20, 20))),
                        open=opened
                        )
                )
@@ -306,11 +306,11 @@ def write_heatmap_pngs(seqlets, d, tasks, pattern, output_dir):
         heatmap_seq=heatmap_sequence(ex_seq, sort_idx=sort_idx, figsize_tmpl=(10, 15), aspect='auto'),
         profile_aggregated=multiple_plot_stranded_profile(ex_signal, figsize_tmpl=(20 / len(ex_signal), 3)),
         profile_heatmap=multiple_heatmap_stranded_profile(ex_signal, sort_idx=sort_idx, figsize=(20, 20)),
-        contrib_profile=multiple_heatmap_importance_profile(ex_contrib_profile, sort_idx=sort_idx, figsize=(20, 20)),
+        contrib_profile=multiple_heatmap_contribution_profile(ex_contrib_profile, sort_idx=sort_idx, figsize=(20, 20)),
     )
 
     if ex_contrib_counts is not None:
-        figs['contrib_counts'] = multiple_heatmap_importance_profile(ex_contrib_counts, sort_idx=sort_idx, figsize=(20, 20))
+        figs['contrib_counts'] = multiple_heatmap_contribution_profile(ex_contrib_counts, sort_idx=sort_idx, figsize=(20, 20))
     # write the figures
     for k, fig in figs.items():
         fig.savefig(os.path.join(output_dir, k + ".png"), bbox_inches='tight')

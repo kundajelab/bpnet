@@ -238,7 +238,7 @@ class ModiscoResult:
                          for s in self._get_seqlets(pattern)])
 
     def plot_profiles(self, x, tracks,
-                      importance_scores={},
+                      contribution_scores={},
                       figsize=(20, 2),
                       rc_vec=None,
                       start_vec=None,
@@ -256,7 +256,7 @@ class ModiscoResult:
         Args:
           x: one-hot-encoded sequence
           tracks: dictionary of profile tracks
-          importance_scores: optional dictionary of importance scores
+          contribution_scores: optional dictionary of contribution scores
 
         TODO - add the reverse complementation option to it
         """
@@ -264,9 +264,9 @@ class ModiscoResult:
         from concise.utils.plot import seqlogo_fig, seqlogo
 
         seqs_all = self.extract_signal(x)
-        ext_importance_scores = {s: self.extract_signal(imp)
-                                 for s, imp in importance_scores.items()}
-        # TODO assert correct shape in imp
+        ext_contribution_scores = {s: self.extract_signal(contrib)
+                                   for s, contrib in contribution_scores.items()}
+        # TODO assert correct shape in contrib
 
         if patterns is None:
             patterns = self.patterns()
@@ -285,10 +285,10 @@ class ModiscoResult:
             n = len(seqs)
             if n < n_limit:
                 continue
-            fig, ax = plt.subplots(1 + len(importance_scores) + len(tracks),
+            fig, ax = plt.subplots(1 + len(contribution_scores) + len(tracks),
                                    1, sharex=True,
                                    figsize=figsize,
-                                   gridspec_kw={'height_ratios': [1] * len(tracks) + [seq_height] * (1 + len(importance_scores))})
+                                   gridspec_kw={'height_ratios': [1] * len(tracks) + [seq_height] * (1 + len(contribution_scores))})
             ax[0].set_title(f"{pattern} ({n})")
             for i, (k, y) in enumerate(tracks.items()):
                 signal = self.extract_signal(y, rc_fn)[pattern]
@@ -334,7 +334,7 @@ class ModiscoResult:
                 if legend:
                     ax[i].legend()
 
-            for k, (imp_score_name, values) in enumerate(ext_importance_scores.items()):
+            for k, (contrib_score_name, values) in enumerate(ext_contribution_scores.items()):
                 ax_id = len(tracks) + k
                 logo = values[pattern].mean(axis=0)
                 # Trim the pattern if necessary
@@ -345,7 +345,7 @@ class ModiscoResult:
                     logo = logo[start:(start + width)]
                 seqlogo(logo, ax=ax[ax_id])
                 ax[ax_id].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-                ax[ax_id].set_ylabel(imp_score_name)
+                ax[ax_id].set_ylabel(contrib_score_name)
                 ax[ax_id].spines['top'].set_visible(False)
                 ax[ax_id].spines['right'].set_visible(False)
                 ax[ax_id].spines['bottom'].set_visible(False)

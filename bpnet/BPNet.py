@@ -68,36 +68,36 @@ class BPNetSeqModel:
         return {task: preds[f'{task}/profile'] * np.exp(preds[f'{task}/counts'][:, np.newaxis])
                 for task in self.seqmodel.tasks}
 
-    def imp_score_all(self, seq, method='deeplift', aggregate_strand=True, batch_size=512,
-                      pred_summaries=['weighted', 'count']):
-        """Compute all importance scores
+    def contrib_score_all(self, seq, method='deeplift', aggregate_strand=True, batch_size=512,
+                          pred_summaries=['weighted', 'count']):
+        """Compute all contribution scores
 
         Args:
           seq: one-hot encoded DNA sequences
           method: 'grad', 'deeplift' or 'ism'
-          aggregate_strands: if True, the average importance scores across strands will be returned
-          batch_size: batch size when computing the importance scores
+          aggregate_strands: if True, the average contribution scores across strands will be returned
+          batch_size: batch size when computing the contribution scores
 
         Returns:
           dictionary with keys: {task}/{pred_summary}/{strand_i} or {task}/{pred_summary}
-          and values with the same shape as `seq` corresponding to importance scores
+          and values with the same shape as `seq` corresponding to contribution scores
         """
         assert aggregate_strand
 
-        imp_scores = self.seqmodel.imp_score_all(seq, method=method)
+        contrib_scores = self.seqmodel.contrib_score_all(seq, method=method)
 
-        return {f"{task}/" + self._get_old_imp_score_name(pred_summary): imp_scores[f"{task}/{pred_summary}"]
+        return {f"{task}/" + self._get_old_contrib_score_name(pred_summary): contrib_scores[f"{task}/{pred_summary}"]
                 for task in self.seqmodel.tasks
                 for pred_summary in ['profile/wn', 'counts/pre-act']}
 
-    def _get_old_imp_score_name(self, s):
+    def _get_old_contrib_score_name(self, s):
         s2s = {"profile/wn": 'weighted', 'counts/pre-act': 'count'}
         return s2s[s]
 
-    def sim_pred(self, central_motif, side_motif=None, side_distances=[], repeat=128, importance=[]):
+    def sim_pred(self, central_motif, side_motif=None, side_distances=[], repeat=128, contribution=[]):
         """
         Args:
-          importance: list of importance scores
+          contribution: list of contribution scores
         """
         from bpnet.simulate import generate_seq, average_profiles, flatten
         batch_size = repeat
@@ -112,15 +112,15 @@ class BPNetSeqModel:
         # get predictions
         scaled_preds = self.predict(seqs, batch_size=batch_size)
 
-        if importance:
-            # get the importance scores (compute only the profile and counts importance)
-            imp_scores_all = self.seqmodel.imp_score_all(seqs, intp_pattern=['*/profile/wn', '*/counts/pre-act'])
-            imp_scores = {t: {self._get_old_imp_score_name(imp_score_name): seqs * imp_scores_all[f'{t}/{imp_score_name}']
-                              for imp_score_name in importance}
-                          for t in tasks}
+        if contribution:
+            # get the contribution scores (compute only the profile and counts contribution)
+            contrib_scores_all = self.seqmodel.contrib_score_all(seqs, intp_pattern=['*/profile/wn', '*/counts/pre-act'])
+            contrib_scores = {t: {self._get_old_contrib_score_name(contrib_score_name): seqs * contrib_scores_all[f'{t}/{contrib_score_name}']
+                                  for contrib_score_name in contribution}
+                              for t in tasks}
 
             # merge and aggregate the profiles
-            out = {"imp": imp_scores, "profile": scaled_preds}
+            out = {"contrib": contrib_scores, "profile": scaled_preds}
         else:
             out = {"profile": scaled_preds}
         return average_profiles(flatten(out, "/"))
@@ -144,29 +144,29 @@ class BPNetSeqModel:
             seq = FastaExtractor(self.fasta_file, use_strand=use_strand)(intervals)
         return seq
 
-    def predict_all(self, seq, imp_method='grad', batch_size=512, pred_summaries=['weighted', 'count']):
+    def predict_all(self, seq, contrib_method='grad', batch_size=512, pred_summaries=['weighted', 'count']):
         """Make model prediction based
         """
         preds = self.predict(seq, batch_size=batch_size)
 
-        if imp_method is not None:
-            imp_scores = self.imp_score_all(seq, method=imp_method, aggregate_strand=True,
-                                            batch_size=batch_size, pred_summaries=pred_summaries)
+        if contrib_method is not None:
+            contrib_scores = self.contrib_score_all(seq, method=contrib_method, aggregate_strand=True,
+                                                    batch_size=batch_size, pred_summaries=pred_summaries)
         else:
-            imp_scores = dict()
+            contrib_scores = dict()
 
         out = [dict(
             seq=get_dataset_item(seq, i),
             # interval=intervals[i],
             pred=get_dataset_item(preds, i),
-            # TODO - shall we call it hyp_imp score or imp_score?
-            imp_score=get_dataset_item(imp_scores, i),
+            # TODO - shall we call it hyp_contrib score or contrib_score?
+            contrib_score=get_dataset_item(contrib_scores, i),
         ) for i in range(len(seq))]
         return out
 
     def predict_intervals(self, intervals,
                           variants=None,
-                          imp_method='grad',
+                          contrib_method='grad',
                           use_strand=False,
                           batch_size=512):
         """
@@ -176,10 +176,10 @@ class BPNetSeqModel:
           pred_summary: 'mean' or 'max', summary function name for the profile gradients
           compute_grads: if False, skip computing gradients
         """
-        # TODO - support also other importance scores
+        # TODO - support also other contribution scores
         seq = self.get_seq(intervals, variants, use_strand=use_strand)
 
-        preds = self.predict_all(seq, imp_method, batch_size)
+        preds = self.predict_all(seq, contrib_method, batch_size)
 
         # append intervals
         for i in range(len(seq)):
@@ -191,7 +191,7 @@ class BPNetSeqModel:
     def plot_intervals(self, intervals, ds=None, variants=None,
                        seqlets=[],
                        pred_summary='weighted',
-                       imp_method='grad',
+                       contrib_method='grad',
                        batch_size=128,
                        # ylim=None,
                        xlim=None,
@@ -211,7 +211,7 @@ class BPNetSeqModel:
         """
         out = self.predict_intervals(intervals,
                                      variants=variants,
-                                     imp_method=imp_method,
+                                     contrib_method=contrib_method,
                                      # pred_summary=pred_summary,
                                      batch_size=batch_size)
         figs = []
@@ -242,15 +242,15 @@ class BPNetSeqModel:
                 # TODO - simplify?
                 viz_dict = OrderedDict(flatten_list([[
                     (f"{task} Pred", pred['pred'][task]),
-                    (f"{task} Imp profile", pred['imp_score'][f"{task}/{pred_summary}"] * seq),
-                    # (f"{task} Imp counts", sum(pred['grads'][task_idx]['counts'].values()) / 2 * seq),
+                    (f"{task} Contrib profile", pred['contrib_score'][f"{task}/{pred_summary}"] * seq),
+                    # (f"{task} Contrib counts", sum(pred['grads'][task_idx]['counts'].values()) / 2 * seq),
                 ] for task_idx, task in enumerate(self.tasks)]))
             else:
                 viz_dict = OrderedDict(flatten_list([[
                     (f"{task} Pred", pred['pred'][task]),
                     (f"{task} Obs", obs[task]),
-                    (f"{task} Imp profile", pred['imp_score'][f"{task}/{pred_summary}"] * seq),
-                    # (f"{task} Imp counts", sum(pred['grads'][task_idx]['counts'].values()) / 2 * seq),
+                    (f"{task} Contrib profile", pred['contrib_score'][f"{task}/{pred_summary}"] * seq),
+                    # (f"{task} Contrib counts", sum(pred['grads'][task_idx]['counts'].values()) / 2 * seq),
                 ] for task_idx, task in enumerate(self.tasks)]))
 
             if add_title:
@@ -260,12 +260,12 @@ class BPNetSeqModel:
 
             if same_ylim:
                 fmax = {feature: max([np.abs(viz_dict[f"{task} {feature}"]).max() for task in self.tasks])
-                        for feature in ['Pred', 'Imp profile', 'Obs']}
+                        for feature in ['Pred', 'Contrib profile', 'Obs']}
 
                 ylim = []
                 for k in viz_dict:
                     f = k.split(" ", 1)[1]
-                    if "Imp" in f:
+                    if "Contrib" in f:
                         ylim.append((-fmax[f], fmax[f]))
                     else:
                         ylim.append((0, fmax[f]))
@@ -282,29 +282,29 @@ class BPNetSeqModel:
             figs.append(fig)
         return figs
 
-    # TODO also allow imp_scores
+    # TODO also allow contrib_scores
     def export_bw(self,
                   intervals,
                   output_dir,
                   # pred_summary='weighted',
-                  imp_method='grad',
+                  contrib_method='grad',
                   batch_size=512,
-                  scale_importance=False,
+                  scale_contribution=False,
                   chromosomes=None):
-        """Export predictions and model importances to big-wig files
+        """Export predictions and model contributions to big-wig files
 
         Args:
           intervals: list of genomic intervals
           output_dir: output directory
 
           batch_size:
-          scale_importance: if True, multiple the importance scores by the predicted count value
+          scale_contribution: if True, multiple the contribution scores by the predicted count value
           chromosomes: a list of chromosome names consisting a genome
         """
         #          pred_summary: which operation to use for the profile gradients
-        logger.info("Get model predictions and importance scores")
+        logger.info("Get model predictions and contribution scores")
         out = self.predict_intervals(intervals,
-                                     imp_method=imp_method,
+                                     contrib_method=contrib_method,
                                      batch_size=batch_size)
 
         logger.info("Setup bigWigs for writing")
@@ -316,7 +316,7 @@ class BPNetSeqModel:
             genome = OrderedDict([(c, l) for c, l in zip(fa.references, fa.lengths) if c in chromosomes])
         fa.close()
 
-        output_feats = ['preds.pos', 'preds.neg', 'importance.profile', 'importance.counts']
+        output_feats = ['preds.pos', 'preds.neg', 'contribution.profile', 'contribution.counts']
 
         # make sure the intervals are in the right order
         first_chr = list(np.unique(np.array([interval.chrom for interval in intervals])))
@@ -387,11 +387,11 @@ class BPNetSeqModel:
                 add_entry(bws[task]['preds.neg'], preds[:, 1],
                           interval, start_idx)
 
-                # Get the importance scores
+                # Get the contribution scores
                 seq = out[i]['seq']
-                hyp_imp = out[i]['imp_score']
+                hyp_contrib = out[i]['contrib_score']
 
-                if scale_importance:
+                if scale_contribution:
                     si_profile = preds.sum()  # Total number of counts in the region
                     si_counts = preds.sum()
                 else:
@@ -399,11 +399,11 @@ class BPNetSeqModel:
                     si_counts = 1
 
                 # profile - multipl
-                add_entry(bws[task]['importance.profile'],
-                          hyp_imp[f'{task}/weighted'][seq.astype(bool)] * si_profile,
+                add_entry(bws[task]['contribution.profile'],
+                          hyp_contrib[f'{task}/weighted'][seq.astype(bool)] * si_profile,
                           interval, start_idx)
-                add_entry(bws[task]['importance.counts'],
-                          hyp_imp[f'{task}/count'][seq.astype(bool)] * si_counts,
+                add_entry(bws[task]['contribution.counts'],
+                          hyp_contrib[f'{task}/count'][seq.astype(bool)] * si_counts,
                           interval, start_idx)
 
             prev_stop = max(interval.stop, prev_stop)

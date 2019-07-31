@@ -105,7 +105,7 @@ class Pattern:
                 return mean(list(d.values()))
             elif k == 'sum':
                 return sum(list(d.values()))
-            # TODO - add weighted based on the importance scores
+            # TODO - add weighted based on the contribution scores
             else:
                 return d[k]
 
@@ -670,7 +670,7 @@ class Pattern:
             ("seq_match_score", match_score[keep])]
         ))
 
-    def scan_importance(self, contrib, hyp_contrib, tasks, pad_mode='median', n_jobs=8, verbose=True):
+    def scan_contribution(self, contrib, hyp_contrib, tasks, pad_mode='median', n_jobs=8, verbose=True):
         """Scan the tracks using this pattern
 
         Args:
@@ -681,7 +681,7 @@ class Pattern:
           n_jobs (int): number of cores to use
 
         Returns:
-          a tuple containing match, importance scans, each with shape: (batch, seqlen, tasks, strand)
+          a tuple containing match, contribution scans, each with shape: (batch, seqlen, tasks, strand)
         """
         def merge_contrib(a, b):
             """Merge the contribution scores taking using the L1 norm (per sequence)
@@ -694,7 +694,7 @@ class Pattern:
                                               None, pad_mode, n_jobs, verbose=verbose)
         # stack by tasks
         contrib_scan_match = np.stack([contrib_scan[t][0] for t in tasks], axis=-1)
-        contrib_scan_importance = np.stack([contrib_scan[t][1] for t in tasks], axis=-1)
+        contrib_scan_contribution = np.stack([contrib_scan[t][1] for t in tasks], axis=-1)
 
         # rev
         _, contrib_scan_rc, _, _ = self.rc().scan_raw(None, contrib, None,  # hyp_contrib,
@@ -703,21 +703,21 @@ class Pattern:
         contrib_scan_match_rc = np.stack([contrib_scan_rc[t][0] for t in tasks], axis=-1)
 
         return (np.stack([contrib_scan_match, contrib_scan_match_rc], axis=-1),
-                contrib_scan_importance)  # importance doesn't have the strand axis
+                contrib_scan_contribution)  # contribution doesn't have the strand axis
 
-    def get_task_importance(self, kind='contrib'):
+    def get_task_contribution(self, kind='contrib'):
         tasks = self.tasks()
-        task_imp = np.array([np.abs(self._get_track(kind)[t]).mean() for t in tasks])
-        task_imp = task_imp / task_imp.sum()
-        return {t: task_imp[i] for i, t in enumerate(tasks)}
+        task_contrib = np.array([np.abs(self._get_track(kind)[t]).mean() for t in tasks])
+        task_contrib = task_contrib / task_contrib.sum()
+        return {t: task_contrib[i] for i, t in enumerate(tasks)}
 
-    def get_instances(self, tasks, match, importance, seq_match=None, norm_df=None,
+    def get_instances(self, tasks, match, contribution, seq_match=None, norm_df=None,
                       fdr=0.01, skip_percentile=99, verbose=False, plot=False):
-        """Convert the match arrays produced by pattern.scan_importance to motif instances
+        """Convert the match arrays produced by pattern.scan_contribution to motif instances
 
         At each position:
-        1. Determine the task with maximal importance
-        2. Select the strand based on the match at task with maximal importance
+        1. Determine the task with maximal contribution
+        2. Select the strand based on the match at task with maximal contribution
         3. Select instances with significantly high match
           (null distribution = Gaussian estimated on [0, `skip_percentile`] of the points (percentiles)
           - Benjamini-Hochberg correction is used to determine the P-value cuttof with fdr=`fdr`
@@ -725,15 +725,15 @@ class Pattern:
 
 
         Args:
-          tasks: same list as used in scan_importance
+          tasks: same list as used in scan_contribution
           pattern (bpnet.modisco.core.Pattern)
           tasks: list of tasks
-          match, importance: returned by pattern.scan_importance
+          match, contribution: returned by pattern.scan_contribution
           seq_match: optional. returned by pattern.scan_seq
           norm_df: match scores for the seqlets discovered by modisco. Obtained by `get_centroid_seqlet_matches`
             if not None, it will be used as normalization. all scores with match< min(norm_match)
             will be discarded
-          fdr: fdr threshold to use when thresholding the importance matches
+          fdr: fdr threshold to use when thresholding the contribution matches
           skip_percentile: points from the percentile > skip_percentile will be skipped when
             estimating the Gaussian null-distribution
           verbose: if True, qq-plots will be plotted
@@ -745,19 +745,19 @@ class Pattern:
 
         # combine the example and position axis into one
         matchf = match.reshape((-1, match.shape[2], match.shape[3]))
-        importancef = importance.reshape((-1, importance.shape[2]))
-        assert matchf.shape[:2] == importancef.shape[:2]
+        contributionf = contribution.reshape((-1, contribution.shape[2]))
+        assert matchf.shape[:2] == contributionf.shape[:2]
         positions = np.broadcast_to(np.arange(match.shape[1]).reshape((1, -1)),
                                     match.shape[:2]).reshape((-1,))
         example_idx = np.broadcast_to(np.arange(match.shape[0]).reshape((-1, 1)),
                                       match.shape[:2]).reshape((-1,))
 
         # aggregate matches across tasks
-        idx = np.arange(len(importancef))
-        task_weights_dict = self.get_task_importance('contrib')
+        idx = np.arange(len(contributionf))
+        task_weights_dict = self.get_task_contribution('contrib')
         task_weights = np.array([task_weights_dict[t] for t in tasks])
         matchfw = np.tensordot(matchf, task_weights, axes=(1, 0))
-        importancefw = np.tensordot(importancef, task_weights, axes=(1, 0))
+        contributionfw = np.tensordot(contributionf, task_weights, axes=(1, 0))
 
         # choose the right strand
         match_score = matchfw.max(axis=-1)
@@ -766,8 +766,8 @@ class Pattern:
         match_max_task = np.argmax(matchf[idx, :, max_strand], axis=-1)
         match_max = matchf[idx, match_max_task, max_strand]
 
-        imp_max_task = np.argmax(importancef, axis=-1)
-        imp_max = importancef[idx, imp_max_task]
+        contrib_max_task = np.argmax(contributionf, axis=-1)
+        contrib_max = contributionf[idx, contrib_max_task]
 
         # TODO - append also the background p-value by fitting a
         # gaussian to it using robust statistics as proposed by
@@ -783,8 +783,8 @@ class Pattern:
 
             match_p = None
             match_cat = None
-            imp_p = None
-            imp_cat = None
+            contrib_p = None
+            contrib_cat = None
 
             if verbose:
                 print(f"Keeping {keep.sum()}/{len(keep)} ({keep.mean():.2%}) of the instances."
@@ -813,8 +813,8 @@ class Pattern:
 
             match_p = quantile_norm(match_score[keep], norm_match)
             match_cat = low_medium_high(match_p)
-            imp_p = quantile_norm(importancefw[keep], norm_df['imp_weighted'])
-            imp_cat = low_medium_high(imp_p)
+            contrib_p = quantile_norm(contributionfw[keep], norm_df['contrib_weighted'])
+            contrib_cat = low_medium_high(contrib_p)
 
         # optionally include the PWM match
         if seq_match is not None:
@@ -875,16 +875,16 @@ class Pattern:
             ("match_max", match_max[keep]),
             ("match_max_task", pd.Series(match_max_task[keep]).
              map({i: t for i, t in enumerate(tasks)})),
-            ("imp_weighted", importancefw[keep]),
-            ("imp_weighted_p", imp_p),
-            ("imp_weighted_cat", imp_cat),
-            ("imp_max", imp_max[keep]),
-            ("imp_max_task", pd.Series(imp_max_task[keep]).
+            ("contrib_weighted", contributionfw[keep]),
+            ("contrib_weighted_p", contrib_p),
+            ("contrib_weighted_cat", contrib_cat),
+            ("contrib_max", contrib_max[keep]),
+            ("contrib_max_task", pd.Series(contrib_max_task[keep]).
              map({i: t for i, t in enumerate(tasks)})),
         ] + sm +
             [("match/" + t, matchf[keep_idx, i, max_strand[keep]])
              for i, t in enumerate(tasks)] +
-            [("imp/" + t, importancef[keep_idx, i])
+            [("contrib/" + t, contributionf[keep_idx, i])
              for i, t in enumerate(tasks)]
         ))
 
@@ -935,7 +935,7 @@ def patterns_to_df(patterns: List[Pattern], properties: List[str]) -> pd.DataFra
                          for p in patterns])
 
 
-class StackedSeqletImp:
+class StackedSeqletContrib:
 
     VOCAB = ["A", "C", "G", "T"]  # sequence vocabulary
     _track_list = ['seq', 'contrib', 'hyp_contrib', 'profile']
@@ -998,7 +998,7 @@ class StackedSeqletImp:
                 return mean(list(d.values()))
             elif k == 'sum':
                 return sum(list(d.values()))
-            # TODO - add weighted based on the importance scores
+            # TODO - add weighted based on the contribution scores
             else:
                 return d[k]
 
@@ -1029,16 +1029,16 @@ class StackedSeqletImp:
                     dfi_subset = self.dfi.iloc[idx]
             else:
                 dfi_subset = None
-            return StackedSeqletImp(name=self.name,
-                                    seq=self.seq[idx],
-                                    contrib={t: self.contrib[t][idx]
-                                             for t in self.tasks()},
-                                    hyp_contrib={t: self.hyp_contrib[t][idx]
+            return StackedSeqletContrib(name=self.name,
+                                        seq=self.seq[idx],
+                                        contrib={t: self.contrib[t][idx]
                                                  for t in self.tasks()},
-                                    profile={t: self.profile[t][idx]
-                                             for t in self.tasks()},
-                                    dfi=dfi_subset,
-                                    attrs=self.attrs)
+                                        hyp_contrib={t: self.hyp_contrib[t][idx]
+                                                     for t in self.tasks()},
+                                        profile={t: self.profile[t][idx]
+                                                 for t in self.tasks()},
+                                        dfi=dfi_subset,
+                                        attrs=self.attrs)
         else:
             dfi_row = self.dfi.iloc[idx] if self.dfi is not None else None
             return Pattern(name=self.name,
@@ -1084,10 +1084,10 @@ class StackedSeqletImp:
 
         Used plotting functions (from `bpnet.plot.heatmaps`):
           profile: `multiple_heatmap_stranded_profile`
-          (hyp_)contrib: `multiple_heatmap_importance_profile`
+          (hyp_)contrib: `multiple_heatmap_contribution_profile`
           seq: `heatmaps.heatmap_sequence`
         """
-        from bpnet.plot.heatmaps import (multiple_heatmap_importance_profile,
+        from bpnet.plot.heatmaps import (multiple_heatmap_contribution_profile,
                                          multiple_heatmap_stranded_profile,
                                          heatmap_sequence)
         from bpnet.plot.profiles import multiple_plot_stranded_profile
@@ -1103,22 +1103,22 @@ class StackedSeqletImp:
         elif kind == 'profile_agg':
             return multiple_plot_stranded_profile(t, **kwargs)  # figsize_tmpl=(2.55,2)
         elif kind == 'contrib':
-            return multiple_heatmap_importance_profile(t, sort_idx=sort_idx, **kwargs)
+            return multiple_heatmap_contribution_profile(t, sort_idx=sort_idx, **kwargs)
         elif kind == 'hyp_contrib':
-            return multiple_heatmap_importance_profile(t, sort_idx=sort_idx, **kwargs)
+            return multiple_heatmap_contribution_profile(t, sort_idx=sort_idx, **kwargs)
         elif kind == 'seq':
             return heatmap_sequence(t, sort_idx=sort_idx, **kwargs)
 
     @classmethod
-    def from_seqlet_imps(cls, seqlet_imps):
+    def from_seqlet_contribs(cls, seqlet_contribs):
         from kipoi.data_utils import numpy_collate
-        s1 = seqlet_imps[0]
+        s1 = seqlet_contribs[0]
         # tasks = s1.tasks()
         return cls(
-            seq=np.stack([s.seq for s in seqlet_imps]),
-            contrib=numpy_collate([s.contrib for s in seqlet_imps]),
-            hyp_contrib=numpy_collate([s.hyp_contrib for s in seqlet_imps]),
-            profile=numpy_collate([s.profile for s in seqlet_imps]),
+            seq=np.stack([s.seq for s in seqlet_contribs]),
+            contrib=numpy_collate([s.contrib for s in seqlet_contribs]),
+            hyp_contrib=numpy_collate([s.hyp_contrib for s in seqlet_contribs]),
+            profile=numpy_collate([s.profile for s in seqlet_contribs]),
             name=s1.name,
             attrs=s1.attrs
         )
@@ -1135,7 +1135,7 @@ class StackedSeqletImp:
         # tasks = self.tasks()
 
         from kipoi.data_utils import numpy_collate_concat
-        return StackedSeqletImp(
+        return StackedSeqletContrib(
             name=self.name,
             seq=np.concatenate([self.seq, s.seq]),
             contrib=numpy_collate_concat([self.contrib, s.contrib]),
@@ -1161,10 +1161,10 @@ def shuffle_seqlets(s1, s2):
     """Shuffle the seqlets among two seqlet groups
 
     Args:
-      s1, s2: StackedSeqletImp
+      s1, s2: StackedSeqletContrib
 
     Returns:
-      tuple of 2 StackedSeqletImp with the same length as before
+      tuple of 2 StackedSeqletContrib with the same length as before
       but with seqlets randomly chosen from one of the two groups
     """
     return s1.append(s2).shuffle().split(len(s1))

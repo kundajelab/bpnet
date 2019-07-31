@@ -5,7 +5,7 @@ import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
 from bpnet.plot.profiles import extract_signal
 from bpnet.plot.tracks import plot_tracks
-from bpnet.plot.heatmaps import heatmap_importance_profile, normalize
+from bpnet.plot.heatmaps import heatmap_contribution_profile, normalize
 
 
 def smooth(y, box_pts):
@@ -57,9 +57,9 @@ def plot_power_spectrum(pattern, task, data):
     p = extract_signal(data.get_region_grad(task, 'profile'), wide_seqlets)
 
     agg_profile = np.log(np.abs(p).sum(axis=-1).sum(axis=0))
-    heatmap_importance_profile(normalize(np.abs(p).sum(axis=-1)[:500], pmin=50, pmax=99), figsize=(10, 20))
+    heatmap_contribution_profile(normalize(np.abs(p).sum(axis=-1)[:500], pmin=50, pmax=99), figsize=(10, 20))
     heatmap_fig = plt.gcf()
-    # heatmap_importance_profile(np.abs(p*seq).sum(axis=-1)[:500], figsize=(10, 20))
+    # heatmap_contribution_profile(np.abs(p*seq).sum(axis=-1)[:500], figsize=(10, 20))
 
     agg_profile = agg_profile - agg_profile.mean()
     agg_profile = agg_profile / agg_profile.std()
@@ -72,8 +72,8 @@ def plot_power_spectrum(pattern, task, data):
     axes[0].plot(agg_profile, label='original')
     axes[0].plot(smooth_part, label="smooth", alpha=0.5)
     axes[0].legend()
-    axes[0].set_ylabel("Avg. importance")
-    axes[0].set_title("Average importance score")
+    axes[0].set_ylabel("Avg. contribution")
+    axes[0].set_title("Average contribution score")
     # axes[0].set_xlabel("Position");
     axes[1].plot(oscilatory_part)
     axes[1].set_xlabel("Position")
