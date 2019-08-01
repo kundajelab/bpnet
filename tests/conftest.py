@@ -61,7 +61,7 @@ def trained_model(data_dir, dataspec_task1, config_gin):
                 premade='bpnet9',
                 config=str(config_gin),
                 num_workers=1,
-                force_overwrite=True
+                overwrite=True
                 )
     return data_dir / 'trained_model'
 
@@ -76,7 +76,7 @@ def trained_model_w_bias(config_gin, data_dir, dataspec_bias):
                 premade='bpnet9',
                 config=str(config_gin),
                 num_workers=1,
-                force_overwrite=True,
+                overwrite=True,
                 )
     return data_dir / 'trained_model_w_bias'
 

@@ -1,0 +1,44 @@
+# Modisco configuration file used in Avsec et al 2019
+import bpnet
+import bpnet.configurables  # imports TfModiscoWorkflow,TfModiscoSeqletsToPatternsFactory,report_template
+
+modisco_run.workflow = @TfModiscoWorkflow()
+# ---------------------------------
+# Seqlet extraction parameters
+TfModiscoWorkflow.sliding_window_size = 21
+TfModiscoWorkflow.flank_size = 10
+TfModiscoWorkflow.target_seqlet_fdr = 0.01
+
+# Deprecated in modisco 0.5 ?
+TfModiscoWorkflow.min_passing_windows_frac = 0.03
+TfModiscoWorkflow.max_passing_windows_frac = 0.2
+
+# metaclustering
+TfModiscoWorkflow.min_metacluster_size = 2000
+TfModiscoWorkflow.min_metacluster_size_frac = 0.02
+
+# This is the most important hyper-parameter. 50k is roughly 250GB of memory
+# Specifying it as a macro to more easily override it with `--override='max_seqlets=40000'
+TfModiscoWorkflow.max_seqlets_per_metacluster = %max_seqlets
+max_seqlets = 50000
+
+# ---------------------------------
+# seqlets clutering parameters
+TfModiscoWorkflow.seqlets_to_patterns_factory = @TfModiscoSeqletsToPatternsFactory()
+TfModiscoSeqletsToPatternsFactory.trim_to_window_size = 30
+TfModiscoSeqletsToPatternsFactory.initial_flank_to_add = 10
+TfModiscoSeqletsToPatternsFactory.kmer_len = 8
+TfModiscoSeqletsToPatternsFactory.num_gaps = 3
+TfModiscoSeqletsToPatternsFactory.num_mismatches = 2
+TfModiscoSeqletsToPatternsFactory.n_cores = %num_workers
+TfModiscoSeqletsToPatternsFactory.final_min_cluster_size = 60
+
+# ---------------------------------
+# report file
+# use modisco-template.ipynb from https://github.com/kundajelab/bpnet/tree/master/bpnet/templates
+modisco_run.report = @report_template()
+report_template.name = 'modisco-template.ipynb'
+
+# ---------------------------------
+# macros overriden by the CLI
+num_workers = 10

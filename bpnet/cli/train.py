@@ -6,7 +6,7 @@ import sys
 import os
 import yaml
 import shutil
-from argh.decorators import aliases, named, arg
+from argh.decorators import named, arg
 from uuid import uuid4
 from fs.osfs import OSFS
 import numpy as np
@@ -51,35 +51,13 @@ def add_file_logging(output_dir, logger, name='stdout'):
     return log
 
 
-@gin.configurable
-def eval_report_template(name, raise_error=True):
-    """Evaluation report template found in ../templates/
-    """
-    import inspect
-    filename = inspect.getframeinfo(inspect.currentframe()).filename
-    this_dir = os.path.dirname(os.path.abspath(filename))
-    template_file = os.path.join(this_dir, '../templates/', name)
-    if not os.path.exists(template_file):
-        if raise_error:
-            # list all file
-            available_template_files = [f for f in os.listdir(os.path.dirname(template_file))
-                                        if f.endswith('.ipynb')]
-            template_str = "\n".join(available_template_files)
-            raise FileNotFoundError(
-                f"Template {name} doesn't exist. Available templates:\n{template_str}"
-            )
-        else:
-            return None
-    return template_file
-
-
 def start_experiment(output_dir,
                      cometml_project="",
                      wandb_project="",
                      run_id=None,
                      note_params="",
                      extra_kwargs=None,
-                     force_overwrite=False):
+                     overwrite=False):
     """Start a model training experiment. This will create a new output directory
     and setup the experiment management handles
     """
@@ -140,7 +118,7 @@ def start_experiment(output_dir,
     # -----------------------------
 
     if os.path.exists(os.path.join(output_dir, 'config.gin')):
-        if force_overwrite:
+        if overwrite:
             logger.info(f"config.gin already exists in the output "
                         "directory {output_dir}. Removing the whole directory.")
             shutil.rmtree(output_dir)
@@ -227,7 +205,7 @@ def gin2dict(gin_config_str):
     return gin_config_dict
 
 
-def log_gin_config(output_dir, cometml_experiment=None, wandb_run=None):
+def log_gin_config(output_dir, cometml_experiment=None, wandb_run=None, prefix=''):
     """Save the config.gin file containing the whole config, convert it
     to a dictionary and upload it to cometml and wandb.
     """
@@ -236,12 +214,12 @@ def log_gin_config(output_dir, cometml_experiment=None, wandb_run=None):
     print("Used config: " + "-" * 40)
     print(gin_config_str)
     print("-" * 52)
-    with open(os.path.join(output_dir, "config.gin"), "w") as f:
+    with open(os.path.join(output_dir, f"{prefix}config.gin"), "w") as f:
         f.write(gin_config_str)
 
     gin_config_dict = gin2dict(gin_config_str)
     write_json(gin_config_dict,
-               os.path.join(output_dir, "config.gin.json"),
+               os.path.join(output_dir, f"{prefix}config.gin.json"),
                sort_keys=True,
                indent=2)
 
@@ -509,6 +487,24 @@ def _get_premade_path(premade, raise_error=False):
     return premade_file
 
 
+def _get_gin_files(premade, config):
+    """Get the gin files given premade and config
+    """
+    gin_files = []
+    if premade in ['none', 'None', '']:
+        logger.info(f"premade config not specified")
+    else:
+        gin_files.append(_get_premade_path(premade, raise_error=True))
+        logger.info(f"Using the following premade configuration: {premade}")
+
+    if config is not None:
+        logger.info(f"Using the following config.gin files: {config}")
+        gin_files += config.split(",")
+    if len(gin_files) == 0:
+        raise ValueError("Please specify at least one of the two: --premade or --config")
+    return gin_files
+
+
 @named('train')
 @arg('dataspec',
      help='dataspec.yaml file')
@@ -520,7 +516,7 @@ def _get_premade_path(premade, raise_error=False):
      help='gin config file path(s) specifying the model architecture and the loss etc.'
      ' They override the premade model. Single model example: config.gin. Multiple file example: data.gin,model.gin')
 @arg('--override',
-     help='semi-colon separated list of additional gin-bindings to use')
+     help='semi-colon separated list of additional gin bindings to use')
 @arg('--gpu',
      help='which gpu to use. Example: gpu=1')
 @arg('--memfrac-gpu',
@@ -543,7 +539,7 @@ def _get_premade_path(premade, raise_error=False):
      help='manual run id. If not specified, it will be either randomly generated or re-used from wandb or comet.ml.')
 @arg('--note-params',
      help='take note of additional key=value pairs. Example: --note-params note="my custom note",feature_set=this')
-@arg('--force-overwrite',
+@arg('--overwrite',
      help='if True, the output directory will be overwritten')
 def bpnet_train(dataspec,
                 output_dir,
@@ -559,7 +555,7 @@ def bpnet_train(dataspec,
                 cometml_project="",
                 run_id=None,
                 note_params="",
-                force_overwrite=False):
+                overwrite=False):
     """Train a model using gin-config
 
     Output files:
@@ -567,7 +563,7 @@ def bpnet_train(dataspec,
       model.h5 - Keras model HDF5 file
       seqmodel.pkl - Serialized SeqModel. This is the main trained model.
       eval-report.ipynb/.html - evaluation report containing training loss curves and some example model predictions.
-        You can specify your own ipynb using `--override='eval_report_template.name="my-template.ipynb"'`.
+        You can specify your own ipynb using `--override='report_template.name="my-template.ipynb"'`.
       model.gin -> copied from the input
       dataspec.yaml -> copied from the input
     """
@@ -576,7 +572,7 @@ def bpnet_train(dataspec,
                                                                  wandb_project=wandb_project,
                                                                  run_id=run_id,
                                                                  note_params=note_params,
-                                                                 force_overwrite=force_overwrite)
+                                                                 overwrite=overwrite)
     # remember the executed command
     write_json({
         "dataspec": dataspec,
@@ -593,13 +589,13 @@ def bpnet_train(dataspec,
         "cometml_project": cometml_project,
         "run_id": run_id,
         "note_params": note_params,
-        "force_overwrite": note_params},
+        "overwrite": overwrite},
         os.path.join(output_dir, 'bpnet-train.kwargs.json'),
         indent=2)
 
-    # copy dataspec.yml and configgin file over
+    # copy dataspec.yml and input config file over
     if config is not None:
-        shutil.copyfile(config, os.path.join(output_dir, 'config.gin'))
+        shutil.copyfile(config, os.path.join(output_dir, 'input-config.gin'))
 
     # parse and validate the dataspec
     ds = DataSpec.load(dataspec)
@@ -619,19 +615,7 @@ def bpnet_train(dataspec,
         logger.info(f"Using gpu: {gpu}, memory fraction: {memfrac_gpu}")
         create_tf_session(gpu, per_process_gpu_memory_fraction=memfrac_gpu)
 
-    gin_files = []
-    if premade in ['none', 'None', '']:
-        logger.info(f"premade model not specified")
-    else:
-        gin_files.append(_get_premade_path(premade, raise_error=True))
-        logger.info(f"Using the following premade model: {premade}")
-
-    if config is not None:
-        logger.info(f"Using the following config.gin files: {config}")
-        gin_files += config.split(",")
-
-    if len(gin_files) == 0:
-        raise ValueError("Please specify at least one of the two: --premade or --config")
+    gin_files = _get_gin_files(premade, config)
 
     # infer differnet hyper-parameters from the dataspec file
     if len(ds.bias_specs) > 0:

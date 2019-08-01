@@ -1,8 +1,10 @@
-import logging
-import matplotlib.pyplot as plt
 """
 Run modisco
 """
+import logging
+import matplotlib.pyplot as plt
+from argh.decorators import named, arg
+import shutil
 import pandas as pd
 import os
 from collections import OrderedDict
@@ -11,6 +13,7 @@ from pathlib import Path
 from bpnet.utils import write_pkl, related_dump_yaml, render_ipynb, remove_exists, add_file_logging, create_tf_session
 from bpnet.cli.schemas import DataSpec, ModiscoHParams
 from bpnet.cli.contrib import ContribFile
+from bpnet.cli.train import _get_gin_files, log_gin_config
 # ContribFile
 from bpnet.modisco.results import ModiscoResult
 from bpnet.functions import mean
@@ -20,6 +23,7 @@ from concise.utils.helper import write_json, read_json
 from bpnet.data import numpy_minibatch
 from kipoi.writers import HDF5BatchWriter
 from kipoi.readers import HDF5Reader
+import gin
 import h5py
 import numpy as np
 import keras.backend as K
@@ -36,38 +40,16 @@ logger.addHandler(logging.NullHandler())
 # load functions for the modisco directory
 
 
-# TODO - shall we remove included_samples overall?
-
-
 def load_included_samples(modisco_dir):
-    modisco_dir = Path(modisco_dir)
-
-    kwargs = read_json(modisco_dir / "kwargs.json")
-
-    d = ContribFile(kwargs["contrib_scores"])
-    interval_from_task = d.get_ranges().interval_from_task
-    n = len(d)
-    d.close()
-
-    included_samples = np.ones((n,), dtype=bool)
-    if not kwargs.get("skip_dist_filter", False) and (modisco_dir / "strand_distances.h5").exists():
-        included_samples = HDF5Reader.load(modisco_dir / "strand_distances.h5")['included_samples'] & included_samples
-
-    if kwargs.get("filter_npy", None) is not None:
-        included_samples = np.load(kwargs["filter_npy"]) & included_samples
-
-    if kwargs.get("subset_tasks", None) is not None and kwargs.get("filter_subset_tasks", False):
-        included_samples = interval_from_task.isin(kwargs['subset_tasks']).values & included_samples
-
-    return included_samples
+    return np.load(os.path.join(modisco_dir, "modisco-run.subset-contrib-file.npz"))
 
 
 def load_ranges(modisco_dir):
     modisco_dir = Path(modisco_dir)
     included_samples = load_included_samples(modisco_dir)
 
-    kwargs = read_json(modisco_dir / "kwargs.json")
-    d = ContribFile(kwargs["contrib_scores"], included_samples)
+    kwargs = read_json(modisco_dir / "modisco-run.kwargs.json")
+    d = ContribFile(kwargs["contrib_file"], included_samples)
     df = d.get_ranges()
     d.close()
     return df
@@ -100,285 +82,257 @@ def get_nonredundant_example_idx(ranges, width=200):
 
 
 # --------------------------------------------
-
-
-# def modisco_run2(contrib_file,
-#                  output_dir,
-#                  null_contrib_file=None,
-#                  config=None,
-#                  override='',
-#                  contrib_wildcard="*/profile/wn",  # on which contribution scores to run modisco
-#                  only_task_regions=False,
-#                  filter_npy=None,
-#                  exclude_chr="",
-#                  num_workers=10,
-#                  overwrite=False,
-#                  gpu=None,  # no need to use a gpu by default
-#                  memfrac_gpu=0.45,
-#                  ):
-#     add_file_logging(output_dir, logger, 'modisco-run')
-#     if gpu is not None:
-#         logger.info(f"Using gpu: {gpu}, memory fraction: {memfrac_gpu}")
-#         create_tf_session(gpu, per_process_gpu_memory_fraction=memfrac_gpu)
-#     else:
-#         # Don't use any GPU's
-#         os.environ['CUDA_VISIBLE_DEVICES'] = ''
-#         os.environ['MKL_THREADING_LAYER'] = 'GNU'
-
-#     import modisco
-#     import modisco.tfmodisco_workflow.workflow
-
-#     assert '/' in contrib_wildcard
-
-#     # figure out subset_tasks
-#     subset_tasks = {}
-#     for w in contrib_wildcard.split(","):
-#         task, head, head_summary = w.split("/")
-#         if task == '*':
-#             subset_tasks = None
-#             break
-#         else:
-#             subset_tasks.add(task)
-#     subset_tasks = list(subset_tasks)
-
-#     if subset_tasks is not None:
-#         # validate that all the `subset_tasks`
-#         # are present in `tasks`
-#         for st in subset_tasks:
-#             if st not in tasks:
-#                 raise ValueError(f"subset task {st} not found in tasks: {tasks}")
-#         logger.info(f"Using the following tasks: {subset_tasks} instead of the original tasks: {tasks}")
-#         tasks = subset_tasks
-#     only_task_regions  # TODO - automatically subset the matrix of the contrib file to the relevant task
-#     pass
-
-
-def modisco_run(contrib_scores,
-                output_dir,
-                null_contrib_scores=None,
-                hparams=None,
-                override_hparams="",  # TODO - switch to gin-train. Use the same strategy as for training the model
-                contrib_type="weighted",  # TODO - rename
-                subset_tasks=None,
-                filter_subset_tasks=False,
-                filter_npy=None,
-                exclude_chr="",
-                num_workers=10,
-                overwrite=False,
-                use_all_seqlets=False,
-                merge_tasks=False,
-                gpu=None,
-                ):
+@gin.configurable
+def modisco_run(output_path,  # specified by bpnet_modisco_run
+                task_names,
+                contrib_scores,
+                hypothetical_contribs,
+                one_hot,
+                null_per_pos_scores,
+                # specified by gin-config
+                workflow=gin.REQUIRED,  # TfModiscoWorkflow
+                report=None):  # reports to use
     """
-    Run modisco
-
     Args:
-      contrib_scores: path to the hdf5 file of contribution scores
-      null_contrib_scores: Path to the null contribution scores
-      contrib_type: for which output to compute the contribution scores
-      hparams: None, modisco hyper - parameeters: either a path to modisco.yaml or
-        a ModiscoHParams object
-      override_hparams: hyper - parameters overriding the settings in the hparams file
-      output_dir: output file directory
-      filter_npy: path to a npy file containing a boolean vector used for subsetting
-      exclude_chr: comma-separated list of chromosomes to exclude
-      subset_tasks: comma-separated list of task names to use as a subset
-      filter_subset_tasks: if True, run modisco only in the regions for that TF
-      hparams: hyper - parameter file
-      summary: which summary statistic to use for the profile gradients
-      use_all_seqlets: if True, don't restrict the number of seqlets
-      split: On which data split to compute the results
-      merge_task: if True, contribution scores for the tasks will be merged
-      gpu: which gpu to use. If None, don't use any GPU's
-
-    Note: when using subset_tasks, modisco will run on all the contribution scores. If you wish
-      to run it only for the contribution scores for a particular task you should subset it to
-      the peak regions of interest using `filter_npy`
+      workflow: TfModiscoWorkflow objects
+      report: path to the report ipynb
     """
-    plt.switch_backend('agg')
+    modisco_results = workflow(task_names=task_names,
+                               contrib_scores=contrib_scores,
+                               hypothetical_contribs=hypothetical_contribs,
+                               one_hot=one_hot,
+                               null_per_pos_scores=null_per_pos_scores)
+    # save the results
+    logger.info(f"Saving modisco file to {output_path}")
+    grp = h5py.File(output_path)
+    modisco_results.save_hdf5(grp)
+
+    if report is not None:
+        if report is not None:
+            report = os.path.abspath(os.path.expanduser(report))
+            if not os.path.exists(report):
+                raise ValueError(f"Report file {report} doesn't exist")
+
+        logger.info("Running the report")
+        # Run the jupyter notebook
+        render_ipynb(report,
+                     os.path.join(os.path.dirname(output_path), os.path.basename(report)),
+                     params=dict(modisco_path=output_path,
+                                 modisco_dir=os.path.dirname(output_path)))
+
+
+@named("modisco-run")
+@arg('contrib_file',
+     help='path to the hdf5 file containing contribution scores')
+@arg('output_dir',
+     help='output file directory')
+@arg('--null-contrib-file',
+     help='Path to the null contribution scores')
+@arg('--overwrite',
+     help='if True, the output directory will be overwritten')
+@arg('--premade',
+     help='pre-made config file specifying modisco hyper-paramters to use.')
+@arg('--config',
+     help='gin config file path(s) specifying the modisco workflow parameters.'
+     ' Parameters specified here override the --premade parameters. Multiple '
+     'config files can be separated by comma separation (i.e. --config=file1.gin,file2.gin)')
+@arg('--override',
+     help='semi-colon separated list of additional gin bindings to use')
+@arg("--contrib-wildcard",
+     help="Wildcard of the contribution scores to use for running modisco. For example, */profile/wn computes"
+     "uses the profile contribution scores for all the tasks (*) using the wn normalization (see bpnet.heads.py)."
+     "*/counts/pre-act uses the total count contribution scores for all tasks w.r.t. the pre-activation output "
+     "of prediction heads. Multiple wildcards can be by comma-separating them.")
+@arg('--only-task-regions',
+     help='If specified, only the contribution scores from regions corresponding to the tasks specified '
+     'in --contrib-wildcard will be used. For example, if dataspec.yml contained Oct4 and Sox2 peaks when '
+     'generating the contrib_file and `--contrib-wildcard=Oct4/profile/wn`, then modisco will be only ran '
+     'in the Oct4 peaks. If `--contrib-wildcard=Oct4/profile/wn,Sox2/profile/wn` or `--contrib-wildcard=*/profile/wn`, '
+     'then peaks of both Sox2 and Oct4 will be used.')
+@arg('--filter-npy',
+     help='File path to the .npz file containing a boolean one-dimensional numpy array of the same length'
+     'as the contrib_file. Modisco will be ran on a subset of regions in the contrib_file '
+     'where this array has value=True.')
+@arg('--exclude-chr',
+     help='Comma-separated list of chromosomes to exclude.')
+@arg('--num-workers',
+     help='number of workers to use in parallel for running modisco')
+@arg('--gpu',
+     help='which gpu to use. Example: gpu=1')
+@arg('--memfrac-gpu',
+     help='what fraction of the GPU memory to use')
+@arg('--overwrite',
+     help='If True, the output files will be overwritten if they already exist.')
+def bpnet_modisco_run(contrib_file,
+                      output_dir,
+                      null_contrib_file=None,
+                      premade='modisco-50k',
+                      config=None,
+                      override='',
+                      contrib_wildcard="*/profile/wn",  # on which contribution scores to run modisco
+                      only_task_regions=False,
+                      filter_npy=None,
+                      exclude_chr="",
+                      num_workers=10,
+                      gpu=None,  # no need to use a gpu by default
+                      memfrac_gpu=0.45,
+                      overwrite=False,
+                      ):
+    """Run TF-MoDISco on the contribution scores stored in the contribution score file
+    generated by `bpnet contrib`.
+    """
     add_file_logging(output_dir, logger, 'modisco-run')
-    import os
     if gpu is not None:
-        create_tf_session(gpu)
+        logger.info(f"Using gpu: {gpu}, memory fraction: {memfrac_gpu}")
+        create_tf_session(gpu, per_process_gpu_memory_fraction=memfrac_gpu)
     else:
         # Don't use any GPU's
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    os.environ['MKL_THREADING_LAYER'] = 'GNU'
-    # import theano
+        os.environ['MKL_THREADING_LAYER'] = 'GNU'
+
     import modisco
-    import modisco.tfmodisco_workflow.workflow
-
-    assert '/' in contrib_type
-
-    if subset_tasks == '':
-        logger.warn("subset_tasks == ''. Not using subset_tasks")
-        subset_tasks = None
-
-    if subset_tasks == 'all':
-        # Use all subset tasks e.g. don't subset
-        subset_tasks = None
-
-    if subset_tasks is not None:
-        subset_tasks = subset_tasks.split(",")
-        if len(subset_tasks) == 0:
-            raise ValueError("Provide one or more subset_tasks. Found None")
-
-    if filter_subset_tasks and subset_tasks is None:
-        print("Using filter_subset_tasks=False since `subset_tasks` is None")
-        filter_subset_tasks = False
-
-    if exclude_chr:
-        exclude_chr = exclude_chr.split(",")
-    else:
-        exclude_chr = []
-
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    output_path = output_dir / "modisco.h5"
-    remove_exists(output_path, overwrite)
-
-    output_distances = output_dir / "strand_distances.h5"
-    remove_exists(output_distances, overwrite)
+    assert '/' in contrib_wildcard
 
     if filter_npy is not None:
         filter_npy = os.path.abspath(filter_npy)
+    if config is not None:
+        config = os.path.abspath(config)
+
+    # setup output file paths
+    output_path = os.path.abspath(os.path.join(output_dir, "modisco.h5"))
+    remove_exists(output_path, overwrite=overwrite)
+    output_filter_npy = os.path.abspath(os.path.join(output_dir, 'modisco-run.subset-contrib-file.npy'))
+    remove_exists(output_filter_npy, overwrite=overwrite)
+    kwargs_json_file = os.path.join(output_dir, "modisco-run.kwargs.json")
+    remove_exists(kwargs_json_file, overwrite=overwrite)
+    if config is not None:
+        config_output_file = os.path.join(output_dir, 'modisco-run.input-config.gin')
+        remove_exists(config_output_file, overwrite=overwrite)
+        shutil.copyfile(config, config_output_file)
 
     # save the hyper-parameters
-    write_json(dict(contrib_scores=os.path.abspath(contrib_scores),
-                    contrib_type=contrib_type,
+    write_json(dict(contrib_file=os.path.abspath(contrib_file),
                     output_dir=str(output_dir),
-                    subset_tasks=subset_tasks,
-                    filter_subset_tasks=filter_subset_tasks,
-                    hparams=hparams,
-                    null_contrib_scores=null_contrib_scores,
-                    # TODO - pack into hyper-parameters as well?
-                    filter_npy=filter_npy,
-                    exclude_chr=",".join(exclude_chr),
-                    use_all_seqlets=use_all_seqlets,
-                    gpu=gpu),
-               os.path.join(output_dir, "kwargs.json"))
+                    null_contrib_file=null_contrib_file,
+                    config=str(config),
+                    override=override,
+                    contrib_wildcard=contrib_wildcard,
+                    only_task_regions=only_task_regions,
+                    filter_npy=str(filter_npy),
+                    exclude_chr=exclude_chr,
+                    num_workers=num_workers,
+                    overwrite=overwrite,
+                    output_filter_npy=output_filter_npy,
+                    gpu=gpu,
+                    memfrac_gpu=memfrac_gpu),
+               kwargs_json_file)
 
-    print("-" * 40)
-    # parse the hyper-parameters
-    if hparams is None:
-        print(f"Using default hyper-parameters")
-        hp = ModiscoHParams()
-    else:
-        if isinstance(hparams, str):
-            print(f"Loading hyper-parameters from file: {hparams}")
-            hp = ModiscoHParams.load(hparams)
+    # setup the gin config using premade, config and override
+    cli_bindings = [f'num_workers={num_workers}']
+    gin.parse_config_files_and_bindings(_get_gin_files(premade, config),
+                                        bindings=cli_bindings + override.split(";"),
+                                        # NOTE: custom files were inserted right after
+                                        # ther user's config file and before the `override`
+                                        # parameters specified at the command-line
+                                        skip_unknown=False)
+    log_gin_config(output_dir, prefix='modisco-run.')
+    # --------------------------------------------
+
+    # load the contribution file
+    logger.info(f"Loading the contribution file: {contrib_file}")
+    cf = ContribFile(contrib_file)
+    tasks = cf.get_tasks()
+
+    # figure out subset_tasks
+    subset_tasks = {}
+    for w in contrib_wildcard.split(","):
+        task, head, head_summary = w.split("/")
+        if task == '*':
+            subset_tasks = None
         else:
-            assert isinstance(hparams, ModiscoHParams)
-            hp = hparams
-    if override_hparams:
-        print(f"Overriding the following hyper-parameters: {override_hparams}")
-    hp = tf.contrib.training.HParams(**hp.get_modisco_kwargs()).parse(override_hparams)
-
-    if use_all_seqlets:
-        hp.max_seqlets_per_metacluster = None
-
-    # save the hyper-parameters
-    print("Using the following hyper-parameters for modisco:")
-    print("-" * 40)
-    related_dump_yaml(ModiscoHParams(**hp.values()),
-                      os.path.join(output_dir, "hparams.yaml"), verbose=True)
-    print("-" * 40)
-
-    # TODO - replace with contrib_scores
-    d = HDF5Reader.load(contrib_scores)
-    tasks = list(d['targets'])
-
+            if task not in tasks:
+                raise ValueError(f"task {task} not found in tasks: {tasks}")
+            subset_tasks.add(task)
     if subset_tasks is not None:
-        # validate that all the `subset_tasks`
-        # are present in `tasks`
-        for st in subset_tasks:
-            if st not in tasks:
-                raise ValueError(f"subset task {st} not found in tasks: {tasks}")
-        logger.info(f"Using the following tasks: {subset_tasks} instead of the original tasks: {tasks}")
-        tasks = subset_tasks
+        subset_tasks = list(subset_tasks)
 
-    if isinstance(d['inputs'], dict):
-        one_hot = d['inputs']['seq']
-    else:
-        one_hot = d['inputs']
+    # --------------------------------------------
+    # subset the intervals
+    logger.info(f"Loading ranges")
+    ranges = cf.get_ranges()
+    # include all samples at the beginning
+    include_samples = np.ones(len(cf)).astype(bool)
 
-    n = len(one_hot)
+    # --only-task-regions
+    if only_task_regions:
+        if subset_tasks is None:
+            logger.warn("contrib_wildcard contains all tasks (specified by */<head>/<summary>). Not using --only-task-regions")
+        elif np.all(ranges['interval_from_task'] == ''):
+            raise ValueError("Contribution file wasn't created from multiple set of peaks. "
+                             "E.g. interval_from_task='' for all ranges. Please disable --only-task-regions")
+        else:
+            logger.info(f"Subsetting ranges according to `interval_from_task`")
+            include_samples = include_samples & ranges['interval_from_task'].isin(subset_tasks).values
+            logger.info(f"Using {include_samples.sum()} / {len(include_samples)} regions after --only-task-regions subset")
 
-    # --------------------
-    # apply filters
-    dist_filter = np.ones((n, ), dtype=bool)
-
-    # add also the filter numpy
-    if filter_npy is not None:
-        print(f"Loading a filter file from {filter_npy}")
-        filter_vec = np.load(filter_npy)
-        dist_filter = dist_filter & filter_vec
-
-    if filter_subset_tasks:
-        assert subset_tasks is not None
-        interval_from_task = pd.Series(d['metadata']['interval_from_task'])
-        print(f"Subsetting the intervals accoring to subset_tasks: {subset_tasks}")
-        print(f"Number of original regions: {dist_filter.sum()}")
-        dist_filter = dist_filter & interval_from_task.isin(subset_tasks).values
-        print(f"Number of filtered regions after filter_subset_tasks: {dist_filter.sum()}")
-
-    # filter by chromosome
+    # --exclude-chr
     if exclude_chr:
         logger.info(f"Excluding chromosomes: {exclude_chr}")
-        chromosomes = d['metadata']['range']['chr']
-        dist_filter = dist_filter & (~pd.Series(chromosomes).isin(exclude_chr)).values
-    # -------------------------------------------------------------
-    # setup contribution scores
+        chromosomes = ranges['chr']
+        include_samples = include_samples & (~pd.Series(chromosomes).isin(exclude_chr)).values
+        logger.info(f"Using {include_samples.sum()} / {len(include_samples)} regions after --exclude-chr subset")
 
-    thr_one_hot = one_hot[dist_filter]
-    thr_hypothetical_contribs = {f"{task}/{gt}": d['hyp_contrib'][task][gt.split("/")[0]][gt.split("/")[1]][dist_filter]
-                                 for task in tasks
-                                 for gt in contrib_type.split(",")}
-    thr_contrib_scores = {f"{task}/{gt}": thr_hypothetical_contribs[f"{task}/{gt}"] * thr_one_hot
-                          for task in tasks
-                          for gt in contrib_type.split(",")}
-    task_names = [f"{task}/{gt}" for task in tasks for gt in contrib_type.split(",")]
+    # -- filter-npy
+    if filter_npy is not None:
+        print(f"Loading a filter file from {filter_npy}")
+        include_samples = include_samples & np.load(filter_npy)
+        logger.info(f"Using {include_samples.sum()} / {len(include_samples)} regions after --filter-npy subset")
 
-    if null_contrib_scores is not None:
-        logger.info(f"Using null_contrib_scores: {null_contrib_scores}")
-        null_isf = ContribFile(null_contrib_scores)
-        null_per_pos_scores = {f"{task}/{gt}": v.sum(axis=-1) for gt in contrib_type.split(",")
-                               for task, v in null_isf.get_contrib(contrib_score=gt).items() if task in tasks}
+    # store the subset-contrib-file.npy
+    logger.info(f"Saving the included samples from ContribFile to {output_filter_npy}")
+    np.save(output_filter_npy, include_samples)
+    # --------------------------------------------
+
+    # convert to indices
+    idx = np.arange(len(include_samples))[include_samples]
+    seqs = cf.get_seq(idx=idx)
+
+    # fetch the contribution scores from the importance score file
+    # expand * to use all possible values
+    # TODO - allow this to be done also for all the heads?
+    hyp_contrib = {}
+    task_names = []
+    for w in contrib_wildcard.split(","):
+        wc_task, head, head_summary = w.split("/")
+        if task == '*':
+            use_tasks = tasks
+        else:
+            use_tasks = [wc_task]
+        for task in use_tasks:
+            key = f"{task}/{head}/{head_summary}"
+            task_names.append(key)
+            hyp_contrib[key] = cf._subset(cf.data[f'/hyp_contrib/{key}'], idx=idx)
+    contrib = {k: v * seqs for k, v in hyp_contrib.items()}
+
+    if null_contrib_file is not None:
+        logger.info(f"Using null-contrib-file: {null_contrib_file}")
+        null_cf = ContribFile(null_contrib_file)
+        null_seqs = null_cf.get_seq()
+        null_per_pos_scores = {key: null_seqs * null_cf.data[f'/hyp_contrib/{key}'][:]
+                               for key in task_names}
     else:
         # default Null distribution. Requires modisco 5.0
         logger.info(f"Using default null_contrib_scores")
         null_per_pos_scores = modisco.coordproducers.LaplaceNullDist(num_to_samp=10000)
 
-    # -------------------------------------------------------------
-    # run modisco
-    tfmodisco_results = modisco.tfmodisco_workflow.workflow.TfModiscoWorkflow(
-        # Modisco defaults
-        sliding_window_size=hp.sliding_window_size,
-        flank_size=hp.flank_size,
-        target_seqlet_fdr=hp.target_seqlet_fdr,
-        min_passing_windows_frac=hp.min_passing_windows_frac,
-        max_passing_windows_frac=hp.max_passing_windows_frac,
-        min_metacluster_size=hp.min_metacluster_size,
-        max_seqlets_per_metacluster=hp.max_seqlets_per_metacluster,
-        seqlets_to_patterns_factory=modisco.tfmodisco_workflow.seqlets_to_patterns.TfModiscoSeqletsToPatternsFactory(
-            trim_to_window_size=hp.trim_to_window_size,   # default: 30
-            initial_flank_to_add=hp.initial_flank_to_add,  # default: 10
-            kmer_len=hp.kmer_len,  # default: 8
-            num_gaps=hp.num_gaps,  # default: 3
-            num_mismatches=hp.num_mismatches,  # default: 2
-            n_cores=num_workers,
-            final_min_cluster_size=hp.final_min_cluster_size)  # default: 30
-    )(
-        task_names=task_names,
-        contrib_scores=thr_contrib_scores,  # -> task score
-        hypothetical_contribs=thr_hypothetical_contribs,
-        one_hot=thr_one_hot,
-        null_per_pos_scores=null_per_pos_scores)
-    # -------------------------------------------------------------
-    # save the results
-    grp = h5py.File(output_path)
-    tfmodisco_results.save_hdf5(grp)
+    # run modisco.
+    # NOTE: `workflow` and `report` parameters are provided by gin config files
+    modisco_run(task_names=task_names,
+                output_path=output_path,
+                contrib_scores=contrib,
+                hypothetical_contribs=hyp_contrib,
+                one_hot=seqs,
+                null_per_pos_scores=null_per_pos_scores)
 
 
 def modisco_plot(modisco_dir,
@@ -439,34 +393,6 @@ def modisco_plot(modisco_dir,
 
     thr_hypothetical_contribs = OrderedDict(flatten(thr_hypothetical_contribs, separator='/'))
     thr_contrib_scores = OrderedDict(flatten(thr_contrib_scores, separator='/'))
-
-    #     # load contribution scores
-    #     modisco_kwargs = read_json(f"{modisco_dir}/kwargs.json")
-    #     d = HDF5Reader.load(modisco_kwargs['contrib_scores'])
-    #     if 'hyp_contrib' not in d:
-    #         # backcompatibility
-    #         d['hyp_contrib'] = d['grads']
-    #     tasks = list(d['targets']['profile'])
-
-    #     if isinstance(d['inputs'], dict):
-    #         one_hot = d['inputs']['seq']
-    #     else:
-    #         one_hot = d['inputs']
-
-    #     # load used strand distance filter
-
-    #     included_samples = load_included_samples(modisco_dir)
-
-    #     contrib_type = "count,weighted"  # always plot both contribution scores
-
-    #     thr_hypothetical_contribs = OrderedDict([(f"{gt}/{task}", mean(d['hyp_contrib'][task][gt])[included_samples])
-    #                                              for task in tasks
-    #                                              for gt in contrib_type.split(",")])
-    #     thr_one_hot = one_hot[included_samples]
-    #     thr_contrib_scores = OrderedDict([(f"{gt}/{task}", thr_hypothetical_contribs[f"{gt}/{task}"] * thr_one_hot)
-    #                                       for task in tasks
-    #                                       for gt in contrib_type.split(",")])
-    #     tracks = OrderedDict([(task, d['targets']['profile'][task][included_samples]) for task in tasks])
     # -------------------------------------------------
 
     all_seqlets = mr.seqlets()
@@ -517,54 +443,6 @@ def modisco_plot(modisco_dir,
     mr.close()
 
 
-def load_modisco_results(modisco_dir):
-    """Load modisco_result - return
-
-    Args:
-      modisco_dir: directory path `output_dir` in `bpnet.cli.modisco.modisco_run`
-        contains: modisco.h5, strand_distances.h5, kwargs.json
-
-    Returns:
-      TfModiscoResults object containing original track_set
-    """
-    import modisco
-    from modisco.tfmodisco_workflow import workflow
-    modisco_kwargs = read_json(f"{modisco_dir}/kwargs.json")
-    contrib_type = modisco_kwargs['contrib_type']
-
-    # load used strand distance filter
-    included_samples = HDF5Reader.load(f"{modisco_dir}/strand_distances.h5")['included_samples']
-
-    # load contribution scores
-    d = HDF5Reader.load(modisco_kwargs['contrib_scores'])
-    if 'hyp_contrib' not in d:
-        # backcompatibility
-        d['hyp_contrib'] = d['grads']
-
-    tasks = list(d['targets']['profile'])
-    if isinstance(d['inputs'], dict):
-        one_hot = d['inputs']['seq']
-    else:
-        one_hot = d['inputs']
-    thr_hypothetical_contribs = {f"{task}/{gt}": mean(d['hyp_contrib'][task][gt])[included_samples]
-                                 for task in tasks
-                                 for gt in contrib_type.split(",")}
-    thr_one_hot = one_hot[included_samples]
-    thr_contrib_scores = {f"{task}/{gt}": thr_hypothetical_contribs[f"{task}/{gt}"] * thr_one_hot
-                          for task in tasks
-                          for gt in contrib_type.split(",")}
-
-    track_set = modisco.tfmodisco_workflow.workflow.prep_track_set(
-        task_names=tasks,
-        contrib_scores=thr_contrib_scores,
-        hypothetical_contribs=thr_hypothetical_contribs,
-        one_hot=thr_one_hot)
-
-    with h5py.File(os.path.join(modisco_dir, "modisco.h5"), "r") as grp:
-        mr = workflow.TfModiscoResults.from_hdf5(grp, track_set=track_set)
-    return mr, tasks, contrib_type
-
-
 def modisco_centroid_seqlet_matches(modisco_dir, contrib_scores, output_dir,
                                     trim_frac=0.08, n_jobs=1,
                                     contribsf=None):
@@ -582,13 +460,13 @@ def modisco_centroid_seqlet_matches(modisco_dir, contrib_scores, output_dir,
     df.to_csv(os.path.join(output_dir, 'centroid_seqlet_matches.csv'))
 
 
-def modisco_score2(modisco_dir,
-                   output_file,
-                   trim_frac=0.08,
-                   contrib_scores=None,
-                   contribution=None,
-                   ignore_filter=False,
-                   n_jobs=20):
+def cwm_scan(modisco_dir,
+             output_file,
+             trim_frac=0.08,
+             contrib_scores=None,
+             contribution=None,
+             ignore_filter=False,
+             n_jobs=20):
     """Modisco score instances
 
     Args:
@@ -605,9 +483,10 @@ def modisco_score2(modisco_dir,
     """
     add_file_logging(os.path.dirname(output_file), logger, 'modisco-score2')
     modisco_dir = Path(modisco_dir)
-    modisco_kwargs = read_json(f"{modisco_dir}/kwargs.json")
+    modisco_kwargs = read_json(f"{modisco_dir}/modisco-run.kwargs.json")
     if contribution is None:
-        contribution = modisco_kwargs['contrib_type']
+        # HACK - fix that to match the bpnet_modisco_run command
+        contribution = modisco_kwargs['contrib_wildcard'].split(",")[0].split("/", maxsplit=1)[1]
 
     # Centroid matches
     cm_path = modisco_dir / 'centroid_seqlet_matches.csv'
@@ -630,6 +509,7 @@ def modisco_score2(modisco_dir,
 
     logger.info(f"Using tasks: {tasks}")
 
+    # TODO - use the same subsetting as before
     if contrib_scores is not None:
         logger.info(f"Loading the contribution scores from: {contrib_scores}")
         contrib = ContribFile(contrib_scores, default_contrib_score=contribution)
@@ -682,67 +562,6 @@ def modisco_cluster_patterns(modisco_dir, output_dir):
                  os.path.join(output_dir, "cluster-patterns.ipynb"),
                  params=dict(modisco_dir=str(modisco_dir),
                              output_dir=str(output_dir)))
-
-
-# TODO - reimplement or remove
-#         - just make it part of the main export function (?)
-# def modisco_instances_to_bed(modisco_h5, instances_parq, contrib_score_h5, output_dir, trim_frac=0.08):
-#     from bpnet.modisco.pattern_instances import load_instances
-
-#     add_file_logging(output_dir, logger, 'modisco-instances-to-bed')
-#     output_dir = Path(output_dir)
-#     output_dir.mkdir(parents=True, exist_ok=True)
-
-#     mr = ModiscoResult(modisco_h5)
-#     mr.open()
-
-#     print("load task_id")
-#     d = HDF5Reader(contrib_score_h5)
-#     d.open()
-#     if 'hyp_contrib' not in d.f.keys():
-#         # backcompatibility
-#         d['hyp_contrib'] = d['grads']
-
-#     id_hash = pd.DataFrame({"peak_id": d.f['/metadata/interval_from_task'][:],
-#                             "example_idx": np.arange(d.f['/metadata/interval_from_task'].shape[0])})
-
-#     # load the instances data frame
-#     print("load all instances")
-#     df = load_instances(instances_parq, motifs=None, dedup=True)
-#     # import pdb
-#     # pdb.set_trace()
-#     df = df.merge(id_hash, on="example_idx")  # append peak_id
-
-#     patterns = df.pattern.unique().tolist()
-#     pattern_pssms = {pattern: mr.get_pssm(*pattern.split("/"))
-#                      for pattern in patterns}
-#     # present in basepair.modisco.core.scan
-#     append_pattern_loc(df, pattern_pssms, trim_frac=trim_frac)
-
-#     # write out the results
-#     example_cols = ['example_chr', 'example_start', 'example_end', 'example_id', 'peak_id']
-#     df_examples = df[example_cols].drop_duplicates().sort_values(["example_chr", "example_start"])
-#     df_examples.to_csv(output_dir / "scored_regions.bed", sep='\t', header=False, index=False)
-
-#     df["pattern_start_rel"] = df.pattern_start + df.example_start
-#     df["pattern_end_rel"] = df.pattern_end + df.example_start
-#     df["strand"] = df.revcomp.astype(bool).map({True: "-", False: "+"})
-
-#     # TODO - update this - ?
-#     pattern_cols = ['example_chr', 'pattern_start_rel', 'pattern_end_rel',
-#                     'example_id', 'percnormed_score', 'strand', 'peak_id', 'seqlet_score']
-
-#     (output_dir / "README").write_text("score_regions.bed columns: " +
-#                                        ", ".join(example_cols) + "\n" +
-#                                        "metacluster_<>/pattern_<>.bed columns: " +
-#                                        ", ".join(pattern_cols))
-#     df_pattern = df[pattern_cols]
-#     for pattern in df.pattern.unique():
-#         out_path = output_dir / (pattern + ".bed.gz")
-#         out_path.parent.mkdir(parents=True, exist_ok=True)
-#         dfp = df_pattern[df.pattern == pattern].drop_duplicates().sort_values(["example_chr",
-#                                                                                "pattern_start_rel"])
-#         dfp.to_csv(out_path, compression='gzip', sep='\t', header=False, index=False)
 
 
 def modisco2bed(modisco_dir, output_dir, trim_frac=0.08):
@@ -912,13 +731,13 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     - modisco_report
     - modisco_table
     - modisco_centroid_seqlet_matches
-    - modisco_score2
+    - cwm_scan
     - modisco2bed
     - modisco_instances_to_bed
 
     Args:
       modisco_dir: directory path `output_dir` in `bpnet.cli.modisco.modisco_run`
-        contains: modisco.h5, strand_distances.h5, kwargs.json
+        contains: modisco.h5, strand_distances.h5, modisco-run.kwargs.json
       trim_frac: how much to trim the pattern
       n_jobs: number of parallel jobs to use
       force: if True, commands will be re-run regardless of whether whey have already
@@ -934,8 +753,8 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
 
     modisco_dir = Path(modisco_dir)
     # figure out the contribution scores used
-    kwargs = read_json(modisco_dir / "kwargs.json")
-    contrib_scores = kwargs["contrib_scores"]
+    kwargs = read_json(modisco_dir / "modisco-run.kwargs.json")
+    contrib_scores = kwargs["contrib_file"]
 
     mr = ModiscoResult(f"{modisco_dir}/modisco.h5")
     mr.open()
@@ -1010,13 +829,13 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
             cr.write()
 
         # TODO - this would not work with the per-TF contribution score file....
-        if not cr.set_cmd('modisco_score2').done():
-            modisco_score2(modisco_dir,
-                           modisco_dir / 'instances.parq',
-                           trim_frac=trim_frac,
-                           contrib_scores=None,  # Use the default one
-                           contribution=None,  # Use the default one
-                           n_jobs=n_jobs)
+        if not cr.set_cmd('cwm_scan').done():
+            cwm_scan(modisco_dir,
+                     modisco_dir / 'instances.parq',
+                     trim_frac=trim_frac,
+                     contrib_scores=None,  # Use the default one
+                     contribution=None,  # Use the default one
+                     n_jobs=n_jobs)
             cr.write()
     # TODO - update the pattern table -> compute the fraction of other motifs etc
     # --------------------------------------------

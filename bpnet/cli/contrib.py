@@ -291,10 +291,14 @@ class ContribFile:
             if include_samples.all():
                 # All are true, we can ignore that
                 include_samples = None
-        kwargs = read_json(os.path.join(modisco_dir, "kwargs.json"))
-        return cls(kwargs["contrib_scores"],
+        kwargs = read_json(os.path.join(modisco_dir, "modisco-run.kwargs.json"))
+
+        # use the first one as the default
+        contrib_type = kwargs['contrib_wildcard'].split(",")[0].split("/", maxsplit=1)[1]
+
+        return cls(kwargs["contrib_file"],
                    include_samples,
-                   default_contrib_score=kwargs['contrib_type'])
+                   default_contrib_score=contrib_type)
 
     def close(self):
         self.f.close()
@@ -325,12 +329,12 @@ class ContribFile:
                 return x[:][self.include_samples]
             else:
                 new_idx = np.arange(len(self.include_samples))[self.include_samples][idx]
-                return x[new_idx]
+                return x[new_idx, ...]
         else:
             if idx is None:
                 return x[:]
             else:
-                return x[idx]
+                return x[idx, ...]
 
     def _data_keys(self):
         if isinstance(self.data, dict):
@@ -408,11 +412,7 @@ class ContribFile:
         task = self.get_tasks()[0]
         return len(self._data_subkeys(f'/hyp_contrib/{task}/{contrib_score}')) > 0
 
-    def get_hyp_contrib(self, contrib_score=None, idx=None, pred_summary=None):
-        if pred_summary is not None:
-            warnings.warn("pred_summary is deprecated. Use `contrib_score`")
-            contrib_score = pred_summary
-
+    def get_hyp_contrib(self, contrib_score=None, idx=None):
         contrib_score = (contrib_score if contrib_score is not None
                          else self.default_contrib_score)
         if contrib_score in self._hyp_contrib_cache and idx is None:
@@ -429,11 +429,7 @@ class ContribFile:
                 self._hyp_contrib_cache[contrib_score] = out
             return out
 
-    def get_contrib(self, contrib_score=None, idx=None, pred_summary=None):
-        if pred_summary is not None:
-            warnings.warn("pred_summary is deprecated. Use `contrib_score`")
-            contrib_score = pred_summary
-
+    def get_contrib(self, contrib_score=None, idx=None):
         contrib_score = (contrib_score if contrib_score is not None
                          else self.default_contrib_score)
         seq = self.get_seq(idx=idx)
@@ -471,12 +467,9 @@ class ContribFile:
                 self.get_profiles(),
                 self.get_ranges())
 
-    def extract(self, seqlets, profile_width=None, contrib_score=None, verbose=False, pred_summary=None):
+    def extract(self, seqlets, profile_width=None, contrib_score=None, verbose=False):
         """Extract multiple seqlets
         """
-        if pred_summary is not None:
-            warnings.warn("pred_summary is deprecated. Use `contrib_score`")
-            contrib_score = pred_summary
         from bpnet.modisco.core import StackedSeqletContrib
 
         contrib_score = (contrib_score if contrib_score is not None
@@ -490,15 +483,11 @@ class ContribFile:
         ])
 
     # StackedSeqletContrib
-    def extract_dfi(self, dfi, profile_width=None, contrib_score=None, verbose=False, pred_summary=None):
+    def extract_dfi(self, dfi, profile_width=None, contrib_score=None, verbose=False):
         """Extract multiple seqlets
         """
         from bpnet.modisco.core import StackedSeqletContrib
         from bpnet.modisco.pattern_instances import dfi_row2seqlet, dfi_filter_valid
-        if pred_summary is not None:
-            warnings.warn("pred_summary is deprecated. Use `contrib_score`")
-            contrib_score = pred_summary
-
         if profile_width is not None:
             df_valid = dfi_filter_valid(dfi, profile_width=profile_width, seqlen=self.get_seqlen())
             if len(df_valid) != len(dfi):
