@@ -1,14 +1,14 @@
-fasta_file: dummy/dummy.fa
+fasta_file: tests/data/dummy/dummy.fa
 task_specs:
   Task1:
     tracks:
-      - dummy/dummy.pos.bw
-      - dummy/dummy.neg.bw
-    peaks: dummy/peaks.bed
+      - tests/data/dummy/dummy.pos.bw
+      - tests/data/dummy/dummy.neg.bw
+    peaks: tests/data/dummy/peaks.bed
 bias_specs:
   bias1:
     tracks:
-      - dummy/dummy.pos.bw
-      - dummy/dummy.neg.bw
+      - tests/data/dummy/dummy.pos.bw
+      - tests/data/dummy/dummy.neg.bw
     tasks:
       - Task1

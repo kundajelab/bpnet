@@ -151,6 +151,17 @@ class DataSpec(RelatedLoadSaveMixin):
         return {task: ts.load_counts(intervals, use_strand=use_strand, progbar=progbar)
                 for task, ts in self.bias_specs.items()}
 
+    def get_all_regions(self):
+        """Get all the regions
+        """
+        from pybedtools import BedTool
+        regions = []
+        for task, task_spec in self.task_specs.items():
+            if task_spec.peaks is not None:
+                regions += list(BedTool(task_spec.peaks))
+        return regions
+
+
 # --------------------------------------------
 # hparams
 @related.immutable(strict=True)

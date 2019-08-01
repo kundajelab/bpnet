@@ -114,3 +114,4 @@ venv.bak/
 examples/chip-nexus/output/*
 /tests/data/dummy/dummy.fa.fai
 /tests/data/output/*
+/tests/data/trained_model*

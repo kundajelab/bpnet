@@ -27,6 +27,7 @@ logger.addHandler(logging.NullHandler())
 
 
 # TODO - remove the fasta file
+# TODO  is it possible to get rid of this class entirely?
 
 
 class BPNetSeqModel:
@@ -42,13 +43,15 @@ class BPNetSeqModel:
     @classmethod
     def from_mdir(cls, model_dir):
         from bpnet.seqmodel import SeqModel
-        # TODO - figure out also the fasta_file if present (from dataspec)
-        # from bpnet.cli.schemas import DataSpec
-        # ds_path = os.path.join(model_dir, "dataspec.yaml")
-        # if os.path.exists(ds_path):
-        #     ds = DataSpec.load(ds_path)
-        #     fasta_file = ds.fasta_file
-        return cls(SeqModel.from_mdir(model_dir))
+        # figure out also the fasta_file if present (from dataspec)
+        from bpnet.cli.schemas import DataSpec
+        ds_path = os.path.join(model_dir, "dataspec.yml")
+        if os.path.exists(ds_path):
+            ds = DataSpec.load(ds_path)
+            fasta_file = ds.fasta_file
+        else:
+            fasta_file = None
+        return cls(SeqModel.from_mdir(model_dir), fasta_file=fasta_file)
 
     def input_seqlen(self):
         return self.seqmodel.seqlen
@@ -69,7 +72,7 @@ class BPNetSeqModel:
                 for task in self.seqmodel.tasks}
 
     def contrib_score_all(self, seq, method='deeplift', aggregate_strand=True, batch_size=512,
-                          pred_summaries=['weighted', 'count']):
+                          pred_summaries=['profile/wn', 'counts/pre-act']):
         """Compute all contribution scores
 
         Args:
@@ -88,9 +91,10 @@ class BPNetSeqModel:
 
         return {f"{task}/" + self._get_old_contrib_score_name(pred_summary): contrib_scores[f"{task}/{pred_summary}"]
                 for task in self.seqmodel.tasks
-                for pred_summary in ['profile/wn', 'counts/pre-act']}
+                for pred_summary in pred_summaries}
 
     def _get_old_contrib_score_name(self, s):
+        # TODO - get rid of the old nomenclature
         s2s = {"profile/wn": 'weighted', 'counts/pre-act': 'count'}
         return s2s[s]
 
@@ -125,26 +129,26 @@ class BPNetSeqModel:
             out = {"profile": scaled_preds}
         return average_profiles(flatten(out, "/"))
 
-    def get_seq(self, intervals, variants=None, use_strand=False):
+    def get_seq(self, regions, variants=None, use_strand=False):
         """Get the one-hot-encoded sequence used to make model predictions and
         optionally augment it with the variants
         """
         if variants is not None:
             if use_strand:
                 raise NotImplementedError("use_strand=True not implemented for variants")
-            # Augment the intervals using a variant
+            # Augment the regions using a variant
             if not isinstance(variants, list):
-                variants = [variants] * len(intervals)
+                variants = [variants] * len(regions)
             else:
-                assert len(variants) == len(intervals)
+                assert len(variants) == len(regions)
             seq = np.stack([extract_seq(interval, variant, self.fasta_file, one_hot=True)
-                            for variant, interval in zip(variants, intervals)])
+                            for variant, interval in zip(variants, regions)])
         else:
-            variants = [None] * len(intervals)
-            seq = FastaExtractor(self.fasta_file, use_strand=use_strand)(intervals)
+            variants = [None] * len(regions)
+            seq = FastaExtractor(self.fasta_file, use_strand=use_strand)(regions)
         return seq
 
-    def predict_all(self, seq, contrib_method='grad', batch_size=512, pred_summaries=['weighted', 'count']):
+    def predict_all(self, seq, contrib_method='grad', batch_size=512, pred_summaries=['profile/wn', 'counts/pre-act']):
         """Make model prediction based
         """
         preds = self.predict(seq, batch_size=batch_size)
@@ -157,63 +161,63 @@ class BPNetSeqModel:
 
         out = [dict(
             seq=get_dataset_item(seq, i),
-            # interval=intervals[i],
+            # interval=regions[i],
             pred=get_dataset_item(preds, i),
             # TODO - shall we call it hyp_contrib score or contrib_score?
             contrib_score=get_dataset_item(contrib_scores, i),
         ) for i in range(len(seq))]
         return out
 
-    def predict_intervals(self, intervals,
-                          variants=None,
-                          contrib_method='grad',
-                          use_strand=False,
-                          batch_size=512):
+    def predict_regions(self, regions,
+                        variants=None,
+                        contrib_method='grad',
+                        pred_summaries=['profile/wn', 'counts/pre-act'],
+                        use_strand=False,
+                        batch_size=512):
         """
         Args:
-          intervals: list of pybedtools.Interval
+          regions: list of pybedtools.Interval
           variant: a single instance or a list bpnet.extractors.Variant
           pred_summary: 'mean' or 'max', summary function name for the profile gradients
           compute_grads: if False, skip computing gradients
         """
-        # TODO - support also other contribution scores
-        seq = self.get_seq(intervals, variants, use_strand=use_strand)
+        seq = self.get_seq(regions, variants, use_strand=use_strand)
 
-        preds = self.predict_all(seq, contrib_method, batch_size)
+        preds = self.predict_all(seq, contrib_method, batch_size, pred_summaries=pred_summaries)
 
-        # append intervals
+        # append regions
         for i in range(len(seq)):
-            preds[i]['interval'] = intervals[i]
+            preds[i]['interval'] = regions[i]
             if variants is not None:
                 preds[i]['variant'] = variants[i]
         return preds
 
-    def plot_intervals(self, intervals, ds=None, variants=None,
-                       seqlets=[],
-                       pred_summary='weighted',
-                       contrib_method='grad',
-                       batch_size=128,
-                       # ylim=None,
-                       xlim=None,
-                       # seq_height=1,
-                       rotate_y=0,
-                       add_title=True,
-                       fig_height_per_track=2,
-                       same_ylim=False,
-                       fig_width=20):
+    def plot_regions(self, regions, ds=None, variants=None,
+                     seqlets=[],
+                     pred_summary='profile/wn',
+                     contrib_method='grad',
+                     batch_size=128,
+                     # ylim=None,
+                     xlim=None,
+                     # seq_height=1,
+                     rotate_y=0,
+                     add_title=True,
+                     fig_height_per_track=2,
+                     same_ylim=False,
+                     fig_width=20):
         """Plot predictions
 
         Args:
-          intervals: list of pybedtools.Interval
+          regions: list of pybedtools.Interval
           variant: a single instance or a list of bpnet.extractors.Variant
           ds: DataSpec. If provided, the ground truth will be added to the plot
           pred_summary: 'mean' or 'max', summary function name for the profile gradients
         """
-        out = self.predict_intervals(intervals,
-                                     variants=variants,
-                                     contrib_method=contrib_method,
-                                     # pred_summary=pred_summary,
-                                     batch_size=batch_size)
+        out = self.predict_regions(regions,
+                                   variants=variants,
+                                   contrib_method=contrib_method,
+                                   # pred_summary=pred_summary,
+                                   batch_size=batch_size)
         figs = []
         if xlim is None:
             xmin = 0
@@ -282,19 +286,18 @@ class BPNetSeqModel:
             figs.append(fig)
         return figs
 
-    # TODO also allow contrib_scores
     def export_bw(self,
-                  intervals,
+                  regions,
                   output_dir,
-                  # pred_summary='weighted',
                   contrib_method='grad',
+                  pred_summaries=['profile/wn', 'counts/pre-act'],
                   batch_size=512,
                   scale_contribution=False,
                   chromosomes=None):
         """Export predictions and model contributions to big-wig files
 
         Args:
-          intervals: list of genomic intervals
+          regions: list of genomic regions
           output_dir: output directory
 
           batch_size:
@@ -303,9 +306,10 @@ class BPNetSeqModel:
         """
         #          pred_summary: which operation to use for the profile gradients
         logger.info("Get model predictions and contribution scores")
-        out = self.predict_intervals(intervals,
-                                     contrib_method=contrib_method,
-                                     batch_size=batch_size)
+        out = self.predict_regions(regions,
+                                   contrib_method=contrib_method,
+                                   pred_summaries=pred_summaries,
+                                   batch_size=batch_size)
 
         logger.info("Setup bigWigs for writing")
         # Get the genome lengths
@@ -316,10 +320,10 @@ class BPNetSeqModel:
             genome = OrderedDict([(c, l) for c, l in zip(fa.references, fa.lengths) if c in chromosomes])
         fa.close()
 
-        output_feats = ['preds.pos', 'preds.neg', 'contribution.profile', 'contribution.counts']
+        output_feats = ['preds.pos', 'preds.neg', 'contrib.profile', 'contrib.counts']
 
-        # make sure the intervals are in the right order
-        first_chr = list(np.unique(np.array([interval.chrom for interval in intervals])))
+        # make sure the regions are in the right order
+        first_chr = list(np.unique(np.array([interval.chrom for interval in regions])))
         last_chr = [c for c, l in genome.items() if c not in first_chr]
         genome = [(c, genome[c]) for c in first_chr + last_chr]
 
@@ -399,10 +403,10 @@ class BPNetSeqModel:
                     si_counts = 1
 
                 # profile - multipl
-                add_entry(bws[task]['contribution.profile'],
+                add_entry(bws[task]['contrib.profile'],
                           hyp_contrib[f'{task}/weighted'][seq.astype(bool)] * si_profile,
                           interval, start_idx)
-                add_entry(bws[task]['contribution.counts'],
+                add_entry(bws[task]['contrib.counts'],
                           hyp_contrib[f'{task}/count'][seq.astype(bool)] * si_counts,
                           interval, start_idx)
 

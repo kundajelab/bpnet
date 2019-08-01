@@ -206,7 +206,7 @@ def dfint_no_intersection(dfa, dfb):
         with the following entries: chr, start and end
 
     Returns:
-      dfa with 
+      dfa with
     """
     from pybedtools import BedTool
     assert len(dfa.columns) == 3

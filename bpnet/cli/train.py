@@ -296,10 +296,7 @@ def dataspec_stats(dataspec,
     if regions is not None:
         regions = list(BedTool(regions))
     else:
-        regions = []
-        for task, task_spec in ds.task_specs.items():
-            if task_spec.peaks is not None:
-                regions += list(BedTool(task_spec.peaks))
+        regions = ds.get_all_regions()
 
     if sample is not None and sample < len(regions):
         logger.info(f"Using {sample} randomly sampled regions instead of {len(regions)}")

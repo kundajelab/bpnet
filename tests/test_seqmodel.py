@@ -52,8 +52,8 @@ def test_interpret_wo_bias():
 
     # Let's use regression
     targets = {"a/class": np.random.randint(low=0, high=2, size=(100, 1)).astype(float),
-               "a/counts": np.random.randn(100),
-               "a/profile": np.random.randn(100, 5, 2),
+               "a/counts": 1 + np.ceil(np.abs(np.random.randn(100))),
+               "a/profile": 1 + np.ceil(np.abs(np.random.randn(100, 5, 2))),
                }
 
     import keras.backend as K
@@ -71,7 +71,8 @@ def test_interpret_wo_bias():
                           use_bias=False),
                ProfileHead('{task}/profile',
                            loss='mse',
-                           metric=PeakPredictionProfileMetric(),
+                           metric=PeakPredictionProfileMetric(neg_max_threshold=0.05,
+                                                              required_min_pos_counts=0),
                            net=TopConv(n_output=2),
                            use_bias=True,
                            bias_shape=(5, 2)),  # NOTE: the shape currently has to be hard-coded to the sequence length

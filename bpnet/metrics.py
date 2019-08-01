@@ -126,7 +126,7 @@ def eval_profile(yt, yp,
                         np.ravel(bin_counts_max(yp[do_eval], binsize)))
             res_random = auprc(y_true,
                                np.ravel(bin_counts_max(yp_random, binsize)))
-        except ValueError:
+        except Exception:
             res = np.nan
             res_random = np.nan
 

@@ -3,6 +3,7 @@ import os
 import pickle
 import json
 import subprocess
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import papermill as pm  # Render the ipython notebook
@@ -96,7 +97,9 @@ def read_json(fname):
 class NumpyAwareJSONEncoder(json.JSONEncoder):
 
     def default(self, obj):
-        if isinstance(obj, np.ndarray):
+        if isinstance(obj, Path):
+            return str(obj)
+        elif isinstance(obj, np.ndarray):
             return obj.tolist()
         elif isinstance(obj, np.generic):
             return obj.item()

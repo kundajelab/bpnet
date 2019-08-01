@@ -36,6 +36,9 @@ logger.addHandler(logging.NullHandler())
 # load functions for the modisco directory
 
 
+# TODO - shall we remove included_samples overall?
+
+
 def load_included_samples(modisco_dir):
     modisco_dir = Path(modisco_dir)
 
@@ -96,35 +99,72 @@ def get_nonredundant_example_idx(ranges, width=200):
     return keep_idx
 
 
-def load_profiles(modisco_dir, contrib_scores):
-    """Load profiles from a modisco dir
-    """
-    modisco_dir = Path(modisco_dir)
-    include_samples = load_included_samples(modisco_dir)
-    f = ContribFile(contrib_scores, include_samples)
-    profiles = f.get_profiles()
-    f.close()
-    return profiles
-
 # --------------------------------------------
+
+
+# def modisco_run2(contrib_file,
+#                  output_dir,
+#                  null_contrib_file=None,
+#                  config=None,
+#                  override='',
+#                  contrib_wildcard="*/profile/wn",  # on which contribution scores to run modisco
+#                  only_task_regions=False,
+#                  filter_npy=None,
+#                  exclude_chr="",
+#                  num_workers=10,
+#                  overwrite=False,
+#                  gpu=None,  # no need to use a gpu by default
+#                  memfrac_gpu=0.45,
+#                  ):
+#     add_file_logging(output_dir, logger, 'modisco-run')
+#     if gpu is not None:
+#         logger.info(f"Using gpu: {gpu}, memory fraction: {memfrac_gpu}")
+#         create_tf_session(gpu, per_process_gpu_memory_fraction=memfrac_gpu)
+#     else:
+#         # Don't use any GPU's
+#         os.environ['CUDA_VISIBLE_DEVICES'] = ''
+#         os.environ['MKL_THREADING_LAYER'] = 'GNU'
+
+#     import modisco
+#     import modisco.tfmodisco_workflow.workflow
+
+#     assert '/' in contrib_wildcard
+
+#     # figure out subset_tasks
+#     subset_tasks = {}
+#     for w in contrib_wildcard.split(","):
+#         task, head, head_summary = w.split("/")
+#         if task == '*':
+#             subset_tasks = None
+#             break
+#         else:
+#             subset_tasks.add(task)
+#     subset_tasks = list(subset_tasks)
+
+#     if subset_tasks is not None:
+#         # validate that all the `subset_tasks`
+#         # are present in `tasks`
+#         for st in subset_tasks:
+#             if st not in tasks:
+#                 raise ValueError(f"subset task {st} not found in tasks: {tasks}")
+#         logger.info(f"Using the following tasks: {subset_tasks} instead of the original tasks: {tasks}")
+#         tasks = subset_tasks
+#     only_task_regions  # TODO - automatically subset the matrix of the contrib file to the relevant task
+#     pass
 
 
 def modisco_run(contrib_scores,
                 output_dir,
                 null_contrib_scores=None,
                 hparams=None,
-                override_hparams="",
-                contrib_type="weighted",
+                override_hparams="",  # TODO - switch to gin-train. Use the same strategy as for training the model
+                contrib_type="weighted",  # TODO - rename
                 subset_tasks=None,
                 filter_subset_tasks=False,
                 filter_npy=None,
                 exclude_chr="",
-                seqmodel=False,  # interpretation glob
-                # hparams=None,
                 num_workers=10,
-                max_strand_distance=0.1,
                 overwrite=False,
-                skip_dist_filter=False,
                 use_all_seqlets=False,
                 merge_tasks=False,
                 gpu=None,
@@ -142,12 +182,10 @@ def modisco_run(contrib_scores,
       output_dir: output file directory
       filter_npy: path to a npy file containing a boolean vector used for subsetting
       exclude_chr: comma-separated list of chromosomes to exclude
-      seqmodel: If enabled, then the contribution scores came from `contrib-score-seqmodel`
       subset_tasks: comma-separated list of task names to use as a subset
       filter_subset_tasks: if True, run modisco only in the regions for that TF
       hparams: hyper - parameter file
       summary: which summary statistic to use for the profile gradients
-      skip_dist_filter: if True, distances are not used to filter
       use_all_seqlets: if True, don't restrict the number of seqlets
       split: On which data split to compute the results
       merge_task: if True, contribution scores for the tasks will be merged
@@ -170,8 +208,7 @@ def modisco_run(contrib_scores,
     import modisco
     import modisco.tfmodisco_workflow.workflow
 
-    if seqmodel:
-        assert '/' in contrib_type
+    assert '/' in contrib_type
 
     if subset_tasks == '':
         logger.warn("subset_tasks == ''. Not using subset_tasks")
@@ -218,9 +255,7 @@ def modisco_run(contrib_scores,
                     # TODO - pack into hyper-parameters as well?
                     filter_npy=filter_npy,
                     exclude_chr=",".join(exclude_chr),
-                    skip_dist_filter=skip_dist_filter,
                     use_all_seqlets=use_all_seqlets,
-                    max_strand_distance=max_strand_distance,
                     gpu=gpu),
                os.path.join(output_dir, "kwargs.json"))
 
@@ -252,14 +287,7 @@ def modisco_run(contrib_scores,
 
     # TODO - replace with contrib_scores
     d = HDF5Reader.load(contrib_scores)
-    if 'hyp_contrib' not in d:
-        # backcompatibility
-        d['hyp_contrib'] = d['grads']
-
-    if seqmodel:
-        tasks = list(d['targets'])
-    else:
-        tasks = list(d['targets']['profile'])
+    tasks = list(d['targets'])
 
     if subset_tasks is not None:
         # validate that all the `subset_tasks`
@@ -279,23 +307,7 @@ def modisco_run(contrib_scores,
 
     # --------------------
     # apply filters
-    if not skip_dist_filter:
-        print("Using profile prediction for the strand filtering")
-        contrib_type_filtered = 'weighted'
-        distances = np.array([np.array([correlation(np.ravel(d['hyp_contrib'][task][contrib_type_filtered][0][i]),
-                                                    np.ravel(d['hyp_contrib'][task][contrib_type_filtered][1][i]))
-                                        for i in range(n)])
-                              for task in tasks
-                              if len(d['hyp_contrib'][task][contrib_type_filtered]) == 2]).T.mean(axis=-1)  # average the distances across tasks
-
-        dist_filter = distances < max_strand_distance
-        print(f"Fraction of sequences kept: {dist_filter.mean()}")
-
-        HDF5BatchWriter.dump(output_distances,
-                             {"distances": distances,
-                              "included_samples": dist_filter})
-    else:
-        dist_filter = np.ones((n, ), dtype=bool)
+    dist_filter = np.ones((n, ), dtype=bool)
 
     # add also the filter numpy
     if filter_npy is not None:
@@ -319,36 +331,14 @@ def modisco_run(contrib_scores,
     # -------------------------------------------------------------
     # setup contribution scores
 
-    if seqmodel:
-        thr_one_hot = one_hot[dist_filter]
-        thr_hypothetical_contribs = {f"{task}/{gt}": d['hyp_contrib'][task][gt.split("/")[0]][gt.split("/")[1]][dist_filter]
-                                     for task in tasks
-                                     for gt in contrib_type.split(",")}
-        thr_contrib_scores = {f"{task}/{gt}": thr_hypothetical_contribs[f"{task}/{gt}"] * thr_one_hot
-                              for task in tasks
-                              for gt in contrib_type.split(",")}
-        task_names = [f"{task}/{gt}" for task in tasks for gt in contrib_type.split(",")]
-
-    else:
-        if merge_tasks:
-            thr_one_hot = np.concatenate([one_hot[dist_filter]
-                                          for task in tasks
-                                          for gt in contrib_type.split(",")])
-            thr_hypothetical_contribs = {"merged": np.concatenate([mean(d['hyp_contrib'][task][gt])[dist_filter]
-                                                                   for task in tasks
-                                                                   for gt in contrib_type.split(",")])}
-
-            thr_contrib_scores = {"merged": thr_hypothetical_contribs['merged'] * thr_one_hot}
-            task_names = ['merged']
-        else:
-            thr_one_hot = one_hot[dist_filter]
-            thr_hypothetical_contribs = {f"{task}/{gt}": mean(d['hyp_contrib'][task][gt])[dist_filter]
-                                         for task in tasks
-                                         for gt in contrib_type.split(",")}
-            thr_contrib_scores = {f"{task}/{gt}": thr_hypothetical_contribs[f"{task}/{gt}"] * thr_one_hot
-                                  for task in tasks
-                                  for gt in contrib_type.split(",")}
-            task_names = [f"{task}/{gt}" for task in tasks for gt in contrib_type.split(",")]
+    thr_one_hot = one_hot[dist_filter]
+    thr_hypothetical_contribs = {f"{task}/{gt}": d['hyp_contrib'][task][gt.split("/")[0]][gt.split("/")[1]][dist_filter]
+                                 for task in tasks
+                                 for gt in contrib_type.split(",")}
+    thr_contrib_scores = {f"{task}/{gt}": thr_hypothetical_contribs[f"{task}/{gt}"] * thr_one_hot
+                          for task in tasks
+                          for gt in contrib_type.split(",")}
+    task_names = [f"{task}/{gt}" for task in tasks for gt in contrib_type.split(",")]
 
     if null_contrib_scores is not None:
         logger.info(f"Using null_contrib_scores: {null_contrib_scores}")
