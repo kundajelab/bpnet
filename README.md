@@ -1,8 +1,3 @@
-## TODO
-
-- [ ] try to get rid of pybedtools entirely
-  - [ ] replace with pyranges
-
 # Quick start
 
 ## Train BPNet
@@ -21,8 +16,16 @@ bpnet train --premade=bpnet9 dataspec.yml --override='seq_width=200;n_dil_layers
 
 ## Compute contribution scores
 
+```bash
+bpnet contrib $model_dir --method=deeplift $model_dir/imp.scores.h5
+```
 
 
+## Run TF-MoDISco
+
+```bash
+bpnet modisco-run $model_dir/imp.scores.h5 --premade=modisco-50k modisco_dir
+```
 
 ## Dependencies
 
@@ -78,3 +81,10 @@ gin_train
 
 pybedtools -> replace with pyranges
 pysam  # replace to pyfaidx?
+
+
+## TODO
+
+- [ ] try to get rid of pybedtools entirely
+  - [ ] replace with pyranges
+
