@@ -10,24 +10,15 @@ import os
 from collections import OrderedDict
 from tqdm import tqdm
 from pathlib import Path
-from bpnet.utils import write_pkl, related_dump_yaml, render_ipynb, remove_exists, add_file_logging, create_tf_session
-from bpnet.cli.schemas import DataSpec, ModiscoHParams
+from bpnet.utils import write_pkl, render_ipynb, remove_exists, add_file_logging, create_tf_session
 from bpnet.cli.contrib import ContribFile
 from bpnet.cli.train import _get_gin_files, log_gin_config
 # ContribFile
 from bpnet.modisco.results import ModiscoResult
-from bpnet.functions import mean
-from kipoi_utils.utils import unique_list
-from scipy.spatial.distance import correlation
 from concise.utils.helper import write_json, read_json
-from bpnet.data import numpy_minibatch
-from kipoi.writers import HDF5BatchWriter
-from kipoi.readers import HDF5Reader
 import gin
 import h5py
 import numpy as np
-import keras.backend as K
-import tensorflow as tf
 import inspect
 filename = inspect.getframeinfo(inspect.currentframe()).filename
 this_path = os.path.dirname(os.path.abspath(filename))
@@ -640,7 +631,6 @@ def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, contrib
     """
     from bpnet.utils import read_pkl, write_pkl
     from bpnet.cli.contrib import ContribFile
-    from bpnet.modisco.core import StackedSeqletContrib
 
     logger.info("Loading patterns")
     modisco_dir = Path(modisco_dir)
@@ -687,9 +677,7 @@ def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
       modisco_dir: modisco directory containing
       output_file: output file path for patterns.pkl
     """
-    from bpnet.utils import read_pkl, write_pkl
     from bpnet.cli.contrib import ContribFile
-    from bpnet.modisco.core import StackedSeqletContrib
 
     logger.info("Loading patterns")
     modisco_dir = Path(modisco_dir)

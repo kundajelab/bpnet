@@ -46,3 +46,4 @@ def report_template(name, raise_error=True):
 
 # alias
 eval_report_template = report_template
+

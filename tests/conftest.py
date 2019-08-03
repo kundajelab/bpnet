@@ -50,6 +50,10 @@ def dataspec_bias(data_dir):
 def config_gin(data_dir):
     return data_dir / 'config.gin'
 
+@fixture(scope='session')
+def modisco_config_gin(data_dir):
+    return data_dir / 'modisco-config.gin'
+
 
 @fixture(scope="session")
 def trained_model(data_dir, dataspec_task1, config_gin):
@@ -88,5 +92,18 @@ def contrib_score_grad(trained_model):
     bpnet_contrib(str(trained_model),
                   str(fpath),
                   method='grad',
+                  overwrite=True)
+    return fpath
+
+
+@fixture(scope='session')
+def contrib_score_grad_null(trained_model):
+    K.clear_session()
+    fpath = trained_model / 'imp-score.grad.null.fixture.h5'
+    bpnet_contrib(str(trained_model),
+                  str(fpath),
+                  method='grad',
+                  shuffle_seq=True,
+                  max_regions=16,
                   overwrite=True)
     return fpath

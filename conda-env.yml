@@ -28,13 +28,13 @@ dependencies:
   - urllib3==1.24.1
   - kipoi>=0.6.8
   - kipoiseq>=0.2.2
-  - concise==0.6.6
+  - concise==0.6.8
   - modisco==0.5.1.1
   - gin-train
   - git+https://github.com/kundajelab/DeepExplain.git
 
   # ML & numerics
-  - tensorflow==1.7  # tensorflow-gpu==1.7 for gpu
+  - tensorflow>=1.7  # tensorflow-gpu==1.7 for gpu
   - keras==2.2.4
   - scikit-learn
   - joblib==0.12.5
@@ -51,6 +51,7 @@ dependencies:
   - tqdm
   - ipykernel
   - ipython
+  - pytest
 
   # rendering notebooks
   - papermill
