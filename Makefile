@@ -48,8 +48,9 @@ test-all: ## run tests on every Python version with tox
 	tox
 
 release: clean ## package and upload a release
-	python setup.py sdist upload
-	python setup.py bdist_wheel upload
+	python setup.py sdist
+	twine upload dist/*
+
 
 dist: clean ## builds source and wheel package
 	python setup.py sdist

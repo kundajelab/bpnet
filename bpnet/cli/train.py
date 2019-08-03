@@ -8,7 +8,6 @@ import yaml
 import shutil
 from argh.decorators import named, arg
 from uuid import uuid4
-from fs.osfs import OSFS
 import numpy as np
 from tqdm import tqdm
 import keras.backend as K
