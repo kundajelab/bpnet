@@ -235,7 +235,7 @@ def bpnet_modisco_run(contrib_file,
     tasks = cf.get_tasks()
 
     # figure out subset_tasks
-    subset_tasks = {}
+    subset_tasks = set()
     for w in contrib_wildcard.split(","):
         task, head, head_summary = w.split("/")
         if task == '*':
