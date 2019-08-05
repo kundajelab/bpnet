@@ -1,6 +1,7 @@
 """Train models using gin configuration
 """
 import gin
+import gc
 import json
 import sys
 import os
@@ -444,6 +445,10 @@ def train(output_dir,
         logger.info("Running the evaluation report")
         # Release the GPU
         K.clear_session()
+
+        # remove memory
+        del tr, train_dataset, valid_dataset, data
+        gc.collect()
 
         if num_workers_orig != num_workers:
             # recover the original number of workers
