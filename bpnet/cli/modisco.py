@@ -108,7 +108,7 @@ def modisco_run(output_path,  # specified by bpnet_modisco_run
         # Run the jupyter notebook
         render_ipynb(report,
                      os.path.join(os.path.dirname(output_path), os.path.basename(report)),
-                     params=dict(modisco_path=output_path,
+                     params=dict(modisco_file=output_path,
                                  modisco_dir=os.path.dirname(output_path)))
 
 
