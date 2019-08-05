@@ -37,7 +37,7 @@ requirements = [
     # "pyranges",
 
     "joblib",
-    "cloudpickle",  # - remove?
+    "cloudpickle>=1.0.0",  # - remove?
     "kipoi",
     "kipoi-utils>=0.3.0",
     "kipoiseq",

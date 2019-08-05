@@ -252,6 +252,14 @@ def get_list_value(lv, i):
         return lv
 
 
+def to_neg(track):
+    """Use the negative sign for reads on the reverse strand
+    """
+    track = track.copy()
+    track[:, 1] = - track[:, 1]
+    return track
+
+
 def plot_tracks(tracks, seqlets=[],
                 title=None,
                 rotate_y=90,

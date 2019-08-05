@@ -139,6 +139,10 @@ class ModiscoResult:
                 patterns = []
             return [x.decode("utf8") for x in patterns]
 
+    def get_all_patterns(self):
+        return [self.get_pattern(pn)
+                for pn in self.patterns()]
+
     def get_pattern(self, pattern):
         """Get the pattern name
         """

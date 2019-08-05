@@ -79,19 +79,23 @@ def start_experiment(output_dir,
             logger.warn("wandb not installed. Not using it")
             wandb_run = None
         else:
+            logger.info("Using wandb. Running wandb.init()")
             wandb._set_stage_dir("./")  # Don't prepend wandb to output file
             if run_id is not None:
                 wandb.init(project=project,
                            dir=output_dir,
                            entity=entity,
+                           reinit=True,
                            resume=run_id)
             else:
                 # automatically set the output
                 wandb.init(project=project,
                            entity=entity,
+                           reinit=True,
                            dir=output_dir)
             wandb_run = wandb.run
-            logger.info("Using wandb")
+            if wandb_run is None:
+                logger.warn("Wandb run is None")
             print(wandb_run)
     else:
         wandb_run = None
