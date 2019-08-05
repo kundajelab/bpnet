@@ -97,6 +97,8 @@ def modisco_run(output_path,  # specified by bpnet_modisco_run
     logger.info(f"Saving modisco file to {output_path}")
     grp = h5py.File(output_path)
     modisco_results.save_hdf5(grp)
+    grp.flush()
+    grp.close()
 
     if report is not None:
         if report is not None:
