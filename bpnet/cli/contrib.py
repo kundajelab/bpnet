@@ -249,6 +249,7 @@ def bpnet_contrib(model_dir,
 
         writer.batch_write(batch)
     writer.close()
+    logger.info(f"Done. Contribution score file was saved to: {output_file}")
 
 
 class ContribFile:

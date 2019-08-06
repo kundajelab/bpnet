@@ -469,6 +469,8 @@ def train(output_dir,
         logger.info("Uploading files to comet.ml")
         cometml_experiment.log_asset_folder(folder=output_dir)
 
+    logger.info(f"Done training and evaluating the model. Model and metrics can be found in: {output_dir}")
+
     return final_metrics
 
 

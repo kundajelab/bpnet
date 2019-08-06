@@ -108,10 +108,12 @@ def modisco_run(output_path,  # specified by bpnet_modisco_run
 
         logger.info("Running the report")
         # Run the jupyter notebook
+        report_path = os.path.join(os.path.dirname(output_path), os.path.basename(report))
         render_ipynb(report,
-                     os.path.join(os.path.dirname(output_path), os.path.basename(report)),
+                     report_path,
                      params=dict(modisco_file=output_path,
                                  modisco_dir=os.path.dirname(output_path)))
+        logger.info(f"Done rendering the report file: {report_path}")
 
 
 @named("modisco-run")
@@ -326,6 +328,8 @@ def bpnet_modisco_run(contrib_file,
                 hypothetical_contribs=hyp_contrib,
                 one_hot=seqs,
                 null_per_pos_scores=null_per_pos_scores)
+
+    logger.info(f"bpnet modisco-run finished. modisco.h5 and other files can be found in: {output_dir}")
 
 
 def modisco_plot(modisco_dir,
