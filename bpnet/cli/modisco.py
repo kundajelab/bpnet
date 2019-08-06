@@ -522,7 +522,7 @@ def cwm_scan_seqlets(modisco_dir,
      help='Optional file path to the contribution score file. If not specified, '
      'the contribution score file used in `bpnet modisco-run` will be used by default.')
 @arg('--add-profile-features',
-     help='Add profile shape features at the location of motif matches.')
+     help='Add profile features at the location of motif matches such as the maximum number of counts.')
 @arg('--num-workers',
      help='Number of workers to use in parallel for cwm scanning.')
 def cwm_scan(modisco_dir,
@@ -599,8 +599,8 @@ def cwm_scan(modisco_dir,
     logger.info(f"Loading centroid matches from {cm_path.resolve()}")
     dfm_norm = pd.read_csv(cm_path)
 
-    # NOTE: profile could be removed
-    seq, contrib, hyp_contrib, profile, ranges = contrib.get_all()
+    # get the raw data
+    seq, contrib, ranges = contrib.get_seq(), contrib.get_contrib(), contrib.get_ranges()
 
     logger.info("Scanning for patterns")
     dfl = []
@@ -610,6 +610,7 @@ def cwm_scan(modisco_dir,
     scan_patterns = [longer_pattern(pn) for pn in scan_patterns]
 
     if add_profile_features:
+        profile = contrib.get_profile()
         logger.info("Profile features will also be added to dfi")
 
     for pattern_name in tqdm(mr.patterns()):
@@ -617,7 +618,7 @@ def cwm_scan(modisco_dir,
             # skip scanning that patterns
             continue
         pattern = mr.get_pattern(pattern_name).trim_seq_ic(trim_frac)
-        match, contribution = pattern.scan_contribution(contrib, hyp_contrib, tasks,
+        match, contribution = pattern.scan_contribution(contrib, hyp_contrib=None, tasks=tasks,
                                                         n_jobs=num_workers, verbose=False)
         seq_match = pattern.scan_seq(seq, n_jobs=num_workers, verbose=False)
         dfm = pattern.get_instances(tasks, match, contribution, seq_match,
