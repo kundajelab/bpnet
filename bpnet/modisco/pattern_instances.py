@@ -14,13 +14,14 @@ from bpnet.modisco.results import resize_seqlets
 from bpnet.modisco.results import trim_pssm_idx, Seqlet
 
 
-def load_instances(parq_file, motifs=None, dedup=True):
+# TODO - allow these to be of also other type?
+def load_instances(parq_file, motifs=None, dedup=True, verbose=True):
     """Load pattern instances from the parquet file
 
     Args:
       parq_file: parquet file of motif instances
       motifs: dictionary of motifs of interest.
-        key=custom motif name, value=short pattern name (e.g. 'm0_p3')
+        key=custom motif name, value=short pattern name (e.g. {'Nanog': 'm0_p3'})
 
     """
     if motifs is not None:
@@ -33,20 +34,11 @@ def load_instances(parq_file, motifs=None, dedup=True):
     else:
         if motifs is not None:
             from fastparquet import ParquetFile
+
             # Selectively load only the relevant patterns
             pf = ParquetFile(str(parq_file))
-            if 'dir0' in pf.cats:
-                # fix the wrong patterns
-                metaclusters = list({'pattern=' + x.split("/")[0] for x in incl_motifs})
-                patterns = list({x.split("/")[1] for x in incl_motifs})
-                dfi = pf.to_pandas(filters=[("dir0", "in", metaclusters),
-                                            ("dir1", "in", patterns)])
-                dfi['pattern'] = dfi['dir0'].str.replace("pattern=", "").astype(str) + "/" + dfi['dir1'].astype(str)
-                del dfi['dir0']
-                del dfi['dir1']
-            else:
-                dfi = pf.to_pandas(filters=[('pattern', 'in', list(incl_motifs))])
-
+            patterns = [shorten_pattern(pn) for pn in incl_motifs]
+            dfi = pf.to_pandas(filters=[("pattern_short", "in", patterns)])
         else:
             dfi = pd.read_parquet(str(parq_file), engine='fastparquet')
             if 'pattern' not in dfi:
@@ -56,15 +48,18 @@ def load_instances(parq_file, motifs=None, dedup=True):
     # filter
     if motifs is not None:
         dfi = dfi[dfi.pattern.isin(incl_motifs)]  # NOTE this should already be removed
-        dfi['pattern_short'] = dfi['pattern'].map({k: shorten_pattern(k) for k in incl_motifs})
+        if 'pattern_short' not in dfi:
+            dfi['pattern_short'] = dfi['pattern'].map({k: shorten_pattern(k) for k in incl_motifs})
         dfi['pattern_name'] = dfi['pattern_short'].map({v: k for k, v in motifs.items()})
     else:
         dfi['pattern_short'] = dfi['pattern'].map({k: shorten_pattern(k)
                                                    for k in dfi.pattern.unique()})
 
-    # add some columns
-    dfi['pattern_start_abs'] = dfi['example_start'] + dfi['pattern_start']
-    dfi['pattern_end_abs'] = dfi['example_start'] + dfi['pattern_end']
+    # add some columns if they don't yet exist
+    if 'pattern_start_abs' not in dfi:
+        dfi['pattern_start_abs'] = dfi['example_start'] + dfi['pattern_start']
+    if 'pattern_end_abs' not in dfi:
+        dfi['pattern_end_abs'] = dfi['example_start'] + dfi['pattern_end']
 
     if dedup:
         # deduplicate
@@ -76,7 +71,8 @@ def load_instances(parq_file, motifs=None, dedup=True):
 
         # number of removed duplicates
         d = len(dfi) - len(dfi_dedup)
-        print("number of de-duplicated instances:", d, f"({d / len(dfi) * 100}%)")
+        if verbose:
+            print("number of de-duplicated instances:", d, f"({d / len(dfi) * 100}%)")
 
         # use de-duplicated instances from now on
         dfi = dfi_dedup
@@ -124,6 +120,23 @@ def dfi_add_ranges(dfi, ranges, dedup=False):
         # use de-duplicated instances from now on
         dfi = dfi_dedup
     return dfi
+
+
+def dfi2pyranges(dfi):
+    """Convert dfi to pyranges
+
+    Args:
+      dfi: pd.DataFrame returned by `load_instances`
+    """
+    import pyranges as pr
+    dfi = dfi.copy()
+    dfi['Chromosome'] = dfi['example_chrom']
+    dfi['Start'] = dfi['pattern_start_abs']
+    dfi['End'] = dfi['pattern_end_abs']
+    dfi['Name'] = dfi['pattern']
+    dfi['Score'] = dfi['contrib_weighted_p']
+    dfi['Strand'] = dfi['strand']
+    return pr.PyRanges(dfi)
 
 
 def align_instance_center(dfi, original_patterns, aligned_patterns, trim_frac=0.08):
@@ -337,6 +350,32 @@ def profile_features(seqlets, ref_seqlets, profile, profile_width=70):
 def dfi_filter_valid(df, profile_width, seqlen):
     return df[(df.pattern_center.round() - profile_width > 0)
               & ((df.pattern_center + profile_width < seqlen))]
+
+
+def annotate_profile_single(dfi, pattern_name, mr, profiles, profile_width=70, trim_frac=0.08):
+    seqlen = profiles[list(profiles)[0]].shape[1]
+
+    dfi = dfi_filter_valid(dfi.copy(), profile_width, seqlen)
+    dfi['id'] = np.arange(len(dfi))
+    assert np.all(dfi.pattern == pattern_name)
+
+    dfp_pattern_list = []
+    dfi_subset = dfi
+    ref_seqlets = mr._get_seqlets(pattern_name, trim_frac=trim_frac)
+    dfi_seqlets = dfi2seqlets(dfi_subset)
+    for task in profiles:
+        dfp = profile_features(dfi_seqlets,
+                               ref_seqlets=ref_seqlets,
+                               profile=profiles[task],
+                               profile_width=profile_width)
+        assert len(dfi_subset) == len(dfp)
+        dfp.columns = [f'{task}/{c}' for c in dfp.columns]  # prepend task
+        dfp_pattern_list.append(dfp)
+
+    dfp_pattern = pd.concat(dfp_pattern_list, axis=1)
+    dfp_pattern['id'] = dfi_subset['id'].values
+    assert len(dfp_pattern) == len(dfi)
+    return pd.merge(dfi, dfp_pattern, on='id')
 
 
 def annotate_profile(dfi, mr, profiles, profile_width=70, trim_frac=0.08, pattern_map=None):

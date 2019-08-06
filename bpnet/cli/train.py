@@ -12,7 +12,7 @@ from uuid import uuid4
 import numpy as np
 from tqdm import tqdm
 import keras.backend as K
-from bpnet.cli.schemas import DataSpec
+from bpnet.dataspecs import DataSpec
 from bpnet.data import NumpyDataset
 from bpnet.utils import (create_tf_session, write_json,
                          render_ipynb,
@@ -257,7 +257,7 @@ def _track_stats(tracks):
 @arg('dataspec',
      help='dataspec.yaml file')
 @arg('--regions',
-     help='Path to the interval bed file. If not specified, files specified in dataspec.yml will be used')
+     help='Path to the interval BED file. If not specified, files specified in dataspec.yml will be used')
 @arg('--sample', type=int,
      help='Specifies the number of randomly selected regions on which the stats are computed.')
 @arg('--peak-width',

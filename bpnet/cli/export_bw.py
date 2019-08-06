@@ -8,7 +8,7 @@ import os
 from bpnet.seqmodel import SeqModel
 from bpnet.BPNet import BPNetSeqModel
 from bpnet.utils import add_file_logging, read_pkl, create_tf_session
-from bpnet.cli.schemas import DataSpec
+from bpnet.dataspecs import DataSpec
 from bpnet.preproc import resize_interval
 from argh.decorators import named, arg
 import logging

@@ -194,11 +194,6 @@ def add_file_logging(output_dir, logger, name='stdout'):
     logger.addHandler(fh)
     return log
 
-# def cache_path(name):
-#     """Get cache path
-#     """
-#     pass
-
 
 def halve(n):
     """Halve an integer"""
@@ -334,15 +329,17 @@ def to_list(l):
         return [l]
 
 
-def pd_first_cols(df, cols):
+def pd_first_cols(df: pd.DataFrame, cols):
+    """Set `cols` to be the first columns in pd.DataFrame df
+    """
     for c in cols:
         assert c in df
     other_cols = [c for c in df.columns if c not in cols]
     return df[cols + other_cols]
 
 
-def pd_col_prepend(df, column, prefix='', suffix=''):
-    """Prep
+def pd_col_prepend(df: pd.DataFrame, column, prefix='', suffix=''):
+    """Add a prefix or suffix to all the columns names in pd.DataFrame
     """
     if isinstance(column, list):
         for c in column:

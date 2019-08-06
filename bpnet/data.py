@@ -1,7 +1,8 @@
 import numpy as np
 from kipoi_utils.external.torch.sampler import BatchSampler
 import collections
-from kipoi_utils.data_utils import get_dataset_lens, get_dataset_item, numpy_collate_concat
+from kipoi_utils.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
+                                    DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
 from copy import deepcopy
 from bpnet.utils import flatten, unflatten
 from collections import OrderedDict
@@ -14,16 +15,14 @@ from kipoi.data import BaseDataLoader
 try:
     import torch
     from torch.utils.data import DataLoader
-except:
+except Exception:
     # use the Kipoi dataloader as a fall-back strategy
     from kipoi.data import DataLoader
 import abc
-from kipoi_utils.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
-                                    DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
 
 
 def to_numpy(data):
-    import torch
+    # import torch
     if isinstance(data, torch.Tensor):
         return data.numpy()
     elif isinstance(data, collections.Mapping):
@@ -137,38 +136,6 @@ class Dataset(BaseDataLoader):
                                      for x in tqdm(self.batch_iter(batch_size,
                                                                    **kwargs),
                                                    total=len(self) // batch_size)])
-
-
-def numpy_minibatch(numpy_array, batch_size=1, min_batch_size=1):
-    """
-    # https://github.com/vitruvianscience/OpenDeep/blob/master/opendeep/utils/batch.py
-
-    Creates a minibatch generator over a numpy array. :func:`minibatch`
-    delegates to this generator
-    when the input is a numpy.ndarray.
-    Parameters
-    ----------
-    numpy_array : numpy.ndarray
-        A numpy array.
-    batch_size : int, optional
-        The number of examples to pull from the array as a batch. Default is 1.
-    min_batch_size : int, optional
-        The minimum number of examples to pull from the iterable. Default is 1.
-    Yields
-    ------
-    numpy array
-        A numpy array of the minibatch. It will yield over the first dimension of the input.
-    """
-    numpy_array = np.asarray(numpy_array)
-    assert 0 < min_batch_size <= batch_size, \
-        "batch_size (%d) has to be larger than min_batch_size (%d) and they both have to be greater than zero!" % \
-        (batch_size, min_batch_size)
-    # go through the first dimension of the input array.
-    for i in iter(range((numpy_array.shape[0] // batch_size) + 1)):
-        idx = i * batch_size
-        data = numpy_array[idx:(idx + batch_size)]
-        if data.shape[0] >= min_batch_size:
-            yield data
 
 
 def nested_numpy_minibatch(data, batch_size=1):

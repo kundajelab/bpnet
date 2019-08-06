@@ -98,6 +98,9 @@ def match_seqlets(unlabelled_seqlets, labelled_seqlets):
     return out_seqlets
 
 
+# TODO - rename this to ModiscoFile
+
+
 class ModiscoResult:
 
     def __init__(self, fpath):

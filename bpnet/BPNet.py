@@ -9,7 +9,7 @@ from keras.models import load_model
 from collections import OrderedDict
 from bpnet.plot.tracks import plot_tracks, filter_tracks
 from bpnet.extractors import extract_seq
-from bpnet.data import numpy_minibatch, nested_numpy_minibatch
+from bpnet.data import nested_numpy_minibatch
 from tqdm import tqdm
 from bpnet.utils import flatten_list
 from concise.utils.plot import seqlogo
@@ -44,7 +44,7 @@ class BPNetSeqModel:
     def from_mdir(cls, model_dir):
         from bpnet.seqmodel import SeqModel
         # figure out also the fasta_file if present (from dataspec)
-        from bpnet.cli.schemas import DataSpec
+        from bpnet.dataspecs import DataSpec
         ds_path = os.path.join(model_dir, "dataspec.yml")
         if os.path.exists(ds_path):
             ds = DataSpec.load(ds_path)

@@ -1,7 +1,5 @@
 """
-Schemas describing the following configuration YAML files:
-- dataspec.yml
-- modisco.yml
+Schemas describing the following configuration YAML files: dataspec.yml
 """
 from __future__ import absolute_import
 from __future__ import print_function
@@ -160,52 +158,3 @@ class DataSpec(RelatedLoadSaveMixin):
             if task_spec.peaks is not None:
                 regions += list(BedTool(task_spec.peaks))
         return regions
-
-
-# --------------------------------------------
-# hparams
-@related.immutable(strict=True)
-class ModiscoHParams(RelatedLoadSaveMixin):
-    """Modisco hyper-parameters
-    """
-    # Modisco kwargs
-    sliding_window_size = related.IntegerField(21, required=False)
-    flank_size = related.IntegerField(10, required=False)  # old=5
-    target_seqlet_fdr = related.FloatField(0.01, required=False)
-
-    min_seqlets_per_task = related.IntegerField(1000, required=False)  # NOTE - this is not used as of modisco 0.5
-
-    # Deprecated in modisco 0.5
-    min_passing_windows_frac = related.FloatField(0.03, required=False)
-    max_passing_windows_frac = related.FloatField(0.2, required=False)
-
-    # metaclustering
-    min_metacluster_size = related.IntegerField(2000, required=False)
-    min_metacluster_size_frac = related.FloatField(0.02, required=False)
-
-    # seqlets_to_patterns.TfModiscoSeqletsToPatternsFactory
-    trim_to_window_size = related.IntegerField(30, required=False)  # default: 30, old=15
-    initial_flank_to_add = related.IntegerField(10, required=False)  # default 10, old=5
-    kmer_len = related.IntegerField(8, required=False)  # default 8, old=5
-    num_gaps = related.IntegerField(3, required=False)  # default 3, old=1
-    num_mismatches = related.IntegerField(2, required=False)  # default 2, old=0
-    final_min_cluster_size = related.IntegerField(60, required=False)
-    max_seqlets_per_metacluster = related.IntegerField(20000, required=False)
-
-    # Other modisc-related kwargs
-
-    # What's the maximum cosine distance between strands to
-    # still consider the examples as representative?
-
-    # TODO - update back
-    # max_strand_distance = related.FloatField(0.2, required=False)
-
-    # TODO - specify for which ones to run?
-
-    # Original path to the file
-    path = related.StringField(required=False)
-
-    def get_modisco_kwargs(self):
-        d = self.get_config()
-        d.pop('counts', None)
-        return d

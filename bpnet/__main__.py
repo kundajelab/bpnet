@@ -3,7 +3,7 @@ import argh
 from bpnet.cli.train import bpnet_train, dataspec_stats
 from bpnet.cli.contrib import bpnet_contrib, list_contrib
 from bpnet.cli.export_bw import bpnet_export_bw
-from bpnet.cli.modisco import bpnet_modisco_run
+from bpnet.cli.modisco import bpnet_modisco_run, cwm_scan
 
 # logging
 import pkg_resources
@@ -28,6 +28,7 @@ def main():
         list_contrib,
         bpnet_export_bw,
         bpnet_modisco_run,
+        cwm_scan,
         ipynb_render,
     ])
     argh.dispatch(parser)

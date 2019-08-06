@@ -10,7 +10,7 @@ import os
 from collections import OrderedDict
 from tqdm import tqdm
 from pathlib import Path
-from bpnet.utils import write_pkl, render_ipynb, remove_exists, add_file_logging, create_tf_session
+from bpnet.utils import write_pkl, render_ipynb, remove_exists, add_file_logging, create_tf_session, pd_first_cols
 from bpnet.cli.contrib import ContribFile
 from bpnet.cli.train import _get_gin_files, log_gin_config
 # ContribFile
@@ -31,8 +31,12 @@ logger.addHandler(logging.NullHandler())
 # load functions for the modisco directory
 
 
+# ModiscoFile() and ModiscoResults()
+# TODO - have a ModiscoDir()
+
+
 def load_included_samples(modisco_dir):
-    return np.load(os.path.join(modisco_dir, "modisco-run.subset-contrib-file.npz"))
+    return np.load(os.path.join(modisco_dir, "modisco-run.subset-contrib-file.npy"))
 
 
 def load_ranges(modisco_dir):
@@ -44,6 +48,20 @@ def load_ranges(modisco_dir):
     df = d.get_ranges()
     d.close()
     return df
+
+
+def load_contrib_type(modisco_kwargs):
+    """Load the contrib_wildcard contribution score
+    """
+    # use the first one as the default
+    contrib_types = [wildcard.split("/", maxsplit=1)[1]
+                     for wildcard in modisco_kwargs['contrib_wildcard'].split(",")]
+    if not len(set(contrib_types)):
+        contrib_wildcard = modisco_kwargs['contrib_wildcard']
+        logger.warn(f"contrib_wildcard: {contrib_wildcard} contains multiple contrib_types. "
+                    "Current code can by default only handle a single one.")
+    contrib_type = contrib_types[0]
+    return contrib_type
 
 
 def get_nonredundant_example_idx(ranges, width=200):
@@ -123,8 +141,6 @@ def modisco_run(output_path,  # specified by bpnet_modisco_run
      help='output file directory')
 @arg('--null-contrib-file',
      help='Path to the null contribution scores')
-@arg('--overwrite',
-     help='if True, the output directory will be overwritten')
 @arg('--premade',
      help='pre-made config file specifying modisco hyper-paramters to use.')
 @arg('--config',
@@ -189,9 +205,9 @@ def bpnet_modisco_run(contrib_file,
     assert '/' in contrib_wildcard
 
     if filter_npy is not None:
-        filter_npy = os.path.abspath(filter_npy)
+        filter_npy = os.path.abspath(str(filter_npy))
     if config is not None:
-        config = os.path.abspath(config)
+        config = os.path.abspath(str(config))
 
     # setup output file paths
     output_path = os.path.abspath(os.path.join(output_dir, "modisco.h5"))
@@ -440,91 +456,184 @@ def modisco_plot(modisco_dir,
     mr.close()
 
 
-def modisco_centroid_seqlet_matches(modisco_dir, contrib_scores, output_dir,
-                                    trim_frac=0.08, n_jobs=1,
-                                    contribsf=None):
-    """Write pattern matches to .csv
+def cwm_scan_seqlets(modisco_dir,
+                     output_file,
+                     trim_frac=0.08,
+                     num_workers=1,
+                     contribsf=None,
+                     verbose=False):
+    """Compute the cwm scanning scores of the original modisco seqlets
     """
     from bpnet.modisco.table import ModiscoData
-    assert os.path.exists(output_dir)
-    add_file_logging(output_dir, logger, 'centroid-seqlet-matches')
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    add_file_logging(os.path.dirname(output_file), logger, 'cwm_scan_seqlets')
 
-    logger.info("Loading required data")
-    data = ModiscoData.load(modisco_dir, contrib_scores, contribsf=contribsf)
+    # figure out contrib_wildcard
+    mr = ModiscoResult(modisco_dir / "modisco.h5")
 
-    logger.info("Generating the table")
-    df = data.get_centroid_seqlet_matches(trim_frac=trim_frac, n_jobs=n_jobs)
-    df.to_csv(os.path.join(output_dir, 'centroid_seqlet_matches.csv'))
+    if contribsf is None:
+        contrib = ContribFile.from_modisco_dir(modisco_dir)
+    else:
+        contrib = contribsf
+
+    tasks = mr.tasks()
+    # HACK prune the tasks of contribution (in case it's present)
+    tasks = [t.split("/")[0] for t in tasks]
+
+    dfi_list = []
+
+    for pattern_name in tqdm(mr.patterns()):
+        pattern = mr.get_pattern(pattern_name).trim_seq_ic(trim_frac)
+        seqlets = mr._get_seqlets(pattern_name, trim_frac=trim_frac)
+
+        # scan only the existing locations of the seqlets instead of the full sequences
+        # to obtain the distribution
+        stacked_seqlets = contrib.extract(seqlets)
+
+        match, contribution = pattern.scan_contribution(stacked_seqlets.contrib, hyp_contrib=None, tasks=tasks,
+                                                        n_jobs=num_workers, verbose=False, pad_mode=None)
+        seq_match = pattern.scan_seq(stacked_seqlets.seq, n_jobs=num_workers, verbose=False, pad_mode=None)
+
+        dfm = pattern.get_instances(tasks, match, contribution, seq_match, fdr=1, verbose=verbose, plot=verbose)
+        dfm = dfm[dfm.seq_match > 0]
+
+        dfi_list.append(dfm)
+    df = pd.concat(dfi_list)
+    df.to_csv(output_file)
 
 
+# TODO - rename centroid_seqlet_matches?
+# TODO - rename pssm to pfm or pwm?
+
+@arg('modisco_dir',
+     help='modisco directory - used to obtain (optionally centroid_seqlet_matches.csv.gz), modisco.h5, contrib-wildcard')
+@arg('output_file',
+     help='Output file path. File format will depend on the file suffix. '
+     'Available suffixes are: .parq (Parquet file), .csv, .csv.gz, .tsv, .tsv.gz, .bed, .bed.gz. '
+     'NOTE: when using .bed or .bed.gz, only the following 7 columns are written: '
+     'chromosome, start, end, pattern, contrib_weighted_p, strand, match_weighted_p')
+@arg('--trim-frac',
+     help='How much to trim the pattern when scanning for motif instances. See also `bpnet.modisco.results.trim_pssm_idx`')
+@arg('--patterns',
+     help='Comma separated list of patterns for which to run CWM scanning')
+@arg('--filters',
+     help='Filters to apply. Specify empty string `--filters=""` for no filters.')
+@arg('--contrib-file',
+     help='Optional file path to the contribution score file. If not specified, '
+     'the contribution score file used in `bpnet modisco-run` will be used by default.')
+@arg('--add-profile-features',
+     help='Add profile shape features at the location of motif matches.')
+@arg('--num-workers',
+     help='Number of workers to use in parallel for cwm scanning.')
 def cwm_scan(modisco_dir,
              output_file,
              trim_frac=0.08,
-             contrib_scores=None,
-             contribution=None,
-             ignore_filter=False,
-             n_jobs=20):
-    """Modisco score instances
-
-    Args:
-      modisco_dir: modisco directory - used to obtain centroid_seqlet_matches.csv and modisco.h5
-      output_file: output file path for the tsv file. If the suffix is
-        tsv.gz, then also gzip the file
-      trim_frac: how much to trim the pattern when scanning
-      contrib_scores: hdf5 file of contribution scores (contains `contribution` score)
-        if None, then load the default contribution scores from modisco
-      contribution: which contribution scores to use
-      n_jobs: number of parallel jobs to use
-
-    Writes a gzipped tsv file(tsv.gz)
+             patterns='all',
+             filters='match_weighted_p>=.2,contrib_weighted_p>=.01',
+             contrib_file=None,
+             add_profile_features=False,
+             num_workers=10):
+    """Get motif instances via CWM scanning.
     """
-    add_file_logging(os.path.dirname(output_file), logger, 'modisco-score2')
+    from bpnet.modisco.utils import longer_pattern, shorten_pattern
+    from bpnet.modisco.pattern_instances import annotate_profile_single
+    add_file_logging(os.path.dirname(output_file), logger, 'cwm-scan')
     modisco_dir = Path(modisco_dir)
-    modisco_kwargs = read_json(f"{modisco_dir}/modisco-run.kwargs.json")
-    if contribution is None:
-        # HACK - fix that to match the bpnet_modisco_run command
-        contribution = modisco_kwargs['contrib_wildcard'].split(",")[0].split("/", maxsplit=1)[1]
 
-    # Centroid matches
-    cm_path = modisco_dir / 'centroid_seqlet_matches.csv'
-    if not cm_path.exists():
-        logger.info(f"Generating centroid matches to {cm_path.resolve()}")
-        modisco_centroid_seqlet_matches(modisco_dir,
-                                        contrib_scores,
-                                        modisco_dir,
-                                        trim_frac=trim_frac,
-                                        n_jobs=n_jobs)
-    logger.info(f"Loading centroid matches from {cm_path.resolve()}")
-    dfm_norm = pd.read_csv(cm_path)
+    valid_suffixes = [
+        '.csv',
+        '.csv.gz',
+        '.tsv',
+        '.tsv.gz',
+        '.parq',
+        '.bed',
+        '.bed.gz',
+    ]
+    if not any([output_file.endswith(suffix) for suffix in valid_suffixes]):
+        raise ValueError(f"output_file doesn't have a valid file suffix. Valid file suffixes are: {valid_suffixes}")
+
+    # Centroid matches path
+    cm_path = modisco_dir / f'cwm-scan-seqlets.trim-frac={trim_frac:.2f}.csv.gz'
+
+    # save the hyper-parameters
+    kwargs_json_file = os.path.join(os.path.dirname(output_file), 'cwm-scan.kwargs.json')
+    write_json(dict(modisco_dir=os.path.abspath(str(contrib_file)),
+                    output_file=str(output_file),
+                    cwm_scan_seqlets_path=str(cm_path),
+                    trim_frac=trim_frac,
+                    patterns=patterns,
+                    filters=filters,
+                    contrib_file=contrib_file,
+                    add_profile_features=add_profile_features,
+                    num_workers=num_workers),
+               str(kwargs_json_file))
+
+    # figure out contrib_wildcard
+    modisco_kwargs = read_json(os.path.join(modisco_dir, "modisco-run.kwargs.json"))
+    contrib_type = load_contrib_type(modisco_kwargs)
 
     mr = ModiscoResult(modisco_dir / "modisco.h5")
-    mr.open()
     tasks = mr.tasks()
-
     # HACK prune the tasks of contribution (in case it's present)
-    tasks = [t.replace(f"/{contribution}", "") for t in tasks]
+    tasks = [t.split("/")[0] for t in tasks]
 
     logger.info(f"Using tasks: {tasks}")
 
-    # TODO - use the same subsetting as before
-    if contrib_scores is not None:
-        logger.info(f"Loading the contribution scores from: {contrib_scores}")
-        contrib = ContribFile(contrib_scores, default_contrib_score=contribution)
+    if contrib_file is None:
+        contrib = ContribFile.from_modisco_dir(modisco_dir)
+        contrib.cache()  # cache it since it can be re-used in `modisco_centroid_seqlet_matches`
     else:
-        contrib = ContribFile.from_modisco_dir(modisco_dir, ignore_include_samples=ignore_filter)
+        logger.info(f"Loading the contribution scores from: {contrib_file}")
+        contrib = ContribFile(contrib_file, default_contrib_score=contrib_type)
 
+    if not cm_path.exists():
+        logger.info(f"Generating centroid matches to {cm_path.resolve()}")
+        cwm_scan_seqlets(modisco_dir,
+                         output_file=cm_path,
+                         trim_frac=trim_frac,
+                         contribsf=contrib if contrib_file is None else None,
+                         num_workers=num_workers,
+                         verbose=False)
+    else:
+        logger.info("Centroid matches already exist.")
+    logger.info(f"Loading centroid matches from {cm_path.resolve()}")
+    dfm_norm = pd.read_csv(cm_path)
+
+    # NOTE: profile could be removed
     seq, contrib, hyp_contrib, profile, ranges = contrib.get_all()
 
     logger.info("Scanning for patterns")
     dfl = []
+
+    # patterns to scan. `longer_pattern` makes sure the patterns are in the long format
+    scan_patterns = patterns.split(",") if patterns is not 'all' else mr.patterns()
+    scan_patterns = [longer_pattern(pn) for pn in scan_patterns]
+
+    if add_profile_features:
+        logger.info("Profile features will also be added to dfi")
+
     for pattern_name in tqdm(mr.patterns()):
+        if pattern_name not in scan_patterns:
+            # skip scanning that patterns
+            continue
         pattern = mr.get_pattern(pattern_name).trim_seq_ic(trim_frac)
         match, contribution = pattern.scan_contribution(contrib, hyp_contrib, tasks,
-                                                        n_jobs=n_jobs, verbose=False)
-        seq_match = pattern.scan_seq(seq, n_jobs=n_jobs, verbose=False)
+                                                        n_jobs=num_workers, verbose=False)
+        seq_match = pattern.scan_seq(seq, n_jobs=num_workers, verbose=False)
         dfm = pattern.get_instances(tasks, match, contribution, seq_match,
                                     norm_df=dfm_norm[dfm_norm.pattern == pattern_name],
                                     verbose=False, plot=False)
+        for filt in filters.split(","):
+            if len(filt) > 0:
+                dfm = dfm.query(filt)
+
+        if add_profile_features:
+            dfm = annotate_profile_single(dfm, pattern_name, mr, profile,
+                                          profile_width=70,
+                                          trim_frac=trim_frac)
+        dfm['pattern_short'] = shorten_pattern(pattern_name)
+
+        # TODO - is it possible to write out the results incrementally?
         dfl.append(dfm)
 
     logger.info("Merging")
@@ -536,16 +645,37 @@ def cwm_scan(modisco_dir,
     ranges.columns = ["example_" + v for v in ranges.columns]
     dfp = dfp.merge(ranges, on="example_idx", how='left')
 
+    # add the absolute coordinates
+    dfp['pattern_start_abs'] = dfp['example_start'] + dfp['pattern_start']
+    dfp['pattern_end_abs'] = dfp['example_start'] + dfp['pattern_end']
+
     logger.info("Table info")
     dfp.info()
     logger.info(f"Writing the resuling pd.DataFrame of shape {dfp.shape} to {output_file}")
+
+    # set the first 7 columns to comply to bed6 format (chrom, start, end, name, score, strand, ...)
+    bed_columns = ['example_chrom', 'pattern_start_abs', 'pattern_end_abs',
+                   'pattern', 'contrib_weighted_p', 'strand', 'match_weighted_p']
+    dfp = pd_first_cols(dfp, bed_columns)
+
     # write to a parquet file
-    dfp.to_parquet(output_file, partition_on=['pattern'], engine='fastparquet')
+    if output_file.endswith(".parq"):
+        logger.info("Writing a parquet file")
+        dfp.to_parquet(output_file, partition_on=['pattern_short'], engine='fastparquet')
+    elif output_file.endswith(".csv.gz") or output_file.endswith(".csv"):
+        logger.info("Writing a csv file")
+        dfp.to_csv(output_file, compression='infer', index=False)
+    elif output_file.endswith(".tsv.gz") or output_file.endswith(".tsv"):
+        logger.info("Writing a tsv file")
+        dfp.to_csv(output_file, sep='\t', compression='infer', index=False)
+    elif output_file.endswith(".bed.gz") or output_file.endswith(".bed"):
+        logger.info("Writing a BED file")
+        # write only the first (and main) 7 columns
+        dfp[bed_columns].to_csv(output_file, sep='\t', compression='infer', index=False, header=False)
+    else:
+        logger.warn("File suffix not recognized. Using .csv.gz file format")
+        dfp.to_csv(output_file, compression='gzip', index=False)
     logger.info("Done!")
-    # except:
-    #    import pdb
-    #    pdb.set_trace()
-    # dfp.to_csv(output_file, index=False, sep='\t', compression='gzip')
 
 
 def modisco_report(modisco_dir, output_dir):
@@ -605,28 +735,6 @@ def modisco_table(modisco_dir, contrib_scores, output_dir, report_url=None, cont
     print("Done!")
 
 
-def modisco_centroid_seqlet_matches2(modisco_dir, contrib_scores, output_dir=None, trim_frac=0.08, n_jobs=1, data_class='profile'):
-    """Write pattern matches to .csv
-    """
-    from bpnet.modisco.table import ModiscoData, ModiscoDataSingleBinary
-    if(output_dir is None):
-        output_dir = modisco_dir
-    add_file_logging(output_dir, logger, 'centroid-seqlet-matches')
-
-    logger.info("Loading required data")
-    if(data_class == 'profile'):
-        data = ModiscoData.load(modisco_dir, contrib_scores)
-    else:
-        data = ModiscoDataSingleBinary.load(modisco_dir)
-
-    logger.info("Generating the table")
-    df = data.get_centroid_seqlet_matches(trim_frac=trim_frac, n_jobs=n_jobs)
-
-    df.to_csv(os.path.join(output_dir, 'centroid_seqlet_matches.csv'))
-
-    return None
-
-
 def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, contribsf=None):
     """Add stacked_seqlet_contrib to pattern `attrs`
 
@@ -643,7 +751,6 @@ def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, contrib
     patterns = read_pkl(patterns_pkl_file)
 
     mr = ModiscoResult(modisco_dir / 'modisco.h5')
-    mr.open()
 
     if contribsf is None:
         contrib_file = ContribFile.from_modisco_dir(modisco_dir)
@@ -689,7 +796,6 @@ def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
     modisco_dir = Path(modisco_dir)
 
     mr = ModiscoResult(modisco_dir / 'modisco.h5')
-    mr.open()
     patterns = [mr.get_pattern(pname)
                 for pname in mr.patterns()]
 
@@ -751,7 +857,6 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     contrib_scores = kwargs["contrib_file"]
 
     mr = ModiscoResult(f"{modisco_dir}/modisco.h5")
-    mr.open()
     all_patterns = mr.patterns()
     mr.close()
     if len(all_patterns) == 0:
@@ -815,12 +920,13 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     # --------------------------------------------
     # Finding new instances
     if scan_instances:
-        if not cr.set_cmd('modisco_centroid_seqlet_matches').done():
-            modisco_centroid_seqlet_matches(modisco_dir, contrib_scores, modisco_dir,
-                                            trim_frac=trim_frac,
-                                            n_jobs=n_jobs,
-                                            contribsf=contribsf)
-            cr.write()
+        # if not cr.set_cmd('modisco_centroid_seqlet_matches').done():
+        #     # TODO - update
+        #     modisco_centroid_seqlet_matches(modisco_dir, contrib_scores, modisco_dir,
+        #                                     trim_frac=trim_frac,
+        #                                     n_jobs=n_jobs,
+        #                                     contribsf=contribsf)
+        #     cr.write()
 
         # TODO - this would not work with the per-TF contribution score file....
         if not cr.set_cmd('cwm_scan').done():

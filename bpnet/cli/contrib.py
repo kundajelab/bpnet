@@ -10,7 +10,7 @@ import warnings
 from kipoi.readers import HDF5Reader
 from kipoi.writers import HDF5BatchWriter
 from bpnet.seqmodel import SeqModel
-from bpnet.cli.schemas import DataSpec, ModiscoHParams
+from bpnet.dataspecs import DataSpec
 from bpnet.functions import mean
 from bpnet.preproc import onehot_dinucl_shuffle
 from bpnet.utils import add_file_logging, fnmatch_any, create_tf_session, read_json
@@ -35,8 +35,6 @@ def list_contrib(model_dir):
 
 
 @named('contrib')
-@arg('--max-regions', type=int,
-     help='Maximum number of regions to score.')
 @arg("model_dir",
      help='path to the model directory')
 @arg("output_file",
@@ -58,13 +56,13 @@ def list_contrib(model_dir):
      "of the contribution scores used by TF-MoDISco.")
 @arg("--shuffle-regions",
      help="Shuffle the order in which the regions are scores. Useful when using --max-regions.")
-@arg("--max-regions",
+@arg("--max-regions", type=int,
      help="Compute the contribution scores only for the top `max-regions` instead of all the regions specified "
      "in the dataspec or the regions document.")
 @arg("--contrib-wildcard",
-     help="Wildcard of the contribution scores to compute. For example, */profile/wn computes"
+     help="Wildcard of the contribution scores to compute. For example, `*/profile/wn computes`"
      "the profile contribution scores for all the tasks (*) using the wn normalization (see bpnet.heads.py)."
-     "*/counts/pre-act computes the total count contribution scores for all tasks w.r.t. the pre-activation output "
+     "`*/counts/pre-act` computes the total count contribution scores for all tasks w.r.t. the pre-activation output "
      "of prediction heads. Multiple wildcards can be by comma-separating them.")
 @arg("--batch-size",
      help='Batch size for computing the contribution scores')
@@ -281,9 +279,11 @@ class ContribFile:
         self._hyp_contrib_cache = dict()
         self.default_contrib_score = default_contrib_score
 
+        self.cached = False
+
     @classmethod
     def from_modisco_dir(cls, modisco_dir, ignore_include_samples=False):
-        from bpnet.cli.modisco import load_included_samples
+        from bpnet.cli.modisco import load_included_samples, load_contrib_type
         from bpnet.utils import read_json
         if ignore_include_samples:
             include_samples = None
@@ -292,12 +292,11 @@ class ContribFile:
             if include_samples.all():
                 # All are true, we can ignore that
                 include_samples = None
-        kwargs = read_json(os.path.join(modisco_dir, "modisco-run.kwargs.json"))
 
-        # use the first one as the default
-        contrib_type = kwargs['contrib_wildcard'].split(",")[0].split("/", maxsplit=1)[1]
+        modisco_kwargs = read_json(os.path.join(modisco_dir, "modisco-run.kwargs.json"))
+        contrib_type = load_contrib_type(modisco_kwargs)
 
-        return cls(kwargs["contrib_file"],
+        return cls(modisco_kwargs["contrib_file"],
                    include_samples,
                    default_contrib_score=contrib_type)
 
@@ -440,7 +439,9 @@ class ContribFile:
     def cache(self):
         """Cache the data in memory
         """
-        self.data = self.f.load_all(unflatten=False)
+        if not self.cached:
+            self.data = self.f.load_all(unflatten=False)
+            self.cached = True
         return self
 
     def _extract(self, seqlet, seq, hyp_contrib, profiles, profile_width=None):

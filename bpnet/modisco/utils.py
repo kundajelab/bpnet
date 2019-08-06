@@ -34,13 +34,21 @@ def ic_scale(x):
 def shorten_pattern(pattern):
     """metacluster_0/pattern_1 -> m1_p1
     """
-    return pattern.replace("metacluster_", "m").replace("/", "_").replace("pattern_", "p")
+    if "/" not in pattern:
+        # input is already a short pattern
+        return pattern
+    else:
+        return pattern.replace("metacluster_", "m").replace("/", "_").replace("pattern_", "p")
 
 
 def longer_pattern(shortpattern):
     """m1_p1 -> metacluster_0/pattern_1
     """
-    return shortpattern.replace("_", "/").replace("m", "metacluster_").replace("p", "pattern_")
+    if "/" in shortpattern:
+        # input is already a long pattern
+        return shortpattern
+    else:
+        return shortpattern.replace("_", "/").replace("m", "metacluster_").replace("p", "pattern_")
 
 
 def extract_name_short(ps):

@@ -17,7 +17,7 @@ from kipoi.data import Dataset
 
 from kipoi.metadata import GenomicRanges
 from bpnet.utils import to_list
-from bpnet.cli.schemas import DataSpec
+from bpnet.dataspecs import DataSpec
 from bpnet.preproc import bin_counts, keep_interval, moving_average, IntervalAugmentor
 from bpnet.extractors import _chrom_sizes, _chrom_names
 from concise.utils.helper import get_from_module
@@ -222,7 +222,7 @@ class StrandedProfile(Dataset):
         """Dataset for loading the bigwigs and fastas
 
         Args:
-          ds (bpnet.cli.schemas.DataSpec): data specification containing the
+          ds (bpnet.dataspecs.DataSpec): data specification containing the
             fasta file, bed files and bigWig file paths
           chromosomes (list of str): a list of chor
           peak_width: resize the bed file to a certain width

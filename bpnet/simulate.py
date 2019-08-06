@@ -1,6 +1,5 @@
 from collections import OrderedDict
 from bpnet.plot.tracks import filter_tracks
-from bpnet.BPNet import BPNet
 from bpnet.utils import flatten, unflatten
 import numpy as np
 from copy import deepcopy
@@ -9,7 +8,6 @@ from scipy.stats import entropy
 import random
 from concise.preprocessing import encodeDNA
 from bpnet.plot.tracks import plot_tracks
-from bpnet.plot.csi import SeqMutationTree, SeqNode
 from kipoi_utils.data_utils import get_dataset_item, numpy_collate_concat
 from bpnet.functions import mean, softmax
 from tqdm import tqdm
