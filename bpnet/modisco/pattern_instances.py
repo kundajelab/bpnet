@@ -304,7 +304,8 @@ def dfi2seqlets(dfi, short_name=False):
     Returns:
       Seqlet list
     """
-    return [dfi_row2seqlet(row) for i, row in dfi.iterrows()]
+    return [dfi_row2seqlet(row, short_name=short_name)
+            for i, row in dfi.iterrows()]
 
 
 def profile_features(seqlets, ref_seqlets, profile, profile_width=70):
