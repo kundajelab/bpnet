@@ -1,7 +1,7 @@
 """Download the required files
 """
 
-from bpnet.cli.schemas import DataSpec
+from bpnet.dataspecs import DataSpec
 
 base_url = 'http://mitra.stanford.edu/kundaje/avsec/chipnexus/paper/data'
 
