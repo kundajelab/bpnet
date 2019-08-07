@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
+import json
 from argh.decorators import aliases, named, arg
 import os
 import warnings
@@ -106,6 +107,7 @@ def bpnet_contrib(model_dir,
                   skip_bias=False):
     """Run contribution scores for a BPNet model
     """
+    from bpnet.extractors import _chrom_sizes
     add_file_logging(os.path.dirname(output_file), logger, 'bpnet-contrib')
     if gpu is not None:
         create_tf_session(gpu, per_process_gpu_memory_fraction=memfrac_gpu)
@@ -161,6 +163,7 @@ def bpnet_contrib(model_dir,
                                      excl_chromosomes=exclude_chr,
                                      auto_resize_len=seq_width,
                                      )
+        chrom_sizes = _chrom_sizes(fasta_file)
     else:
         if dataspec is None:
             logger.info("Using dataspec used to train the model")
@@ -175,6 +178,7 @@ def bpnet_contrib(model_dir,
                                    peak_width=peak_width,
                                    shuffle=False,
                                    seq_width=seq_width)
+        chrom_sizes = _chrom_sizes(ds.fasta_file)
 
     # Setup contribution score trimming (not required currently)
     if seq_width > peak_width:
@@ -245,7 +249,12 @@ def bpnet_contrib(model_dir,
         # Trim the sequence
         batch['inputs']['seq'] = batch['inputs']['seq'][:, trim_start:trim_end]
 
+        # ? maybe it would it be better to have an explicit ContribFileWriter.
+        # that way the written schema would be fixed
         writer.batch_write(batch)
+
+    # add chromosome sizes
+    writer.f.attrs['chrom_sizes'] = json.dumps(chrom_sizes)
     writer.close()
     logger.info(f"Done. Contribution score file was saved to: {output_file}")
 
@@ -400,6 +409,11 @@ class ContribFile:
             else:
                 return '/inputs'
 
+    def get_chrom_sizes(self):
+        """Get the chromosome sizes
+        """
+        return json.loads(self.f.f.attrs['chrom_sizes'])
+
     def get_seq(self, idx=None):
         return self._subset(self.data[self._get_seq_key()], idx)
 
@@ -411,6 +425,10 @@ class ContribFile:
         """
         task = self.get_tasks()[0]
         return len(self._data_subkeys(f'/hyp_contrib/{task}/{contrib_score}')) > 0
+
+    def available_contrib_scores(self):
+        task = self.get_tasks()[0]
+        return self._data_subkeys(f'/hyp_contrib/{task}/')
 
     def get_hyp_contrib(self, contrib_score=None, idx=None):
         contrib_score = (contrib_score if contrib_score is not None

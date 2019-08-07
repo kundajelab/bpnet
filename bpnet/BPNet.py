@@ -10,6 +10,7 @@ from collections import OrderedDict
 from bpnet.plot.tracks import plot_tracks, filter_tracks
 from bpnet.extractors import extract_seq
 from bpnet.data import nested_numpy_minibatch
+from bpnet.seqmodel import SeqModel
 from tqdm import tqdm
 from bpnet.utils import flatten_list
 from concise.utils.plot import seqlogo
@@ -37,6 +38,7 @@ class BPNetSeqModel:
         self.seqmodel = seqmodel
         self.tasks = self.seqmodel.tasks
         self.fasta_file = fasta_file
+        assert isinstance(self.seqmodel, SeqModel)
         # TODO - add some sanity checks (profile head available etc)
 
     @classmethod
@@ -94,7 +96,7 @@ class BPNetSeqModel:
 
     def _get_old_contrib_score_name(self, s):
         # TODO - get rid of the old nomenclature
-        s2s = {"profile/wn": 'weighted', 'counts/pre-act': 'count'}
+        s2s = {"profile/wn": 'profile', 'counts/pre-act': 'count'}
         return s2s[s]
 
     def sim_pred(self, central_motif, side_motif=None, side_distances=[], repeat=128, contribution=[]):
@@ -128,10 +130,13 @@ class BPNetSeqModel:
             out = {"profile": scaled_preds}
         return average_profiles(flatten(out, "/"))
 
-    def get_seq(self, regions, variants=None, use_strand=False):
+    def get_seq(self, regions, variants=None, use_strand=False, fasta_file=None):
         """Get the one-hot-encoded sequence used to make model predictions and
         optionally augment it with the variants
         """
+        if fasta_file is None:
+            fasta_file = self.fasta_file
+
         if variants is not None:
             if use_strand:
                 raise NotImplementedError("use_strand=True not implemented for variants")
@@ -140,11 +145,11 @@ class BPNetSeqModel:
                 variants = [variants] * len(regions)
             else:
                 assert len(variants) == len(regions)
-            seq = np.stack([extract_seq(interval, variant, self.fasta_file, one_hot=True)
+            seq = np.stack([extract_seq(interval, variant, fasta_file, one_hot=True)
                             for variant, interval in zip(variants, regions)])
         else:
             variants = [None] * len(regions)
-            seq = FastaExtractor(self.fasta_file, use_strand=use_strand)(regions)
+            seq = FastaExtractor(fasta_file, use_strand=use_strand)(regions)
         return seq
 
     def predict_all(self, seq, contrib_method='grad', batch_size=512, pred_summaries=['profile/wn', 'counts/pre-act']):
@@ -172,6 +177,7 @@ class BPNetSeqModel:
                         contrib_method='grad',
                         pred_summaries=['profile/wn', 'counts/pre-act'],
                         use_strand=False,
+                        fasta_file=None,
                         batch_size=512):
         """
         Args:
@@ -180,7 +186,7 @@ class BPNetSeqModel:
           pred_summary: 'mean' or 'max', summary function name for the profile gradients
           compute_grads: if False, skip computing gradients
         """
-        seq = self.get_seq(regions, variants, use_strand=use_strand)
+        seq = self.get_seq(regions, variants, use_strand=use_strand, fasta_file=fasta_file)
 
         preds = self.predict_all(seq, contrib_method, batch_size, pred_summaries=pred_summaries)
 
@@ -287,7 +293,8 @@ class BPNetSeqModel:
 
     def export_bw(self,
                   regions,
-                  output_dir,
+                  output_prefix,
+                  fasta_file=None,
                   contrib_method='grad',
                   pred_summaries=['profile/wn', 'counts/pre-act'],
                   batch_size=512,
@@ -297,7 +304,7 @@ class BPNetSeqModel:
 
         Args:
           regions: list of genomic regions
-          output_dir: output directory
+          output_prefix: output file prefix
 
           batch_size:
           scale_contribution: if True, multiple the contribution scores by the predicted count value
@@ -309,11 +316,15 @@ class BPNetSeqModel:
         out = self.predict_regions(regions,
                                    contrib_method=contrib_method,
                                    pred_summaries=pred_summaries,
+                                   fasta_file=fasta_file,
                                    batch_size=batch_size)
 
         logger.info("Setup bigWigs for writing")
         # Get the genome lengths
-        fa = FastaFile(self.fasta_file)
+        if fasta_file is None:
+            fasta_file = self.fasta_file
+
+        fa = FastaFile(fasta_file)
         if chromosomes is None:
             genome = OrderedDict([(c, l) for c, l in zip(fa.references, fa.lengths)])
         else:
@@ -332,7 +343,7 @@ class BPNetSeqModel:
         for task in self.tasks:
             bws[task] = {}
             for feat in output_feats:
-                bw_preds_pos = pyBigWig.open(f"{output_dir}/{task}.{feat}.bw", "w")
+                bw_preds_pos = pyBigWig.open(f"{output_prefix}.{task}.{feat}.bw", "w")
                 bw_preds_pos.addHeader(genome)
                 bws[task][feat] = bw_preds_pos
 
@@ -404,7 +415,7 @@ class BPNetSeqModel:
 
                 # profile - multipl
                 add_entry(bws[task]['contrib.profile'],
-                          hyp_contrib[f'{task}/weighted'][seq.astype(bool)] * si_profile,
+                          hyp_contrib[f'{task}/profile'][seq.astype(bool)] * si_profile,
                           interval, start_idx)
                 add_entry(bws[task]['contrib.counts'],
                           hyp_contrib[f'{task}/count'][seq.astype(bool)] * si_counts,
@@ -417,4 +428,4 @@ class BPNetSeqModel:
         for task in self.tasks:
             for feat in output_feats:
                 bws[task][feat].close()
-        logger.info(f"Done! Files located at: {output_dir}")
+        logger.info(f"Done! Output files stored as: {output_prefix}.*")

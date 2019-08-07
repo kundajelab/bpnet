@@ -21,7 +21,7 @@ def _chrom_sizes(fasta_file):
     """
     from pysam import FastaFile
     fa = FastaFile(fasta_file)
-    chrom_lens = {name: l for name, l in zip(fa.references, fa.lengths)}
+    chrom_lens = OrderedDict([(name, l) for name, l in zip(fa.references, fa.lengths)])
     if len(chrom_lens) == 0:
         raise ValueError(f"no chromosomes found in fasta file: {fasta_file}. "
                          "Make sure the file path is correct and that the fasta index "

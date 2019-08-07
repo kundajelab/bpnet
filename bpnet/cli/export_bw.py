@@ -37,12 +37,12 @@ logger.addHandler(logging.NullHandler())
 @arg('--memfrac-gpu',
      help='what fraction of the GPU memory to use')
 def bpnet_export_bw(model_dir,
-                    output_dir,  # TODO - migrate to prefix
-                    fasta_file=None,  # TODO - also use the fasta file
+                    output_prefix,
+                    fasta_file=None,
                     regions=None,
                     contrib_method='grad',
                     contrib_wildcard='*/profile/wn,*/counts/pre-act',  # specifies which contrib. scores to compute
-                    batch_size=512,
+                    batch_size=256,
                     scale_contribution=False,
                     gpu=0,
                     memfrac_gpu=0.45):
@@ -50,6 +50,7 @@ def bpnet_export_bw(model_dir,
     """
     from pybedtools import BedTool
     from bpnet.modisco.core import Seqlet
+    output_dir = os.path.dirname(output_prefix)
     add_file_logging(output_dir, logger, 'bpnet-export-bw')
     os.makedirs(output_dir, exist_ok=True)
     if gpu is not None:
@@ -74,9 +75,10 @@ def bpnet_export_bw(model_dir,
     regions = list(BedTool(regions).sort())
 
     bp.export_bw(regions=regions,
-                 output_dir=output_dir,
+                 output_prefix=output_prefix,
                  contrib_method=contrib_method,
-                 # TODO - use also contrib_wildcard there
+                 fasta_file=fasta_file,
+                 # TODO - rename pred_summaries
                  pred_summaries=contrib_wildcard.replace("*/", "").split(","),
                  batch_size=batch_size,
                  scale_contribution=scale_contribution,
@@ -84,9 +86,46 @@ def bpnet_export_bw(model_dir,
 
 
 def contrib2bw(contrib_file,
-               output_dir,
-               batch_size=512,
-               scale_contribution=False):
+               output_prefix):
     """Convert the contribution file to bigwigs
     """
-    pass
+    from kipoi.writers import BigWigWriter
+    from bpnet.cli.contrib import ContribFile
+    from bpnet.cli.modisco import get_nonredundant_example_idx
+    output_dir = os.path.dirname(output_prefix)
+    add_file_logging(output_dir, logger, 'contrib2bw')
+    os.makedirs(output_dir, exist_ok=True)
+
+    cf = ContribFile(contrib_file)
+
+    # remove overlapping intervals
+    ranges = cf.get_ranges()
+    keep_idx = get_nonredundant_example_idx(ranges, width=None)
+    cf.include_samples = keep_idx
+    discarded = len(ranges) - len(keep_idx)
+    logger.info(f"{discarded}/{len(ranges)} of ranges will be discarded due to overlapping intervals")
+
+    contrib_scores = cf.available_contrib_scores()  # TODO - implement contrib_wildcard to filter them
+    chrom_sizes = [(k, v) for k, v in cf.get_chrom_sizes().items()]
+    ranges = cf.ranges()
+
+    assert len(ranges) == len(keep_idx)
+
+    for contrib_score in contrib_scores:
+        contrib_dict = cf.get_contrib(contrib_score=contrib_score)
+        contrib_score_name = contrib_score.replace("/", "_")
+
+        for task, contrib in contrib_dict.items():
+            output_file = output_prefix + f'.contrib.{contrib_score_name}.{task}.bw'
+            logger.info(f"Genrating {output_file}")
+            contrib_writer = BigWigWriter(output_file,
+                                          chrom_sizes=chrom_sizes,
+                                          is_sorted=False)
+
+            for idx in range(len(ranges)):
+                contrib_writer.region_write(region={"chr": ranges['chrom'].iloc[idx],
+                                                    "start": ranges['start'].iloc[idx],
+                                                    "end": ranges['end'].iloc[idx]},
+                                            data=contrib[idx])
+            contrib_writer.close()
+    logger.info("Done!")

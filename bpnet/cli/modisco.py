@@ -29,10 +29,6 @@ logger.addHandler(logging.NullHandler())
 # load functions for the modisco directory
 
 
-# ModiscoFile() and ModiscoFiles()
-# TODO - have a ModiscoDir()
-
-
 def load_included_samples(modisco_dir):
     return np.load(os.path.join(modisco_dir, "modisco-run.subset-contrib-file.npy"))
 
@@ -75,7 +71,8 @@ def get_nonredundant_example_idx(ranges, width=200):
     # 1. resize ranges
     ranges['example_idx'] = np.arange(len(ranges))  # make sure
     r = ranges[['chrom', 'start', 'end', 'example_idx']]  # add also the strand information
-    r = resize_interval(r, width, ignore_strand=True)
+    if width is not None:
+        r = resize_interval(r, width, ignore_strand=True)
 
     bt = BedTool.from_dataframe(r)
     btm = bt.sort().merge()
@@ -385,8 +382,8 @@ def modisco_plot(modisco_dir,
     thr_hypothetical_contribs = dict()
     thr_contrib_scores = dict()
     # TODO - generalize this
-    thr_hypothetical_contribs['weighted'] = d.get_hyp_contrib()
-    thr_contrib_scores['weighted'] = d.get_contrib()
+    thr_hypothetical_contribs['profile'] = d.get_hyp_contrib()
+    thr_contrib_scores['profile'] = d.get_contrib()
 
     tasks = d.get_tasks()
 

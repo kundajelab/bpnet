@@ -107,7 +107,7 @@ def get_scores(ref_pred, alt_pred, tasks, motif, seqlen, center_coords):
 
 
 def generate_sim(bpnet, central_motif, side_motif, side_distances,
-                 center_coords=[450, 550], repeat=128, contribution=['count', 'weighted'], correct=False):
+                 center_coords=[450, 550], repeat=128, contribution=['count', 'profile'], correct=False):
     outl = []
     tasks = bpnet.tasks
     seqlen = bpnet.input_seqlen()
@@ -243,7 +243,7 @@ def plot_sim_motif_col(dfm, tasks, variables, motifs, subfigsize=(4, 2), alpha=0
         fig.legend(tasks, title="Tasks")
 
 
-def interactive_tracks(profiles, central_motif, side_motif, contrib_score='weighted'):
+def interactive_tracks(profiles, central_motif, side_motif, contrib_score='profile'):
     def interactive_tracks_build_fn(profiles, central_motif, side_motif, contrib_score):
         p = {k: v['profile'] for k, v in profiles}
         contrib = {k: {task: v['contrib'][task][contrib_score].max(axis=-1) for task in v['contrib']}

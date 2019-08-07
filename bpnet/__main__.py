@@ -2,7 +2,7 @@ import argh
 
 from bpnet.cli.train import bpnet_train, dataspec_stats
 from bpnet.cli.contrib import bpnet_contrib, list_contrib
-from bpnet.cli.export_bw import bpnet_export_bw
+from bpnet.cli.export_bw import bpnet_export_bw, contrib2bw
 from bpnet.cli.modisco import (bpnet_modisco_run, cwm_scan,
                                chip_nexus_analysis, modisco_export_seqlets)
 
@@ -28,6 +28,7 @@ def main():
         bpnet_contrib,
         list_contrib,
         bpnet_export_bw,
+        contrib2bw,
         bpnet_modisco_run,
         cwm_scan,
         modisco_export_seqlets,

@@ -192,7 +192,7 @@ def vdom_metacluster(mr, metacluster, figdir, total_counts, dfp=None, is_open=Tr
     def render_act(task, act):
         """Render the activity vector
         """
-        task = task.replace("/weighted", "")  # omit weighted
+        task = task.replace("/weighted", "").replace("/profile", "")  # omit weighted or profile
         if act == 0:
             return ""
         elif act < 0:
