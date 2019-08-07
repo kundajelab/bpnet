@@ -609,7 +609,7 @@ def cwm_scan(modisco_dir,
     scan_patterns = [longer_pattern(pn) for pn in scan_patterns]
 
     if add_profile_features:
-        profile = cf.get_profile()
+        profile = cf.get_profiles()
         logger.info("Profile features will also be added to dfi")
 
     for pattern_name in tqdm(mf.patterns()):
