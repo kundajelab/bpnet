@@ -38,7 +38,8 @@ def shorten_pattern(pattern):
         # input is already a short pattern
         return pattern
     else:
-        return pattern.replace("metacluster_", "m").replace("/", "_").replace("pattern_", "p")
+        # two slashes -> prepended name
+        return pattern.replace("metacluster_", "m").replace("/pattern_", "_p")
 
 
 def longer_pattern(shortpattern):
@@ -48,7 +49,7 @@ def longer_pattern(shortpattern):
         # input is already a long pattern
         return shortpattern
     else:
-        return shortpattern.replace("_", "/").replace("m", "metacluster_").replace("p", "pattern_")
+        return shortpattern.replace("_p", "/pattern_").replace("m", "metacluster_")
 
 
 def extract_name_short(ps):

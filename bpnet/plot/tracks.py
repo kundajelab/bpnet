@@ -260,7 +260,7 @@ def to_neg(track):
     return track
 
 
-def plot_tracks(tracks, seqlets=[],
+def plot_tracks(tracks, seqlets=None,
                 title=None,
                 rotate_y=90,
                 legend=False,
@@ -315,9 +315,10 @@ def plot_tracks(tracks, seqlets=[],
             spine_subset(ax, max(yl[0], 0), yl[1])
 
         # TODO allow to specify separate seqlets for different regions (e.g. via dicts)
-        for seqlet in seqlets:
-            if seqlet.seqname == track:
-                seqlet_plot_fn(seqlet, ax, add_label=True)
+        if seqlets is not None:
+            for seqlet in seqlets:
+                if seqlet.seqname == track:
+                    seqlet_plot_fn(seqlet, ax, add_label=True)
         # ax.set_ylabel(track)
         if ylab:
             if rotate_y == 90:
@@ -331,9 +332,6 @@ def plot_tracks(tracks, seqlets=[],
             ax.xaxis.set_ticks_position('none')
         if i == 0 and title is not None:
             ax.set_title(title)
-
-        # if seqlets:
-        #    pass
 
     # add ticks to the final axis
     ax.xaxis.set_major_locator(ticker.AutoLocator())
