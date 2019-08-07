@@ -436,4 +436,4 @@ class BPNetSeqModel:
         for task in self.tasks:
             for feat in output_feats:
                 bws[task][feat].close()
-        logger.info(f"Done! Output files stored as: {output_prefix}.*")
+        logger.info(f"Done! Output files stored as: {output_prefix}{delim}*")
