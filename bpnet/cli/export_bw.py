@@ -48,6 +48,7 @@ def bpnet_export_bw(model_dir,
                     memfrac_gpu=0.45):
     """Export model predictions and contribution scores to big-wig files
     """
+    from pybedtools import BedTool
     from bpnet.modisco.core import Seqlet
     add_file_logging(output_dir, logger, 'bpnet-export-bw')
     os.makedirs(output_dir, exist_ok=True)
