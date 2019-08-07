@@ -341,10 +341,7 @@ def dist_n_modes(values):
     from scipy.stats import gaussian_kde
     from scipy.signal import argrelextrema
 
-    try:
-        density = gaussian_kde(values)
-    except Exception:
-
+    density = gaussian_kde(values)
     xs = np.linspace(values.min(), values.max(), 100)
     smooth_hist = density(xs)
     maxima = argrelextrema(smooth_hist, np.greater)
