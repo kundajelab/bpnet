@@ -111,12 +111,14 @@ def contrib2bw(contrib_file,
 
     assert len(ranges) == len(keep_idx)
 
+    delim = "." if not output_prefix.endswith("/") else ""
+
     for contrib_score in contrib_scores:
         contrib_dict = cf.get_contrib(contrib_score=contrib_score)
         contrib_score_name = contrib_score.replace("/", "_")
 
         for task, contrib in contrib_dict.items():
-            output_file = output_prefix + f'.contrib.{contrib_score_name}.{task}.bw'
+            output_file = output_prefix + f'{delim}.contrib.{contrib_score_name}.{task}.bw'
             logger.info(f"Genrating {output_file}")
             contrib_writer = BigWigWriter(output_file,
                                           chrom_sizes=chrom_sizes,

@@ -343,7 +343,8 @@ class BPNetSeqModel:
         for task in self.tasks:
             bws[task] = {}
             for feat in output_feats:
-                bw_preds_pos = pyBigWig.open(f"{output_prefix}.{task}.{feat}.bw", "w")
+                delim = "." if not output_prefix.endswith("/") else ""
+                bw_preds_pos = pyBigWig.open(f"{output_prefix}{delim}{task}.{feat}.bw", "w")
                 bw_preds_pos.addHeader(genome)
                 bws[task][feat] = bw_preds_pos
 
@@ -360,12 +361,16 @@ class BPNetSeqModel:
             assert start_idx < len(arr)
 
             if interval.stop - interval.start != len(arr):
-                logger.error(f"interval.stop - interval.start ({interval.stop - interval.start})!= len(arr) ({len(arr)})")
-                logger.error(f"Skipping the entry: {interval}")
+                logger.warning(f"interval.stop - interval.start ({interval.stop - interval.start})!= len(arr) ({len(arr)})")
+                logger.warning(f"Skipping the entry: {interval}")
                 return
             bw.addEntries(interval.chrom, interval.start + start_idx,
                           values=arr[start_idx:],
                           span=1, step=1)
+
+        def to_1d_contrib(hyp_contrib, seq):
+            # mask the hyp_contrib + add them up
+            return (hyp_contrib * seq).sum(axis=-1)
 
         # interval logic to handle overlapping intervals
         #   assumption: all intervals are sorted w.r.t the start coordinate
@@ -414,11 +419,14 @@ class BPNetSeqModel:
                     si_counts = 1
 
                 # profile - multipl
+                if np.all(seq.astype(bool).sum(axis=-1).max() == 1):
+                    continue
+
                 add_entry(bws[task]['contrib.profile'],
-                          hyp_contrib[f'{task}/profile'][seq.astype(bool)] * si_profile,
+                          to_1d_contrib(hyp_contrib[f'{task}/profile'], seq) * si_profile,
                           interval, start_idx)
                 add_entry(bws[task]['contrib.counts'],
-                          hyp_contrib[f'{task}/count'][seq.astype(bool)] * si_counts,
+                          to_1d_contrib(hyp_contrib[f'{task}/count'], seq) * si_counts,
                           interval, start_idx)
 
             prev_stop = max(interval.stop, prev_stop)
