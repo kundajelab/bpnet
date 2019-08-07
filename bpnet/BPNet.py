@@ -20,7 +20,6 @@ import numpy as np
 import tensorflow as tf
 from genomelake.extractors import BigwigExtractor
 import pyBigWig
-from pysam import FastaFile
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -304,6 +303,7 @@ class BPNetSeqModel:
           scale_contribution: if True, multiple the contribution scores by the predicted count value
           chromosomes: a list of chromosome names consisting a genome
         """
+        from pysam import FastaFile
         #          pred_summary: which operation to use for the profile gradients
         logger.info("Get model predictions and contribution scores")
         out = self.predict_regions(regions,

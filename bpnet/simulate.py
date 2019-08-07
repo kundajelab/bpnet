@@ -13,7 +13,7 @@ from bpnet.functions import mean, softmax
 from tqdm import tqdm
 from kipoi_utils.utils import unique_list
 import matplotlib.pyplot as plt
-from bpnet.modisco.results import Seqlet
+from bpnet.modisco.core import Seqlet
 
 
 def motif_coords(motif, position):

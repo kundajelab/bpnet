@@ -3,10 +3,10 @@ import os
 import subprocess
 import numpy as np
 import pandas as pd
+import attr
 from tqdm import tqdm
 from copy import deepcopy
-from bpnet.modisco.utils import ic_scale
-from bpnet.modisco.results import trim_pssm_idx, Seqlet
+from bpnet.modisco.utils import ic_scale, trim_pssm_idx
 from concise.utils.pwm import DEFAULT_LETTER_TO_INDEX, DEFAULT_INDEX_TO_LETTER
 from collections import OrderedDict
 from bpnet.plot.tracks import plot_tracks, filter_tracks, rc_tracks, skip_nan_tracks, pad_track, pad_tracks
@@ -16,12 +16,6 @@ from bpnet.modisco.utils import shorten_pattern
 from bpnet.modisco.sliding_similarities import sliding_similarity, pssm_scan, pad_same
 from bpnet.stats import fdr_threshold_norm_right, quantile_norm, low_medium_high, get_metric
 from bpnet.functions import mean
-from bpnet.modisco.results import resize_seqlets
-
-# backcompatibility
-from bpnet.modisco.pattern_instances import (dfi2seqlets, profile_features,
-                                             dfi_filter_valid, annotate_profile)
-from kipoi_utils.data_utils import get_dataset_item
 
 # TODO - add `stacked_seqlet_tracks` to Profile `attrs` and pickle it to `patterns.pkl`
 #   - make sure you shift and rc the seqlet when extracting it
@@ -246,7 +240,7 @@ class Pattern:
     def write_meme_file(self, bg, fname):
         """write a temporary meme file to be used by tomtom
         Args:
-           bg: background 
+           bg: background
         """
         ppm = self.seq  # position probability matrix
         f = open(fname, 'w')
@@ -278,10 +272,10 @@ class Pattern:
             n: number of top matches to return, ordered by p-value
             temp_dir: directory for storing temp files
             trim_threshold: the ppm is trimmed from left till first position for which
-                probability for any base pair >= trim_threshold. Similarly from right. 
+                probability for any base pair >= trim_threshold. Similarly from right.
         Returns:
             list: a list of up to n results returned by tomtom, each entry is a
-                dictionary with keys 'Target ID', 'p-value', 'E-value', 'q-value'  
+                dictionary with keys 'Target ID', 'p-value', 'E-value', 'q-value'
         """
         fname = os.path.join(temp_dir, 'query_file')
         # trim and prepare meme file
@@ -327,7 +321,7 @@ class Pattern:
         """Note: profile is left intact
         """
         if anchor != 'center':
-            raise NotImplemented("Only anchor='center' is implemented at the moment")
+            raise NotImplementedError("Only anchor='center' is implemented at the moment")
         # if self.profile is not None:
         #    raise ValueError("resize() not possible with profile != None")
         if new_len < len(self):
@@ -342,7 +336,7 @@ class Pattern:
         """
         """
         if anchor != 'center':
-            raise NotImplemented("Only anchor='center' is implemented at the moment")
+            raise NotImplementedError("Only anchor='center' is implemented at the moment")
         # if self.profile is not None:
         #    raise ValueError("resize() not possible with profile != None")
         if new_len < self.len_profile():
@@ -559,7 +553,7 @@ class Pattern:
           pattern: other Pattern
           track: which track to use
           metric: which metric to use
-          max_shift: if specified the shift of the motif exceeds some threshold, 
+          max_shift: if specified the shift of the motif exceeds some threshold,
             then the alignemnt will not be performed
 
         Returns:
@@ -730,9 +724,9 @@ class Pattern:
           tasks: list of tasks
           match, contribution: returned by pattern.scan_contribution
           seq_match: optional. returned by pattern.scan_seq
-          norm_df: match scores for the seqlets discovered by modisco. Obtained by `get_centroid_seqlet_matches`
-            if not None, it will be used as normalization. all scores with match< min(norm_match)
-            will be discarded
+          norm_df: match scores for the seqlets discovered by modisco.
+            Obtained by `bpnet.cli.modisco.cwm_scan_seqlets` if not None, it will be used
+            as normalization. all scores with match< min(norm_match) will be discarded
           fdr: fdr threshold to use when thresholding the contribution matches
           skip_percentile: points from the percentile > skip_percentile will be skipped when
             estimating the Gaussian null-distribution
@@ -1155,6 +1149,200 @@ class StackedSeqletContrib:
 
     def split(self, i):
         return self[np.arange(i)], self[np.arange(i, len(self))]
+
+
+@attr.s
+class Seqlet:
+    # Have a proper seqlet class (interiting from the interval?)
+
+    seqname = attr.ib()
+    start = attr.ib()
+    end = attr.ib()
+    name = attr.ib()
+    strand = attr.ib(".")
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(seqname=d['example'],
+                   start=d['start'],
+                   end=d['end'],
+                   name="",
+                   strand="-" if d['rc'] else "+")
+
+    def center(self, ignore_rc=False):
+        if ignore_rc:
+            add_offset = 0
+        else:
+            add_offset = 0 if self.strand == "-" else 1
+        delta = (self.end + self.start) % 2
+        center = (self.end + self.start) // 2
+        return center + add_offset * delta
+
+    def set_seqname(self, seqname):
+        obj = self.copy()
+        obj.seqname = seqname
+        return obj
+
+    def shift(self, x):
+        obj = self.copy()
+        obj.start = self.start + x
+        obj.end = self.end + x
+        return obj
+
+    def swap_strand(self):
+        obj = self.copy()
+        if obj.strand == "+":
+            obj.strand = "-"
+        elif obj.strand == "-":
+            obj.strand = "+"
+        return obj
+
+    def to_dict(self):
+        return OrderedDict([("seqname", self.seqname),
+                            ("start", self.start),
+                            ("end", self.end),
+                            ("name", self.name),
+                            ("strand", self.strand)])
+
+    def __getitem__(self, item):
+        if item == "example":
+            return self.seqname
+        elif item == "start":
+            return self.start
+        elif item == "end":
+            return self.end
+        elif item == "pattern":
+            return self.name
+        elif item == "rc":
+            return self.rc
+        else:
+            raise ValueError("item needs to be from:"
+                             "example, start, end, pattern, rc")
+
+    @property
+    def rc(self):
+        return self.strand == "-"
+
+    def copy(self):
+        return deepcopy(self)
+
+    def contains(self, seqlet, ignore_strand=True):
+        """Check if one seqlet contains the other seqlet
+        """
+        if self.seqname != seqlet.seqname:
+            return False
+        if self.start > seqlet.start:
+            return False
+        if self.end < seqlet.end:
+            return False
+        if not ignore_strand and self.strand != seqlet.strand:
+            return False
+        return True
+
+    def extract(self, x, rc_fn=lambda x: x[::-1, ::-1]):
+
+        if isinstance(x, OrderedDict):
+            return OrderedDict([(track, self.extract(arr, rc_fn))
+                                for track, arr in x.items()])
+        elif isinstance(x, dict):
+            return {track: self.extract(arr, rc_fn)
+                    for track, arr in x.items()}
+        elif isinstance(x, list):
+            return [(track, self.extract(arr, rc_fn))
+                    for track, arr in x]
+        else:
+            # Normal array
+            def optional_rc(x, is_rc):
+                if is_rc:
+                    return rc_fn(x)
+                else:
+                    return x
+            return optional_rc(
+                x[self['example']][self['start']:self['end']],
+                self['rc']
+            )
+
+    def resize(self, width):
+        obj = deepcopy(self)
+
+        if width is None or self.width() == width:
+            # no need to resize
+            return obj
+
+        if not self['rc']:
+            obj.start = self.center() - width // 2 - width % 2
+            obj.end = self.center() + width // 2
+        else:
+            obj.start = self.center() - width // 2
+            obj.end = self.center() + width // 2 + width % 2
+        return obj
+
+    def width(self):
+        return self.end - self.start
+
+    def trim(self, i, j):
+        if i == 0 and j == self.width():
+            return self
+        obj = self.copy()
+        assert j > i
+        if self.strand == "-":
+            w = self.width()
+            obj.start = self.start + w - j
+            obj.end = self.start + w - i
+        else:
+            obj.start = self.start + i
+            obj.end = self.start + j
+        return obj
+
+    def valid_resize(self, width, max_width):
+        if width is None:
+            width = self.width()
+        return self.center() > width // 2 and self.center() < max_width - width // 2
+
+    def pattern_align(self, offset=0, use_rc=False):
+        """Align the seqlet accoring to the pattern alignmet
+
+        Example:
+        `seqlet.pattern_align(**pattern.attrs['align'])`
+        """
+        seqlet = self.copy()
+        if use_rc:
+            seqlet = seqlet.swap_strand()
+        return seqlet.shift((seqlet.rc * 2 - 1) * offset)
+
+
+def resize_seqlets(seqlets, resize_width, seqlen):
+    return [s.resize(resize_width) for s in seqlets
+            if s.valid_resize(resize_width, seqlen)]
+
+
+def labelled_seqlets2df(seqlets):
+    """Convert a list of sequences to a dataframe
+
+    Args:
+      seqlets: list of seqlets returned by find_instances
+
+    Returns:
+      pandas.DataFrame with one row per seqlet
+    """
+    def seqlet2row(seqlet):
+        """Convert a single seqlete to a pandas array
+        """
+        return OrderedDict([
+            ("example_idx", seqlet.coor.example_idx),
+            ("seqlet_start", seqlet.coor.start),
+            ("seqlet_end", seqlet.coor.end),
+            ("seqlet_is_revcomp", seqlet.coor.is_revcomp),
+            ("seqlet_score", seqlet.coor.score),
+            ("metacluster", seqlet.metacluster),
+            ("pattern", seqlet.pattern),
+            ("percnormed_score", seqlet.score_result.percnormed_score),
+            ("score", seqlet.score_result.score),
+            ("offset", seqlet.score_result.offset),
+            ("revcomp", seqlet.score_result.revcomp),
+        ])
+
+    return pd.DataFrame([seqlet2row(seqlet) for seqlet in seqlets])
 
 
 def shuffle_seqlets(s1, s2):

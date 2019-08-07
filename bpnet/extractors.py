@@ -1,17 +1,16 @@
 import numpy as np
 from tqdm import tqdm
 import attr
-from pysam import FastaFile
 from concise.preprocessing import encodeDNA
 from joblib import Parallel, delayed
 from collections import OrderedDict
-import pybedtools
 
 
 # utility functions
 def _chrom_names(fasta_file):
     """Get the list of chromosome names from a fasta file
     """
+    from pysam import FastaFile
     with FastaFile(fasta_file) as fa:
         chroms = list(fa.references)
     return chroms
@@ -20,6 +19,7 @@ def _chrom_names(fasta_file):
 def _chrom_sizes(fasta_file):
     """Get the chromosome sizes for a fasta file
     """
+    from pysam import FastaFile
     fa = FastaFile(fasta_file)
     chrom_lens = {name: l for name, l in zip(fa.references, fa.lengths)}
     if len(chrom_lens) == 0:
@@ -65,6 +65,7 @@ class Interval:
         self.stop = value
 
     def to_pybedtools(self):
+        import pybedtools
         return pybedtools.create_interval_from_list([self.chrom,
                                                      self.start,
                                                      self.stop,

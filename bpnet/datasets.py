@@ -3,9 +3,6 @@ import numpy as np
 from copy import deepcopy
 import json
 from pathlib import Path
-from pysam import FastaFile
-from pybedtools import BedTool, Interval
-import pybedtools
 from kipoi.data import Dataset
 # try:
 # import torch
@@ -139,6 +136,7 @@ class TsvReader:
     def __getitem__(self, idx):
         """Returns (pybedtools.Interval, labels)
         """
+        from pybedtools import Interval
         # TODO - speedup using: iat[idx, .]
         # interval = Interval(self.dfm.iat[idx, 0],  # chrom
         #                     self.dfm.iat[idx, 1],  # start
@@ -318,6 +316,8 @@ class StrandedProfile(Dataset):
         return self.tsv.get_targets()
 
     def __getitem__(self, idx):
+        from pybedtools import Interval
+
         if self.fasta_extractor is None:
             # first call
             # Use normal fasta/bigwig extractors

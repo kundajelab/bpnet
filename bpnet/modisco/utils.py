@@ -60,3 +60,23 @@ def extract_name_short(ps):
 def extract_name_long(ps):
     m, p = ps.split("/")
     return {"metacluster": int(m.replace("metacluster_", "")), "pattern": int(p.replace("pattern_", ""))}
+
+
+def trim_pssm_idx(pssm, frac=0.05):
+    if frac == 0:
+        return 0, len(pssm)
+    pssm = np.abs(pssm)
+    threshold = pssm.sum(axis=-1).max() * frac
+    for i in range(len(pssm)):
+        if pssm[i].sum(axis=-1) > threshold:
+            break
+
+    for j in reversed(range(len(pssm))):
+        if pssm[j].sum(axis=-1) > threshold:
+            break
+    return i, j + 1  # + 1 is for using 0-based indexing
+
+
+def trim_pssm(pssm, frac=0.05):
+    i, j = trim_pssm_idx(pssm, frac=frac)
+    return pssm[i:j]

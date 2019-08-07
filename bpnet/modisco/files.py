@@ -1,22 +1,20 @@
-"""Implementes ModiscoResult class
+"""Implementes ModiscoFile class
 """
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 import os
 from copy import deepcopy
 import yaml
 from bpnet.functions import mean
 import h5py
-from concise.utils.helper import write_json, read_json
+from bpnet.utils import write_json, read_json
 from kipoi.readers import HDF5Reader
 import numpy as np
-from pybedtools import BedTool, Interval
 from matplotlib.ticker import FormatStrFormatter
 import pandas as pd
 from bpnet.plot.utils import show_figure
-from bpnet.modisco.utils import bootstrap_mean, nan_like, ic_scale
+from bpnet.modisco.utils import bootstrap_mean, nan_like, ic_scale, trim_pssm_idx, trim_pssm
 import matplotlib.pyplot as plt
 import seaborn as sns
-import attr
 from bpnet.plot.vdom import vdom_modisco
 from bpnet.plot.utils import seqlogo_clean, strip_axis
 from bpnet.extractors import Interval
@@ -37,26 +35,6 @@ def group_seqlets(seqlets, by='seqname'):
     for seqlet in seqlets:
         groups[getattr(seqlet, by)].append(seqlet)
     return groups
-
-
-def trim_pssm_idx(pssm, frac=0.05):
-    if frac == 0:
-        return 0, len(pssm)
-    pssm = np.abs(pssm)
-    threshold = pssm.sum(axis=-1).max() * frac
-    for i in range(len(pssm)):
-        if pssm[i].sum(axis=-1) > threshold:
-            break
-
-    for j in reversed(range(len(pssm))):
-        if pssm[j].sum(axis=-1) > threshold:
-            break
-    return i, j + 1  # + 1 is for using 0-based indexing
-
-
-def trim_pssm(pssm, frac=0.05):
-    i, j = trim_pssm_idx(pssm, frac=frac)
-    return pssm[i:j]
 
 
 def match_seqlets(unlabelled_seqlets, labelled_seqlets):
@@ -101,7 +79,7 @@ def match_seqlets(unlabelled_seqlets, labelled_seqlets):
 # TODO - rename this to ModiscoFile
 
 
-class ModiscoResult:
+class ModiscoFile:
 
     def __init__(self, fpath):
         self.fpath = fpath
@@ -188,6 +166,7 @@ class ModiscoResult:
         ax.set_ylabel("Tasks")
 
     def parse_seqlet(cls, s):
+        from bpnet.modisco.core import Seqlet
         return Seqlet.from_dict({x.split(":")[0]: yaml.load(x.split(":")[1])
                                  for x in s.decode("utf8").split(",")})
 
@@ -415,6 +394,7 @@ class ModiscoResult:
         """
         assert position in ['relative', 'absolute']
         if position == 'absolute':
+            from pybedtools import BedTool
             assert example_intervals is not None
             os.makedirs(output_dir, exist_ok=True)
             BedTool(example_intervals).saveas(os.path.join(output_dir, "scored_regions.bed"))
@@ -554,16 +534,17 @@ class ModiscoResult:
                 plt.gca().axison = False
 
 
-class MultipleModiscoResult:
-    def __init__(self, modisco_paths):
-        self.modisco_paths = modisco_paths
-        # load the modisco directory
-        self.mr_dict = {k: ModiscoResult(v).open()
-                        for k, v in modisco_paths.items()}
+class ModiscoFileGroup:
+    def __init__(self, mf_dict):
+        """
+        Args:
+          mf_dict: Modisco
+        """
+        self.mf_dict = mf_dict
 
     def close(self):
-        for mr in self.mr_dict.values():
-            mr.close()
+        for mf in self.mf_dict.values():
+            mf.close()
 
     def parse_pattern_name(self, pattern_name):
         task, name = pattern_name.split("/", 1)
@@ -573,24 +554,24 @@ class MultipleModiscoResult:
 
     def get_pattern(self, pattern_name):
         task, name = self.parse_pattern_name(pattern_name)
-        p = self.mr_dict[task].get_pattern(name)
+        p = self.mf_dict[task].get_pattern(name)
         p.name = pattern_name
         return p
 
     def n_seqlets(self, pattern_name):
         task, name = self.parse_pattern_name(pattern_name)
-        return self.mr_dict[task].n_seqlets(*name.split("/"))
+        return self.mf_dict[task].n_seqlets(*name.split("/"))
 
     def tasks(self):
-        return list({x for mr in self.mr_dict.values()
-                     for x in mr.tasks()})
+        return list({x for mf in self.mf_dict.values()
+                     for x in mf.tasks()})
 
     def get_seqlet_intervals(self, pattern_name,
                              trim_frac=0,
                              as_df=False):
         task, name = self.parse_pattern_name(pattern_name)
-        mr = self.mr_dict[task]
-        return mr.get_seqlet_intervals(self,
+        mf = self.mf_dict[task]
+        return mf.get_seqlet_intervals(self,
                                        name,
                                        trim_frac=trim_frac,
                                        as_df=as_df)
@@ -599,8 +580,8 @@ class MultipleModiscoResult:
         """List all patterns
         """
         return [task + "/" + pn
-                for task, mr in self.mr_dict.items()
-                for pn in mr.patterns()]
+                for task, mf in self.mf_dict.items()
+                for pn in mf.patterns()]
 
     def get_all_patterns(self):
         return [self.get_pattern(pn)
@@ -608,198 +589,4 @@ class MultipleModiscoResult:
 
     def _get_seqlets(self, pattern_name, trim_frac=0):
         task, name = self.parse_pattern_name(pattern_name)
-        return self.mr_dict[task]._get_seqlets(name, trim_frac=trim_frac)
-
-
-@attr.s
-class Seqlet:
-    # Have a proper seqlet class (interiting from the interval?)
-
-    seqname = attr.ib()
-    start = attr.ib()
-    end = attr.ib()
-    name = attr.ib()
-    strand = attr.ib(".")
-
-    @classmethod
-    def from_dict(cls, d):
-        return cls(seqname=d['example'],
-                   start=d['start'],
-                   end=d['end'],
-                   name="",
-                   strand="-" if d['rc'] else "+")
-
-    def center(self, ignore_rc=False):
-        if ignore_rc:
-            add_offset = 0
-        else:
-            add_offset = 0 if self.strand == "-" else 1
-        delta = (self.end + self.start) % 2
-        center = (self.end + self.start) // 2
-        return center + add_offset * delta
-
-    def set_seqname(self, seqname):
-        obj = self.copy()
-        obj.seqname = seqname
-        return obj
-
-    def shift(self, x):
-        obj = self.copy()
-        obj.start = self.start + x
-        obj.end = self.end + x
-        return obj
-
-    def swap_strand(self):
-        obj = self.copy()
-        if obj.strand == "+":
-            obj.strand = "-"
-        elif obj.strand == "-":
-            obj.strand = "+"
-        return obj
-
-    def to_dict(self):
-        return OrderedDict([("seqname", self.seqname),
-                            ("start", self.start),
-                            ("end", self.end),
-                            ("name", self.name),
-                            ("strand", self.strand)])
-
-    def __getitem__(self, item):
-        if item == "example":
-            return self.seqname
-        elif item == "start":
-            return self.start
-        elif item == "end":
-            return self.end
-        elif item == "pattern":
-            return self.name
-        elif item == "rc":
-            return self.rc
-        else:
-            raise ValueError("item needs to be from:"
-                             "example, start, end, pattern, rc")
-
-    @property
-    def rc(self):
-        return self.strand == "-"
-
-    def copy(self):
-        return deepcopy(self)
-
-    def contains(self, seqlet, ignore_strand=True):
-        """Check if one seqlet contains the other seqlet
-        """
-        if self.seqname != seqlet.seqname:
-            return False
-        if self.start > seqlet.start:
-            return False
-        if self.end < seqlet.end:
-            return False
-        if not ignore_strand and self.strand != seqlet.strand:
-            return False
-        return True
-
-    def extract(self, x, rc_fn=lambda x: x[::-1, ::-1]):
-
-        if isinstance(x, OrderedDict):
-            return OrderedDict([(track, self.extract(arr, rc_fn))
-                                for track, arr in x.items()])
-        elif isinstance(x, dict):
-            return {track: self.extract(arr, rc_fn)
-                    for track, arr in x.items()}
-        elif isinstance(x, list):
-            return [(track, self.extract(arr, rc_fn))
-                    for track, arr in x]
-        else:
-            # Normal array
-            def optional_rc(x, is_rc):
-                if is_rc:
-                    return rc_fn(x)
-                else:
-                    return x
-            return optional_rc(
-                x[self['example']][self['start']:self['end']],
-                self['rc']
-            )
-
-    def resize(self, width):
-        obj = deepcopy(self)
-
-        if width is None or self.width() == width:
-            # no need to resize
-            return obj
-
-        if not self['rc']:
-            obj.start = self.center() - width // 2 - width % 2
-            obj.end = self.center() + width // 2
-        else:
-            obj.start = self.center() - width // 2
-            obj.end = self.center() + width // 2 + width % 2
-        return obj
-
-    def width(self):
-        return self.end - self.start
-
-    def trim(self, i, j):
-        if i == 0 and j == self.width():
-            return self
-        obj = self.copy()
-        assert j > i
-        if self.strand == "-":
-            w = self.width()
-            obj.start = self.start + w - j
-            obj.end = self.start + w - i
-        else:
-            obj.start = self.start + i
-            obj.end = self.start + j
-        return obj
-
-    def valid_resize(self, width, max_width):
-        if width is None:
-            width = self.width()
-        return self.center() > width // 2 and self.center() < max_width - width // 2
-
-    def pattern_align(self, offset=0, use_rc=False):
-        """Align the seqlet accoring to the pattern alignmet
-
-        Example:
-        `seqlet.pattern_align(**pattern.attrs['align'])`
-        """
-        seqlet = self.copy()
-        if use_rc:
-            seqlet = seqlet.swap_strand()
-        return seqlet.shift((seqlet.rc * 2 - 1) * offset)
-
-
-def resize_seqlets(seqlets, resize_width, seqlen):
-    return [s.resize(resize_width) for s in seqlets
-            if s.valid_resize(resize_width, seqlen)]
-
-
-def labelled_seqlets2df(seqlets):
-    """Convert a list of sequences to a dataframe
-
-    Args:
-      seqlets: list of seqlets returned by find_instances
-
-    Returns:
-      pandas.DataFrame with one row per seqlet
-    """
-    def seqlet2row(seqlet):
-        """Convert a single seqlete to a pandas array
-        """
-        return OrderedDict([
-            ("example_idx", seqlet.coor.example_idx),
-            ("seqlet_start", seqlet.coor.start),
-            ("seqlet_end", seqlet.coor.end),
-            ("seqlet_is_revcomp", seqlet.coor.is_revcomp),
-            ("seqlet_score", seqlet.coor.score),
-            ("metacluster", seqlet.metacluster),
-            ("pattern", seqlet.pattern),
-            ("percnormed_score", seqlet.score_result.percnormed_score),
-            ("score", seqlet.score_result.score),
-            ("offset", seqlet.score_result.offset),
-            ("revcomp", seqlet.score_result.revcomp),
-        ])
-
-    return pd.DataFrame([seqlet2row(seqlet) for seqlet in seqlets])
+        return self.mf_dict[task]._get_seqlets(name, trim_frac=trim_frac)

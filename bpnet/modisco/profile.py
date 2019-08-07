@@ -4,8 +4,8 @@ from tqdm import tqdm
 import numpy as np
 from collections import OrderedDict
 
-from bpnet.modisco.results import resize_seqlets, extract_signal
-from bpnet.modisco.core import dfi2seqlets
+from bpnet.plot.profiles import extract_signal
+from bpnet.modisco.core import dfi2seqlets, resize_seqlets, resize_seqlets
 from bpnet.simulate import profile_sim_metrics
 from bpnet.stats import quantile_norm
 

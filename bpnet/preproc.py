@@ -3,10 +3,8 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 from copy import deepcopy
-import pybedtools
 from bpnet.external.deeplift.dinuc_shuffle import dinuc_shuffle
 from concise.preprocessing.sequence import one_hot2string, encodeDNA, DNA
-from pybedtools import Interval, BedTool
 from scipy.ndimage.filters import gaussian_filter1d
 import gin
 import random
@@ -102,7 +100,8 @@ def resize_interval(interval, width, ignore_strand=False):
 
 
 def update_interval(interval, start, end):
-    if isinstance(interval, Interval):
+    import pybedtools
+    if isinstance(interval, pybedtools.Interval):
         name = interval.name if interval.name is not None else ''
         return pybedtools.create_interval_from_list([interval.chrom,
                                                      start,
@@ -118,7 +117,8 @@ def update_interval(interval, start, end):
 
 
 def update_interval_strand(interval, strand):
-    if isinstance(interval, Interval):
+    import pybedtools
+    if isinstance(interval, pybedtools.Interval):
         name = interval.name if interval.name is not None else ''
         return pybedtools.create_interval_from_list([interval.chrom,
                                                      interval.start,
@@ -170,28 +170,6 @@ class IntervalAugmentor:
             interval = random_strand(interval)
         # Return the interval
         return shift_interval(interval, shift)
-
-
-def label_bed(a, b_dict):
-    """Compute if any feature overlaps with the bed file
-
-    Args:
-      a: bed file of interest
-      b: list of bed files
-    """
-    # load the pandas dataframe
-    dfg = BedTool(a).to_dataframe()
-    dfg['name'] = dfg.index
-    btg = BedTool.from_dataframe(dfg)
-
-    for task, b in b_dict.items():
-        feature = f'task/{task}'
-        intersected = btg.intersect(BedTool(b), wa=True, u=True).to_dataframe()['name']
-        dfg[feature] = 0
-        dfg.loc[intersected, feature] = 1
-    del dfg['name']
-    dfg = dfg.rename(columns={"chrom": "#chrom"})
-    return dfg
 
 
 def dfint_intersects(dfa, dfb):

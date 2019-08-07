@@ -13,11 +13,9 @@ from pathlib import Path
 from bpnet.utils import write_pkl, render_ipynb, remove_exists, add_file_logging, create_tf_session, pd_first_cols
 from bpnet.cli.contrib import ContribFile
 from bpnet.cli.train import _get_gin_files, log_gin_config
-# ContribFile
-from bpnet.modisco.results import ModiscoResult
-from concise.utils.helper import write_json, read_json
+from bpnet.modisco.files import ModiscoFile
+from bpnet.utils import write_json, read_json
 import gin
-import h5py
 import numpy as np
 import inspect
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -31,7 +29,7 @@ logger.addHandler(logging.NullHandler())
 # load functions for the modisco directory
 
 
-# ModiscoFile() and ModiscoResults()
+# ModiscoFile() and ModiscoFiles()
 # TODO - have a ModiscoDir()
 
 
@@ -106,6 +104,7 @@ def modisco_run(output_path,  # specified by bpnet_modisco_run
       workflow: TfModiscoWorkflow objects
       report: path to the report ipynb
     """
+    import h5py
     modisco_results = workflow(task_names=task_names,
                                contrib_scores=contrib_scores,
                                hypothetical_contribs=hypothetical_contribs,
@@ -371,7 +370,7 @@ def modisco_plot(modisco_dir,
     output_dir.parent.mkdir(parents=True, exist_ok=True)
 
     # load modisco
-    mr = ModiscoResult(f"{modisco_dir}/modisco.h5")
+    mf = ModiscoFile(f"{modisco_dir}/modisco.h5")
 
     if contribsf is not None:
         d = contribsf
@@ -408,8 +407,8 @@ def modisco_plot(modisco_dir,
     thr_contrib_scores = OrderedDict(flatten(thr_contrib_scores, separator='/'))
     # -------------------------------------------------
 
-    all_seqlets = mr.seqlets()
-    all_patterns = mr.patterns()
+    all_seqlets = mf.seqlets()
+    all_patterns = mf.patterns()
     if len(all_patterns) == 0:
         print("No patterns found")
         return
@@ -453,7 +452,7 @@ def modisco_plot(modisco_dir,
                            pattern,
                            output_dir=str(output_dir / pattern))
 
-    mr.close()
+    mf.close()
 
 
 def cwm_scan_seqlets(modisco_dir,
@@ -469,22 +468,22 @@ def cwm_scan_seqlets(modisco_dir,
     add_file_logging(os.path.dirname(output_file), logger, 'cwm_scan_seqlets')
 
     # figure out contrib_wildcard
-    mr = ModiscoResult(modisco_dir / "modisco.h5")
+    mf = ModiscoFile(modisco_dir / "modisco.h5")
 
     if contribsf is None:
         contrib = ContribFile.from_modisco_dir(modisco_dir)
     else:
         contrib = contribsf
 
-    tasks = mr.tasks()
+    tasks = mf.tasks()
     # HACK prune the tasks of contribution (in case it's present)
     tasks = [t.split("/")[0] for t in tasks]
 
     dfi_list = []
 
-    for pattern_name in tqdm(mr.patterns()):
-        pattern = mr.get_pattern(pattern_name).trim_seq_ic(trim_frac)
-        seqlets = mr._get_seqlets(pattern_name, trim_frac=trim_frac)
+    for pattern_name in tqdm(mf.patterns()):
+        pattern = mf.get_pattern(pattern_name).trim_seq_ic(trim_frac)
+        seqlets = mf._get_seqlets(pattern_name, trim_frac=trim_frac)
 
         # scan only the existing locations of the seqlets instead of the full sequences
         # to obtain the distribution
@@ -513,7 +512,7 @@ def cwm_scan_seqlets(modisco_dir,
      'NOTE: when using .bed or .bed.gz, only the following 7 columns are written: '
      'chromosome, start, end, pattern, contrib_weighted_p, strand, match_weighted_p')
 @arg('--trim-frac',
-     help='How much to trim the pattern when scanning for motif instances. See also `bpnet.modisco.results.trim_pssm_idx`')
+     help='How much to trim the pattern when scanning for motif instances. See also `bpnet.modisco.utils.trim_pssm_idx`')
 @arg('--patterns',
      help='Comma separated list of patterns for which to run CWM scanning')
 @arg('--filters',
@@ -572,8 +571,8 @@ def cwm_scan(modisco_dir,
     modisco_kwargs = read_json(os.path.join(modisco_dir, "modisco-run.kwargs.json"))
     contrib_type = load_contrib_type(modisco_kwargs)
 
-    mr = ModiscoResult(modisco_dir / "modisco.h5")
-    tasks = mr.tasks()
+    mf = ModiscoFile(modisco_dir / "modisco.h5")
+    tasks = mf.tasks()
     # HACK prune the tasks of contribution (in case it's present)
     tasks = [t.split("/")[0] for t in tasks]
 
@@ -606,18 +605,18 @@ def cwm_scan(modisco_dir,
     dfl = []
 
     # patterns to scan. `longer_pattern` makes sure the patterns are in the long format
-    scan_patterns = patterns.split(",") if patterns is not 'all' else mr.patterns()
+    scan_patterns = patterns.split(",") if patterns is not 'all' else mf.patterns()
     scan_patterns = [longer_pattern(pn) for pn in scan_patterns]
 
     if add_profile_features:
         profile = cf.get_profile()
         logger.info("Profile features will also be added to dfi")
 
-    for pattern_name in tqdm(mr.patterns()):
+    for pattern_name in tqdm(mf.patterns()):
         if pattern_name not in scan_patterns:
             # skip scanning that patterns
             continue
-        pattern = mr.get_pattern(pattern_name).trim_seq_ic(trim_frac)
+        pattern = mf.get_pattern(pattern_name).trim_seq_ic(trim_frac)
         match, contribution = pattern.scan_contribution(contrib, hyp_contrib=None, tasks=tasks,
                                                         n_jobs=num_workers, verbose=False)
         seq_match = pattern.scan_seq(seq, n_jobs=num_workers, verbose=False)
@@ -629,7 +628,7 @@ def cwm_scan(modisco_dir,
                 dfm = dfm.query(filt)
 
         if add_profile_features:
-            dfm = annotate_profile_single(dfm, pattern_name, mr, profile,
+            dfm = annotate_profile_single(dfm, pattern_name, mf, profile,
                                           profile_width=70,
                                           trim_frac=trim_frac)
         dfm['pattern_short'] = shorten_pattern(pattern_name)
@@ -685,22 +684,23 @@ def modisco_report(modisco_dir, output_dir):
                  params=dict(modisco_dir=modisco_dir))
 
 
-def modisco_cluster_patterns(modisco_dir, output_dir):
-    render_ipynb(os.path.join(this_path, "../modisco/cluster-patterns.ipynb"),
-                 os.path.join(output_dir, "cluster-patterns.ipynb"),
-                 params=dict(modisco_dir=str(modisco_dir),
-                             output_dir=str(output_dir)))
-
-
-def modisco2bed(modisco_dir, output_dir, trim_frac=0.08):
+@arg('modisco_dir',
+     help='directory path `output_dir` in `bpnet.cli.modisco.modisco_run` contains: '
+     'modisco.h5, modisco-run.subset-contrib-file.npy, modisco-run.kwargs.json')
+@arg("output_dir",
+     'output directory where to store the output bed files')
+@arg('--trim-frac',
+     help='How much to trim the pattern when scanning for motif instances. '
+     'See also `bpnet.modisco.utils.trim_pssm_idx`')
+def modisco_export_seqlets(modisco_dir, output_dir, trim_frac=0.08):
     from pybedtools import Interval
-    from bpnet.modisco.results import ModiscoResult
-    add_file_logging(output_dir, logger, 'modisco2bed')
+    from bpnet.modisco.files import ModiscoFile
+    add_file_logging(output_dir, logger, 'modisco_export_seqlets')
     ranges = load_ranges(modisco_dir)
     example_intervals = [Interval(row.chrom, row.start, row.end)
                          for i, row in ranges.iterrows()]
 
-    r = ModiscoResult(os.path.join(modisco_dir, "modisco.h5"))
+    r = ModiscoFile(os.path.join(modisco_dir, "modisco.h5"))
     r.export_seqlets_bed(output_dir,
                          example_intervals=example_intervals,
                          position='absolute',
@@ -731,54 +731,54 @@ def modisco_table(modisco_dir, contrib_scores, output_dir, report_url=None, cont
     print("Writing footprints")
     profiles = OrderedDict([(pattern, {task: data.get_profile_wide(pattern, task).mean(axis=0)
                                        for task in data.tasks})
-                            for pattern in data.mr.patterns()])
+                            for pattern in data.mf.patterns()])
     write_pkl(profiles, Path(output_dir) / 'footprints.pkl')
     print("Done!")
 
 
-def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, contribsf=None):
-    """Add stacked_seqlet_contrib to pattern `attrs`
+# def modisco_enrich_patterns(patterns_pkl_file, modisco_dir, output_file, contribsf=None):
+#     """Add stacked_seqlet_contrib to pattern `attrs`
 
-    Args:
-      patterns_pkl: patterns.pkl file path
-      modisco_dir: modisco directory containing
-      output_file: output file path for patterns.pkl
-    """
-    from bpnet.utils import read_pkl, write_pkl
-    from bpnet.cli.contrib import ContribFile
+#     Args:
+#       patterns_pkl: patterns.pkl file path
+#       modisco_dir: modisco directory containing
+#       output_file: output file path for patterns.pkl
+#     """
+#     from bpnet.utils import read_pkl, write_pkl
+#     from bpnet.cli.contrib import ContribFile
 
-    logger.info("Loading patterns")
-    modisco_dir = Path(modisco_dir)
-    patterns = read_pkl(patterns_pkl_file)
+#     logger.info("Loading patterns")
+#     modisco_dir = Path(modisco_dir)
+#     patterns = read_pkl(patterns_pkl_file)
 
-    mr = ModiscoResult(modisco_dir / 'modisco.h5')
+#     mf = ModiscoFile(modisco_dir / 'modisco.h5')
 
-    if contribsf is None:
-        contrib_file = ContribFile.from_modisco_dir(modisco_dir)
-        logger.info("Loading ContribFile into memory")
-        contrib_file.cache()
-    else:
-        logger.info("Using the provided ContribFile")
-        contrib_file = contribsf
+#     if contribsf is None:
+#         contrib_file = ContribFile.from_modisco_dir(modisco_dir)
+#         logger.info("Loading ContribFile into memory")
+#         contrib_file.cache()
+#     else:
+#         logger.info("Using the provided ContribFile")
+#         contrib_file = contribsf
 
-    logger.info("Extracting profile and contribution scores")
-    extended_patterns = []
-    for p in tqdm(patterns):
-        p = p.copy()
-        profile_width = p.len_profile()
-        # get the shifted seqlets
-        seqlets = [s.pattern_align(**p.attrs['align']) for s in mr._get_seqlets(p.name)]
+#     logger.info("Extracting profile and contribution scores")
+#     extended_patterns = []
+#     for p in tqdm(patterns):
+#         p = p.copy()
+#         profile_width = p.len_profile()
+#         # get the shifted seqlets
+#         seqlets = [s.pattern_align(**p.attrs['align']) for s in mf._get_seqlets(p.name)]
 
-        # keep only valid seqlets
-        valid_seqlets = [s for s in seqlets
-                         if s.valid_resize(profile_width, contrib_file.get_seqlen() + 1)]
-        # extract the contribution scores
-        p.attrs['stacked_seqlet_contrib'] = contrib_file.extract(valid_seqlets, profile_width=profile_width)
+#         # keep only valid seqlets
+#         valid_seqlets = [s for s in seqlets
+#                          if s.valid_resize(profile_width, contrib_file.get_seqlen() + 1)]
+#         # extract the contribution scores
+#         p.attrs['stacked_seqlet_contrib'] = contrib_file.extract(valid_seqlets, profile_width=profile_width)
 
-        p.attrs['n_seqlets'] = mr.n_seqlets(*p.name.split("/"))
-        extended_patterns.append(p)
+#         p.attrs['n_seqlets'] = mf.n_seqlets(*p.name.split("/"))
+#         extended_patterns.append(p)
 
-    write_pkl(extended_patterns, output_file)
+#     write_pkl(extended_patterns, output_file)
 
 
 def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
@@ -787,7 +787,6 @@ def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
     Adds `stacked_seqlet_contrib` and `n_seqlets` to pattern `attrs`
 
     Args:
-      patterns_pkl: patterns.pkl file path
       modisco_dir: modisco directory containing
       output_file: output file path for patterns.pkl
     """
@@ -796,9 +795,9 @@ def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
     logger.info("Loading patterns")
     modisco_dir = Path(modisco_dir)
 
-    mr = ModiscoResult(modisco_dir / 'modisco.h5')
-    patterns = [mr.get_pattern(pname)
-                for pname in mr.patterns()]
+    mf = ModiscoFile(modisco_dir / 'modisco.h5')
+    patterns = [mf.get_pattern(pname)
+                for pname in mf.patterns()]
 
     if contribsf is None:
         contrib_file = ContribFile.from_modisco_dir(modisco_dir)
@@ -813,36 +812,39 @@ def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
     for p in tqdm(patterns):
         p = p.copy()
 
-        # get the shifted seqlets
-        valid_seqlets = mr._get_seqlets(p.name)
+        # get seqlets
+        valid_seqlets = mf._get_seqlets(p.name)
 
         # extract the contribution scores
         sti = contrib_file.extract(valid_seqlets, profile_width=None)
-        sti.dfi = mr.get_seqlet_intervals(p.name, as_df=True)
+        sti.dfi = mf.get_seqlet_intervals(p.name, as_df=True)
         p.attrs['stacked_seqlet_contrib'] = sti
-        p.attrs['n_seqlets'] = mr.n_seqlets(*p.name.split("/"))
+        p.attrs['n_seqlets'] = mf.n_seqlets(*p.name.split("/"))
         extended_patterns.append(p)
 
     write_pkl(extended_patterns, output_file)
 
 
-def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=False, force=False):
-    """Compute all the results for modisco. Runs:
+@arg('modisco_dir',
+     help='directory path `output_dir` in `bpnet.cli.modisco.modisco_run` contains: '
+     'modisco.h5, modisco-run.subset-contrib-file.npy, modisco-run.kwargs.json')
+@arg('--trim-frac',
+     help='How much to trim the pattern when scanning for motif instances. '
+     'See also `bpnet.modisco.utils.trim_pssm_idx`')
+@arg('--num-workers',
+     help='number of workers to use in parallel for running modisco')
+@arg('--run-cwm-scan',
+     help='if True, cwm scanning will be ran')
+@arg('--force',
+     help='if True, commands will be re-run regardless of whether whey have already been computed')
+def chip_nexus_analysis(modisco_dir, trim_frac=0.08, num_workers=20, run_cwm_scan=False, force=False):
+    """Compute all the results for modisco specific for ChIP-nexus/exo data. Runs:
     - modisco_plot
     - modisco_report
     - modisco_table
-    - modisco_centroid_seqlet_matches
+    - modisco_export_patterns
     - cwm_scan
-    - modisco2bed
-    - modisco_instances_to_bed
-
-    Args:
-      modisco_dir: directory path `output_dir` in `bpnet.cli.modisco.modisco_run`
-        contains: modisco.h5, strand_distances.h5, modisco-run.kwargs.json
-      trim_frac: how much to trim the pattern
-      n_jobs: number of parallel jobs to use
-      force: if True, commands will be re-run regardless of whether whey have already
-        been computed
+    - modisco_export_seqlets
 
     Note:
       All the sub-commands are only executed if they have not been ran before. Use --force override this.
@@ -857,9 +859,9 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     kwargs = read_json(modisco_dir / "modisco-run.kwargs.json")
     contrib_scores = kwargs["contrib_file"]
 
-    mr = ModiscoResult(f"{modisco_dir}/modisco.h5")
-    all_patterns = mr.patterns()
-    mr.close()
+    mf = ModiscoFile(f"{modisco_dir}/modisco.h5")
+    all_patterns = mf.patterns()
+    mf.close()
     if len(all_patterns) == 0:
         print("No patterns found.")
         # Touch results.html for snakemake
@@ -873,7 +875,6 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     sync = []
     # --------------------------------------------
     if (not cr.set_cmd('modisco_plot').done()
-        or not cr.set_cmd('modisco_cluster_patterns').done()
             or not cr.set_cmd('modisco_enrich_patterns').done()):
         # load ContribFile and pass it to all the functions
         logger.info("Loading ContribFile")
@@ -901,62 +902,32 @@ def modisco_report_all(modisco_dir, trim_frac=0.08, n_jobs=20, scan_instances=Fa
     sync.append("footprints.pkl")
     sync.append("pattern_table.*")
 
-    if not cr.set_cmd('modisco_cluster_patterns').done():
-        modisco_cluster_patterns(modisco_dir, modisco_dir)
+    if not cr.set_cmd('modisco_export_patterns').done():
+        modisco_export_patterns(modisco_dir,
+                                output_file=modisco_dir / 'patterns.pkl',
+                                contribsf=contribsf)
         cr.write()
     sync.append("patterns.pkl")
-    sync.append("cluster-patterns.*")
-    sync.append("motif_clustering")
 
-    if not cr.set_cmd('modisco_enrich_patterns').done():
-        modisco_enrich_patterns(modisco_dir / 'patterns.pkl',
-                                modisco_dir,
-                                modisco_dir / 'patterns.pkl', contribsf=contribsf)
-        cr.write()
-    # sync.append("patterns.pkl")
-
-    # TODO - run modisco align
-    # - [ ] add the motif clustering step (as ipynb) and export the aligned tables
-    #   - save the final table as a result to CSV (ready to be imported in excel)
     # --------------------------------------------
     # Finding new instances
-    if scan_instances:
-        # if not cr.set_cmd('modisco_centroid_seqlet_matches').done():
-        #     # TODO - update
-        #     modisco_centroid_seqlet_matches(modisco_dir, contrib_scores, modisco_dir,
-        #                                     trim_frac=trim_frac,
-        #                                     n_jobs=n_jobs,
-        #                                     contribsf=contribsf)
-        #     cr.write()
-
-        # TODO - this would not work with the per-TF contribution score file....
+    if run_cwm_scan:
         if not cr.set_cmd('cwm_scan').done():
             cwm_scan(modisco_dir,
-                     modisco_dir / 'instances.parq',
+                     modisco_dir / 'instances.bed.gz',
                      trim_frac=trim_frac,
-                     contrib_scores=None,  # Use the default one
-                     contribution=None,  # Use the default one
-                     n_jobs=n_jobs)
+                     contrib_file=None,
+                     num_workers=num_workers)
             cr.write()
-    # TODO - update the pattern table -> compute the fraction of other motifs etc
+
     # --------------------------------------------
     # Export bed-files and bigwigs
 
     # Seqlets
-    if not cr.set_cmd('modisco2bed').done():
-        modisco2bed(str(modisco_dir), str(modisco_dir / 'seqlets'), trim_frac=trim_frac)
+    if not cr.set_cmd('modisco_export_seqlets').done():
+        modisco_export_seqlets(str(modisco_dir), str(modisco_dir / 'seqlets'), trim_frac=trim_frac)
         cr.write()
     sync.append("seqlets")
-
-    # Scanned instances
-    # if not cr.set_cmd('modisco_instances_to_bed').done():
-    #     modisco_instances_to_bed(str(modisco_dir / 'modisco.h5'),
-    #                              instances_parq=str(modisco_dir / 'instances.parq'),
-    #                              contrib_score_h5=contrib_scores,
-    #                              output_dir=str(modisco_dir / 'instances_bed/'),
-    #                              )
-    #     cr.write()
-    # sync.append("instances_bed")
 
     # print the rsync command to run in order to sync the output
     # directories to the webserver

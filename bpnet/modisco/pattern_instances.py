@@ -10,8 +10,8 @@ from bpnet.modisco.utils import longer_pattern, shorten_pattern
 from bpnet.cli.modisco import get_nonredundant_example_idx
 import numpy as np
 from bpnet.plot.profiles import extract_signal
-from bpnet.modisco.results import resize_seqlets
-from bpnet.modisco.results import trim_pssm_idx, Seqlet
+from bpnet.modisco.core import resize_seqlets, Seqlet
+from bpnet.modisco.utils import trim_pssm_idx
 
 
 # TODO - allow these to be of also other type?
@@ -384,7 +384,7 @@ def annotate_profile(dfi, mr, profiles, profile_width=70, trim_frac=0.08, patter
 
     Args:
       dfi[pd.DataFrame]: motif instances
-      mr[ModiscoResult]
+      mr[ModiscoFile]
       profiles: dictionary of profiles with shape: (n_examples, seqlen, strand)
       profile_width: width of the profile to extract
       trim_frac: what trim fraction to use then computing the values for modisco

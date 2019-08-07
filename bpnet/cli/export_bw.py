@@ -1,8 +1,6 @@
 """
 Export prediction to a bigWig file
 """
-
-from pybedtools import BedTool
 import pandas as pd
 import os
 from bpnet.seqmodel import SeqModel
@@ -50,6 +48,7 @@ def bpnet_export_bw(model_dir,
                     memfrac_gpu=0.45):
     """Export model predictions and contribution scores to big-wig files
     """
+    from bpnet.modisco.core import Seqlet
     add_file_logging(output_dir, logger, 'bpnet-export-bw')
     os.makedirs(output_dir, exist_ok=True)
     if gpu is not None:
