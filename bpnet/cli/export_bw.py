@@ -17,7 +17,7 @@ logger.addHandler(logging.NullHandler())
 @named("export-bw")
 @arg('model_dir',
      help='Path to the trained model directory (specified in `bpnet train <output_dir>`')
-@arg('output_dir',
+@arg('output_prefix',
      help='if True, the output directory will be overwritten')
 @arg('--regions',
      help='Path to the interval bed file. If not specified, files specified in dataspec.yml will be used')
