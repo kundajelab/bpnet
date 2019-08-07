@@ -688,7 +688,7 @@ def modisco_report(modisco_dir, output_dir):
      help='directory path `output_dir` in `bpnet.cli.modisco.modisco_run` contains: '
      'modisco.h5, modisco-run.subset-contrib-file.npy, modisco-run.kwargs.json')
 @arg("output_dir",
-     'output directory where to store the output bed files')
+     help='output directory where to store the output bed files')
 @arg('--trim-frac',
      help='How much to trim the pattern when scanning for motif instances. '
      'See also `bpnet.modisco.utils.trim_pssm_idx`')
