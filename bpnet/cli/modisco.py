@@ -580,18 +580,18 @@ def cwm_scan(modisco_dir,
     logger.info(f"Using tasks: {tasks}")
 
     if contrib_file is None:
-        contrib = ContribFile.from_modisco_dir(modisco_dir)
-        contrib.cache()  # cache it since it can be re-used in `modisco_centroid_seqlet_matches`
+        cf = ContribFile.from_modisco_dir(modisco_dir)
+        cf.cache()  # cache it since it can be re-used in `modisco_centroid_seqlet_matches`
     else:
         logger.info(f"Loading the contribution scores from: {contrib_file}")
-        contrib = ContribFile(contrib_file, default_contrib_score=contrib_type)
+        cf = ContribFile(contrib_file, default_contrib_score=contrib_type)
 
     if not cm_path.exists():
         logger.info(f"Generating centroid matches to {cm_path.resolve()}")
         cwm_scan_seqlets(modisco_dir,
                          output_file=cm_path,
                          trim_frac=trim_frac,
-                         contribsf=contrib if contrib_file is None else None,
+                         contribsf=cf if contrib_file is None else None,
                          num_workers=num_workers,
                          verbose=False)
     else:
@@ -600,7 +600,7 @@ def cwm_scan(modisco_dir,
     dfm_norm = pd.read_csv(cm_path)
 
     # get the raw data
-    seq, contrib, ranges = contrib.get_seq(), contrib.get_contrib(), contrib.get_ranges()
+    seq, contrib, ranges = cf.get_seq(), cf.get_contrib(), cf.get_ranges()
 
     logger.info("Scanning for patterns")
     dfl = []
@@ -610,7 +610,7 @@ def cwm_scan(modisco_dir,
     scan_patterns = [longer_pattern(pn) for pn in scan_patterns]
 
     if add_profile_features:
-        profile = contrib.get_profile()
+        profile = cf.get_profile()
         logger.info("Profile features will also be added to dfi")
 
     for pattern_name in tqdm(mr.patterns()):
