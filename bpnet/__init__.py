@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 __author__ = 'Ziga Avsec'
 __email__ = 'avsec@in.tum.de'
-__version__ = '0.0.17'
+__version__ = '0.0.18'
 
 try:
     from comet_ml import Experiment  # needs to be imported before keras/tensorflow
