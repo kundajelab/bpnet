@@ -14,6 +14,26 @@ from bpnet.modisco.core import resize_seqlets, Seqlet
 from bpnet.modisco.utils import trim_pssm_idx
 
 
+def get_motif_pairs(motifs):
+    """Generate motif pairs
+    """
+    pairs = []
+    for i in range(len(motifs)):
+        for j in range(i, len(motifs)):
+            pairs.append([list(motifs)[i], list(motifs)[j], ])
+    return pairs
+
+
+comp_strand_compbination = {
+    "++": "--",
+    "--": "++",
+    "-+": "+-",
+    "+-": "-+"
+}
+
+strand_combinations = ["++", "--", "+-", "-+"]
+
+
 # TODO - allow these to be of also other type?
 def load_instances(parq_file, motifs=None, dedup=True, verbose=True):
     """Load pattern instances from the parquet file
@@ -421,3 +441,53 @@ def annotate_profile(dfi, mr, profiles, profile_width=70, trim_frac=0.08, patter
     out = pd.concat(dfp_list, axis=0)
     assert len(out) == len(dfi)
     return pd.merge(dfi, out, on='id')
+
+
+def get_motif_pairs(motifs):
+    """Generate motif pairs
+    """
+    pairs = []
+    for i in range(len(motifs)):
+        for j in range(i, len(motifs)):
+            pairs.append([list(motifs)[i], list(motifs)[j], ])
+    return pairs
+
+
+def motif_pair_dfi(dfi_filtered, motif_pair):
+    """Construct the matrix of motif pairs
+
+    Args:
+      dfi_filtered: dfi filtered to the desired property
+      motif_pair: tuple of two pattern_name's
+    Returns:
+      pd.DataFrame with columns from dfi_filtered with _x and _y suffix
+    """
+    dfa = dfi_filtered[dfi_filtered.pattern_name == motif_pair[0]]
+    dfb = dfi_filtered[dfi_filtered.pattern_name == motif_pair[1]]
+
+    dfab = pd.merge(dfa, dfb, on='example_idx', how='outer')
+    dfab = dfab[~dfab[['pattern_center_x', 'pattern_center_y']].isnull().any(1)]
+
+    dfab['center_diff'] = dfab.pattern_center_y - dfab.pattern_center_x
+    if "pattern_center_aln_x" in dfab:
+        dfab['center_diff_aln'] = dfab.pattern_center_aln_y - dfab.pattern_center_aln_x
+    dfab['strand_combination'] = dfab.strand_x + dfab.strand_y
+    # assure the right strand combination
+    dfab.loc[dfab.center_diff < 0, 'strand_combination'] = dfab[dfab.center_diff < 0]['strand_combination'].map(comp_strand_compbination).values
+
+    if motif_pair[0] == motif_pair[1]:
+        dfab.loc[dfab['strand_combination'] == "--", 'strand_combination'] = "++"
+        dfab = dfab[dfab.center_diff > 0]
+    else:
+        dfab.center_diff = np.abs(dfab.center_diff)
+        if "center_diff_aln" in dfab:
+            dfab.center_diff_aln = np.abs(dfab.center_diff_aln)
+    if "center_diff_aln" in dfab:
+        dfab = dfab[dfab.center_diff_aln != 0]  # exclude perfect matches
+    return dfab
+
+
+def remove_edge_instances(dfab, profile_width=70, total_width=1000):
+    half = profile_width // 2 + profile_width % 2
+    return dfab[(dfab.pattern_center_x - half > 0) & (dfab.pattern_center_x + half < total_width) &
+                (dfab.pattern_center_y - half > 0) & (dfab.pattern_center_y + half < total_width)]
