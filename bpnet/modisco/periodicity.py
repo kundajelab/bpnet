@@ -14,6 +14,21 @@ def smooth(y, box_pts):
     return y_smooth
 
 
+def pad_zeros(x, desired_length):
+    """Pads the array with zeros
+    """
+    from bpnet.utils import halve
+    # padd with 0's
+    if len(x) < desired_length:
+        i, j = halve(desired_length - len(x))
+        return np.concatenate([np.zeros(i), x, np.zeros(j)])
+    elif len(x) > desired_length:
+        i, j = halve(len(x) - desired_length)
+        return x[i:(i + desired_length)]
+    else:
+        return x
+
+
 def compute_power_spectrum(pattern, task, data):
     seqlets = data.seqlets_per_task[pattern]
     wide_seqlets = [s.resize(data.footprint_width)
@@ -21,12 +36,15 @@ def compute_power_spectrum(pattern, task, data):
                     if s.center() > data.footprint_width // 2 and
                     s.center() < data.get_seqlen(pattern) - data.footprint_width // 2
                     ]
-    p = extract_signal(data.get_region_grad(task, 'profile'), wide_seqlets)
+    p = extract_signal(data.get_region_hyp_contrib(task, 'profile'), wide_seqlets)
 
     agg_profile = np.log(np.abs(p).sum(axis=-1).sum(axis=0))
 
     agg_profile = agg_profile - agg_profile.mean()
     agg_profile = agg_profile / agg_profile.std()
+
+    # HACK pad array with 0's to reach 200 bp
+    agg_profile = pad_zeros(agg_profile, 200)
 
     smooth_part = smooth(agg_profile, 10)
     oscilatory_part = agg_profile - smooth_part
@@ -54,9 +72,13 @@ def plot_power_spectrum(pattern, task, data):
                     if s.center() > data.footprint_width // 2 and
                     s.center() < data.get_seqlen(pattern) - data.footprint_width // 2
                     ]
-    p = extract_signal(data.get_region_grad(task, 'profile'), wide_seqlets)
+    p = extract_signal(data.get_region_hyp_contrib(task, 'profile'), wide_seqlets)
 
     agg_profile = np.log(np.abs(p).sum(axis=-1).sum(axis=0))
+
+    # # HACK - pad with zeros
+    # agg_profile = pad_zeros(agg_profile, 200)
+
     heatmap_contribution_profile(normalize(np.abs(p).sum(axis=-1)[:500], pmin=50, pmax=99), figsize=(10, 20))
     heatmap_fig = plt.gcf()
     # heatmap_contribution_profile(np.abs(p*seq).sum(axis=-1)[:500], figsize=(10, 20))

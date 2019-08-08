@@ -348,6 +348,7 @@ def modisco_plot(modisco_dir,
                  output_dir,
                  # filter_npy=None,
                  # ignore_dist_filter=False,
+                 heatmap_width=200,
                  figsize=(10, 10), contribsf=None):
     """Plot the results of a modisco run
 
@@ -405,7 +406,7 @@ def modisco_plot(modisco_dir,
     # -------------------------------------------------
 
     all_seqlets = mf.seqlets()
-    all_patterns = mf.patterns()
+    all_patterns = mf.pattern_names()
     if len(all_patterns) == 0:
         print("No patterns found")
         return
@@ -447,7 +448,8 @@ def modisco_plot(modisco_dir,
                            d,
                            tasks,
                            pattern,
-                           output_dir=str(output_dir / pattern))
+                           output_dir=str(output_dir / pattern),
+                           resize_width=heatmap_width)
 
     mf.close()
 
@@ -478,7 +480,7 @@ def cwm_scan_seqlets(modisco_dir,
 
     dfi_list = []
 
-    for pattern_name in tqdm(mf.patterns()):
+    for pattern_name in tqdm(mf.pattern_names()):
         pattern = mf.get_pattern(pattern_name).trim_seq_ic(trim_frac)
         seqlets = mf._get_seqlets(pattern_name, trim_frac=trim_frac)
 
@@ -602,14 +604,14 @@ def cwm_scan(modisco_dir,
     dfl = []
 
     # patterns to scan. `longer_pattern` makes sure the patterns are in the long format
-    scan_patterns = patterns.split(",") if patterns is not 'all' else mf.patterns()
+    scan_patterns = patterns.split(",") if patterns is not 'all' else mf.pattern_names()
     scan_patterns = [longer_pattern(pn) for pn in scan_patterns]
 
     if add_profile_features:
         profile = cf.get_profiles()
         logger.info("Profile features will also be added to dfi")
 
-    for pattern_name in tqdm(mf.patterns()):
+    for pattern_name in tqdm(mf.pattern_names()):
         if pattern_name not in scan_patterns:
             # skip scanning that patterns
             continue
@@ -676,8 +678,8 @@ def cwm_scan(modisco_dir,
 
 
 def modisco_report(modisco_dir, output_dir):
-    render_ipynb(os.path.join(this_path, "../templates/modisco.ipynb"),
-                 os.path.join(output_dir, "results.ipynb"),
+    render_ipynb(os.path.join(this_path, "../templates/modisco-chip.ipynb"),
+                 os.path.join(output_dir, "modisco-chip.ipynb"),
                  params=dict(modisco_dir=modisco_dir))
 
 
@@ -705,7 +707,8 @@ def modisco_export_seqlets(modisco_dir, output_dir, trim_frac=0.08):
     r.close()
 
 
-def modisco_table(modisco_dir, contrib_scores, output_dir, report_url=None, contribsf=None):
+def modisco_table(modisco_dir, contrib_scores, output_dir, report_url=None, contribsf=None,
+                  footprint_width=200):
     """Write the pattern table to as .html and .csv
     """
     plt.switch_backend('agg')
@@ -713,7 +716,7 @@ def modisco_table(modisco_dir, contrib_scores, output_dir, report_url=None, cont
     from bpnet.modisco.motif_clustering import hirearchically_reorder_table
     add_file_logging(output_dir, logger, 'modisco-table')
     print("Loading required data")
-    data = ModiscoData.load(modisco_dir, contrib_scores, contribsf=contribsf)
+    data = ModiscoData.load(modisco_dir, contrib_scores, contribsf=contribsf, footprint_width=footprint_width)
 
     print("Generating the table")
     df = modisco_table(data)
@@ -728,7 +731,7 @@ def modisco_table(modisco_dir, contrib_scores, output_dir, report_url=None, cont
     print("Writing footprints")
     profiles = OrderedDict([(pattern, {task: data.get_profile_wide(pattern, task).mean(axis=0)
                                        for task in data.tasks})
-                            for pattern in data.mf.patterns()])
+                            for pattern in data.mf.pattern_names()])
     write_pkl(profiles, Path(output_dir) / 'footprints.pkl')
     print("Done!")
 
@@ -772,7 +775,7 @@ def modisco_table(modisco_dir, contrib_scores, output_dir, report_url=None, cont
 #         # extract the contribution scores
 #         p.attrs['stacked_seqlet_contrib'] = contrib_file.extract(valid_seqlets, profile_width=profile_width)
 
-#         p.attrs['n_seqlets'] = mf.n_seqlets(*p.name.split("/"))
+#         p.attrs['n_seqlets'] = mf.n_seqlets(p.name)
 #         extended_patterns.append(p)
 
 #     write_pkl(extended_patterns, output_file)
@@ -794,7 +797,7 @@ def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
 
     mf = ModiscoFile(modisco_dir / 'modisco.h5')
     patterns = [mf.get_pattern(pname)
-                for pname in mf.patterns()]
+                for pname in mf.pattern_names()]
 
     if contribsf is None:
         contrib_file = ContribFile.from_modisco_dir(modisco_dir)
@@ -816,7 +819,7 @@ def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
         sti = contrib_file.extract(valid_seqlets, profile_width=None)
         sti.dfi = mf.get_seqlet_intervals(p.name, as_df=True)
         p.attrs['stacked_seqlet_contrib'] = sti
-        p.attrs['n_seqlets'] = mf.n_seqlets(*p.name.split("/"))
+        p.attrs['n_seqlets'] = mf.n_seqlets(p.name)
         extended_patterns.append(p)
 
     write_pkl(extended_patterns, output_file)
@@ -834,7 +837,10 @@ def modisco_export_patterns(modisco_dir, output_file, contribsf=None):
      help='if True, cwm scanning will be ran')
 @arg('--force',
      help='if True, commands will be re-run regardless of whether whey have already been computed')
-def chip_nexus_analysis(modisco_dir, trim_frac=0.08, num_workers=20, run_cwm_scan=False, force=False):
+@arg('--footprint-width',
+     help='Width of the footprint to consider when showing heatmaps or when computing the footprint scores')
+def chip_nexus_analysis(modisco_dir, trim_frac=0.08, num_workers=20, run_cwm_scan=False, force=False,
+                        footprint_width=200):
     """Compute all the results for modisco specific for ChIP-nexus/exo data. Runs:
     - modisco_plot
     - modisco_report
@@ -857,12 +863,12 @@ def chip_nexus_analysis(modisco_dir, trim_frac=0.08, num_workers=20, run_cwm_sca
     contrib_scores = kwargs["contrib_file"]
 
     mf = ModiscoFile(f"{modisco_dir}/modisco.h5")
-    all_patterns = mf.patterns()
+    all_patterns = mf.pattern_names()
     mf.close()
     if len(all_patterns) == 0:
         print("No patterns found.")
-        # Touch results.html for snakemake
-        open(modisco_dir / 'results.html', 'a').close()
+        # Touch modisco-chip.html for snakemake
+        open(modisco_dir / 'modisco-chip.html', 'a').close()
         open(modisco_dir / 'seqlets/scored_regions.bed', 'a').close()
         return
 
@@ -884,6 +890,7 @@ def chip_nexus_analysis(modisco_dir, trim_frac=0.08, num_workers=20, run_cwm_sca
     if not cr.set_cmd('modisco_plot').done():
         modisco_plot(modisco_dir,
                      modisco_dir / 'plots',
+                     heatmap_width=footprint_width,
                      figsize=(10, 10), contribsf=contribsf)
         cr.write()
     sync.append("plots")
@@ -891,10 +898,11 @@ def chip_nexus_analysis(modisco_dir, trim_frac=0.08, num_workers=20, run_cwm_sca
     if not cr.set_cmd('modisco_report').done():
         modisco_report(str(modisco_dir), str(modisco_dir))
         cr.write()
-    sync.append("results.html")
+    sync.append("modisco-chip.html")
 
     if not cr.set_cmd('modisco_table').done():
-        modisco_table(modisco_dir, contrib_scores, modisco_dir, report_url=None, contribsf=contribsf)
+        modisco_table(modisco_dir, contrib_scores, modisco_dir, report_url=None, contribsf=contribsf,
+                      footprint_width=footprint_width)
         cr.write()
     sync.append("footprints.pkl")
     sync.append("pattern_table.*")

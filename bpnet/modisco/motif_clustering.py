@@ -1,10 +1,8 @@
 from bpnet.plot.utils import strip_axis
 from concise.utils.plot import seqlogo
 from bpnet.plot.tracks import plot_track, plot_tracks
-from bpnet.plot.config import get_figsize
 import matplotlib.pyplot as plt
 from scipy.cluster.hierarchy import linkage, optimal_leaf_ordering, cut_tree, leaves_list
-from bpnet.modisco.motif_clustering import create_pattern_table, align_clustered_patterns
 from bpnet.stats import perc
 from bpnet.plot.vdom import df2html, df2html_old, render_datatable, vdom_footprint
 from tqdm import tqdm
@@ -380,11 +378,11 @@ def cluster_patterns(patterns, n_clusters=9, cluster_track='seq_ic'):
     sim = similarity_matrix(patterns, track=cluster_track)
 
     # cluster
-    lm_nte_seq = linkage(1 - sim_nte_seq[iu1], 'ward', optimal_ordering=True)
+    lm_nte_seq = linkage(1 - sim, 'ward', optimal_ordering=True)
     cluster = cut_tree(lm_nte_seq, n_clusters=n_clusters)[:, 0]
 
     cluster_order = np.argsort(leaves_list(lm_nte_seq))
-    pattern_table_nte_seq = create_pattern_table(patterns_nte, cluster_order, cluster,
+    pattern_table_nte_seq = create_pattern_table(lm_nte_seq, cluster_order, cluster,
                                                  align_track='contrib/mean',
                                                  logo_len=70,
                                                  seqlogo_kwargs=dict(width=320),
@@ -398,7 +396,6 @@ def create_pattern_table(patterns,
                          footprint_width=320,
                          footprint_kwargs=None,
                          seqlogo_kwargs=None,
-                         # report_url='results.html'
                          n_jobs=10):
     """Creates the pattern table given a list of patterns
 
@@ -463,8 +460,8 @@ def create_pattern_table(patterns,
 def get_patterns(mr_dict, footprints, tasks, min_n_seqlets=300):
     patterns = []
     for task, mr in mr_dict:
-        for pattern_name in mr.patterns():
-            n_seqlets = mr.n_seqlets(*pattern_name.split("/"))
+        for pattern_name in mr.pattern_names():
+            n_seqlets = mr.n_seqlets(pattern_name)
             if n_seqlets < min_n_seqlets:
                 # ignore patterns with few seqlets
                 continue

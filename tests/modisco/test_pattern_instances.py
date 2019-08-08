@@ -10,6 +10,7 @@ import bpnet
 from bpnet.modisco.core import Pattern
 from concise.preprocessing import encodeDNA
 
+
 def scan_seq(p, seq):
     scanned = p.scan_seq(seqs_one_hot, n_jobs=1)
     strands = scanned.argmax(-1)

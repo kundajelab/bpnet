@@ -27,7 +27,7 @@ class ModiscoData:
     # global variables
     trim_frac = 0.08
 
-    def __init__(self, mf, d, tasks):
+    def __init__(self, mf, d, tasks, footprint_width=200):
         self.mf = mf
         self.d = d
         self.tasks = tasks
@@ -39,7 +39,7 @@ class ModiscoData:
         self.contrib_counts = {}
         self.seq = {}
 
-        self.footprint_width = 200
+        self.footprint_width = footprint_width
 
         # Setup all the required matrices
         for pattern, seqlets in tqdm(self.seqlets_per_task.items()):
@@ -67,7 +67,7 @@ class ModiscoData:
             self.seq[pattern] = extract_signal(self.get_region_seq(), seqlets)
 
     @classmethod
-    def load(cls, modisco_dir, contrib_scores_h5, contribsf=None):
+    def load(cls, modisco_dir, contrib_scores_h5, contribsf=None, footprint_width=200):
         """Instantiate ModiscoData from tf-modisco run folder
         """
         from bpnet.cli.contrib import ContribFile
@@ -88,7 +88,7 @@ class ModiscoData:
             d.cache()
         # load included samples
         tasks = d.get_tasks()  # list(d['targets']['profile'].keys())
-        return cls(mf, d, tasks)
+        return cls(mf, d, tasks, footprint_width=footprint_width)
 
     # Explicitly defined getters to abstract the underlying storage
 
@@ -157,7 +157,7 @@ class ModiscoData:
     def get_trim_idx(self, pattern):
         """Return the trimming indices
         """
-        return trim_pssm_idx(self.mf.get_pssm(*pattern.split("/")), frac=self.trim_frac)
+        return trim_pssm_idx(self.mf.get_pssm(pattern), frac=self.trim_frac)
 
 
 DOC = OrderedDict([
@@ -196,7 +196,7 @@ def modisco_table(data):
       pd.DataFrame containing all the information about the patterns
     """
     df = pd.DataFrame([pattern_features(pattern, data)
-                       for pattern in tqdm(data.mf.patterns())])
+                       for pattern in tqdm(data.mf.pattern_names())])
     df.insert(0, 'idx', df.index)  # add also idx to the front
 
     df.doc = DOC
@@ -231,7 +231,7 @@ def pattern_url(shortpattern, report_url):
 
 
 def logo_pwm(pattern, data, width=80):
-    fig = data.mf.plot_pssm(*pattern.split("/"), trim_frac=data.trim_frac)
+    fig = data.mf.plot_pssm(pattern, trim_frac=data.trim_frac)
     return fig2vdom(fig).to_html().replace("<img", f"<img width={width}")  # hack
 
 
@@ -246,7 +246,7 @@ def logo_contrib(pattern, data, width=80):
 
 
 def consensus(pattern, data):
-    pssm = data.mf.get_pssm(*pattern.split("/"), trim_frac=data.trim_frac)
+    pssm = data.mf.get_pssm(pattern, trim_frac=data.trim_frac)
     return "".join(["ACGT"[i] for i in pssm.argmax(axis=1)])
 
 
@@ -254,7 +254,7 @@ def pwm_mean_ic(pattern, data):
     """Average per-base information content
     of the PWM matrix
     """
-    pssm = data.mf.get_pssm(*pattern.split("/"), trim_frac=data.trim_frac)
+    pssm = data.mf.get_pssm(pattern, trim_frac=data.trim_frac)
     return pssm.sum(axis=1).mean(axis=0)
 
 # --------------------------------------------

@@ -15,7 +15,7 @@ EXPECTED_FILES = ['Task1.contrib.counts.bw',
 def test_export_bw_w_bias(tmp_path, trained_model_w_bias):
     K.clear_session()
     bpnet_export_bw(str(trained_model_w_bias),
-                    str(tmp_path),
+                    output_prefix=str(tmp_path) + '/',  # make sure we have a trailing slash
                     contrib_method='grad',
                     scale_contribution=True)
 
@@ -27,7 +27,7 @@ def test_export_bw_w_bias(tmp_path, trained_model_w_bias):
 def test_export_bw(tmp_path, trained_model, regions):
     K.clear_session()
     bpnet_export_bw(str(trained_model),
-                    str(tmp_path),
+                    output_prefix=str(tmp_path) + '/',  # make sure we have a trailing slash
                     contrib_method='grad',
                     regions=str(regions))
 

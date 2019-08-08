@@ -22,11 +22,6 @@ from tqdm import tqdm
 from bpnet.modisco.utils import shorten_pattern, longer_pattern
 
 
-def parse_seqlet(s):
-    return {x.split(":")[0]: yaml.load(x.split(":")[1])
-            for x in s.decode("utf8").split(",")}
-
-
 def group_seqlets(seqlets, by='seqname'):
     """Group seqlets by a certain feature
     """
@@ -76,9 +71,6 @@ def match_seqlets(unlabelled_seqlets, labelled_seqlets):
     return out_seqlets
 
 
-# TODO - rename this to ModiscoFile
-
-
 class ModiscoFile:
 
     def __init__(self, fpath):
@@ -99,7 +91,7 @@ class ModiscoFile:
     def tasks(self):
         return list(self.f.f['task_names'][:].astype(str))
 
-    def patterns(self, metacluster=None):
+    def pattern_names(self, metacluster=None):
         """List all detected patterns:
 
         output format: {metacluster}/{pattern}
@@ -108,7 +100,7 @@ class ModiscoFile:
             # Display all
             return [f"{metacluster}/{pattern}"
                     for metacluster in self.metaclusters()
-                    for pattern in self.patterns(metacluster)]
+                    for pattern in self.pattern_names(metacluster)]
         else:
             try:
                 patterns = (list(self.f.f
@@ -120,15 +112,20 @@ class ModiscoFile:
                 patterns = []
             return [x.decode("utf8") for x in patterns]
 
-    def get_all_patterns(self):
-        return [self.get_pattern(pn)
-                for pn in self.patterns()]
+    def patterns(self):
+        """Get all the modisco patterns
 
-    def get_pattern(self, pattern):
+        Returns: List[Pattern]
+        """
+        return [self.get_pattern(pn)
+                for pn in self.pattern_names()]
+
+    def get_pattern(self, pattern_name):
         """Get the pattern name
         """
         from bpnet.modisco.core import Pattern
-        return Pattern.from_hdf5_grp(self.get_pattern_grp(*pattern.split("/")), pattern)
+        # TODO - add number of seqlets?
+        return Pattern.from_hdf5_grp(self._get_pattern_grp(*pattern_name.split("/")), pattern_name)
 
     def metaclusters(self):
         return list(self.f.f['/metaclustering_results/all_metacluster_names'][:].astype(str))
@@ -167,7 +164,7 @@ class ModiscoFile:
 
     def parse_seqlet(cls, s):
         from bpnet.modisco.core import Seqlet
-        return Seqlet.from_dict({x.split(":")[0]: yaml.load(x.split(":")[1])
+        return Seqlet.from_dict({x.split(":")[0]: yaml.load(x.split(":")[1], Loader=yaml.FullLoader)
                                  for x in s.decode("utf8").split(",")})
 
     def all_seqlets(self, label=False):
@@ -180,16 +177,16 @@ class ModiscoFile:
             return match_seqlets(self.all_seqlets(False),
                                  self.seqlets(None))
 
-    def _get_seqlets(self, pattern, trim_frac=0):
-        metacluster, pattern = pattern.split("/")
-        i, j = trim_pssm_idx(self.get_pssm(metacluster, pattern), trim_frac)
+    def _get_seqlets(self, pattern_name, trim_frac=0):
+        metacluster, pattern = pattern_name.split("/")
+        i, j = trim_pssm_idx(self.get_pssm(pattern_name), trim_frac)
         return [self.parse_seqlet(x).trim(i, j)
                 for x in self.f.f[f'/metacluster_idx_to_submetacluster_results/{metacluster}/seqlets_to_patterns_result/patterns/{pattern}/seqlets_and_alnmts/seqlets'][:]]
 
     def seqlets(self, by='pattern', trim_frac=0):
         if by == 'pattern':
             return {p: self._get_seqlets(p, trim_frac=trim_frac)
-                    for p in self.patterns()}
+                    for p in self.pattern_names()}
         elif by == 'example':
             examples = {}
             for p, seqlets in self.seqlets(by='pattern', trim_frac=trim_frac).items():
@@ -205,15 +202,15 @@ class ModiscoFile:
                 seqlet.name = name
                 return seqlet
             return [add_name(seqlet, p)
-                    for p in self.patterns()
+                    for p in self.pattern_names()
                     for seqlet in self._get_seqlets(p, trim_frac=trim_frac)]
         else:
             raise ValueError("by has to be from: {'pattern', 'example',None}")
 
-    def extract_signal(self, x, pattern=None, rc_fn=lambda x: x[::-1, ::-1]):
-        if pattern is None:
+    def extract_signal(self, x, pattern_name=None, rc_fn=lambda x: x[::-1, ::-1]):
+        if pattern_name is None:
             # Back-compatibility, TODO - remove
-            return {p: self.extract_signal(x, p, rc_fn) for p in self.patterns()}
+            return {p: self.extract_signal(x, p, rc_fn) for p in self.pattern_names()}
 
         def optional_rc(x, is_rc):
             if is_rc:
@@ -221,7 +218,7 @@ class ModiscoFile:
             else:
                 return x
         return np.stack([optional_rc(x[s['example'], s['start']:s['end']], s['rc'])
-                         for s in self._get_seqlets(pattern)])
+                         for s in self._get_seqlets(pattern_name)])
 
     def plot_profiles(self, x, tracks,
                       contribution_scores={},
@@ -234,7 +231,7 @@ class ModiscoFile:
                       ylim=[0, 3],
                       n_limit=35,
                       n_bootstrap=None,
-                      patterns=None,
+                      pattern_names=None,
                       fpath_template=None,
                       rc_fn=lambda x: x[::-1, ::-1]):
         """
@@ -254,9 +251,9 @@ class ModiscoFile:
                                    for s, contrib in contribution_scores.items()}
         # TODO assert correct shape in contrib
 
-        if patterns is None:
-            patterns = self.patterns()
-        for i, pattern in enumerate(patterns):
+        if pattern_names is None:
+            pattern_names = self.pattern_names()
+        for i, pattern in enumerate(pattern_names):
             j = i
             seqs = seqs_all[pattern]
             sequence = ic_scale(seqs.mean(axis=0))
@@ -361,10 +358,10 @@ class ModiscoFile:
             self.ranges['example_idx'] = np.arange(len(self.ranges))
         return self.ranges
 
-    def get_seqlet_intervals(self, pattern, trim_frac=0, as_df=False):
+    def get_seqlet_intervals(self, pattern_name, trim_frac=0, as_df=False):
         import pybedtools
         ranges = self.load_ranges()
-        dfs = self.seqlet_df_instances(patterns=[pattern], trim_frac=trim_frac)
+        dfs = self.seqlet_df_instances(pattern_names=[pattern_name], trim_frac=trim_frac)
         dfs = pd.merge(dfs, ranges, how='left',
                        left_on='seqname', right_on='example_idx',
                        suffixes=("_seqlet", "_example"))
@@ -400,7 +397,7 @@ class ModiscoFile:
             BedTool(example_intervals).saveas(os.path.join(output_dir, "scored_regions.bed"))
 
         exi = example_intervals
-        for p in tqdm(self.patterns()):
+        for p in tqdm(self.pattern_names()):
             if position == 'relative':
                 nintervals = [Interval(str(seqlet.seqname),
                                        seqlet.start,
@@ -426,22 +423,22 @@ class ModiscoFile:
             os.makedirs(os.path.dirname(fpath), exist_ok=True)
             BedTool(nintervals).saveas(fpath)
 
-    def seqlet_df_instances(self, patterns=None, trim_frac=0):
-        if patterns is None:
-            patterns = self.patterns()
-        if isinstance(patterns, str):
-            patterns = [patterns]
+    def seqlet_df_instances(self, pattern_names=None, trim_frac=0):
+        if pattern_names is None:
+            pattern_names = self.pattern_names()
+        if isinstance(pattern_names, str):
+            pattern_names = [pattern_names]
         dfp = pd.concat([pd.DataFrame([s.to_dict()
                                        for s in self._get_seqlets(pattern, trim_frac=trim_frac)]).
                          assign(pattern=pattern)
-                         for pattern in patterns
+                         for pattern in pattern_names
                          ])
         dfp['center'] = (dfp.end + dfp.start) / 2
         return dfp
 
     def stats(self, verbose=True):
         mc_stat = self.metacluster_stats()
-        stats = {"patterns": len(self.patterns()),
+        stats = {"patterns": len(self.pattern_names()),
                  "clustered_seqlets": mc_stat.n.sum(),
                  "metaclusters": len(self.metaclusters()),
                  "all_seqlets": self.f.f['/multitask_seqlet_creation_results/final_seqlets'].shape[0]
@@ -453,16 +450,17 @@ class ModiscoFile:
                   )
         return stats
 
-    def n_seqlets(self, metacluster, pattern):
-        pattern_grp = self.get_pattern_grp(metacluster, pattern)
+    def n_seqlets(self, pattern_name):
+        metacluster, pattern = pattern_name.split("/")
+        pattern_grp = self._get_pattern_grp(metacluster, pattern)
         return pattern_grp['seqlets_and_alnmts/seqlets'].shape[0]
 
-    def get_pattern_grp(self, metacluster, pattern):
+    def _get_pattern_grp(self, metacluster, pattern):
         return self.f.f[f'/metacluster_idx_to_submetacluster_results/{metacluster}/seqlets_to_patterns_result/patterns/{pattern}']
 
-    def get_pssm(self, metacluster, pattern,
+    def get_pssm(self, pattern_name,
                  rc=False, trim_frac=None):
-        pattern_grp = self.get_pattern_grp(metacluster, pattern)
+        pattern_grp = self._get_pattern_grp(*pattern_name.split("/"))
         pssm = ic_scale(pattern_grp["sequence"]['fwd'][:])
         if trim_frac is not None:
             pssm = trim_pssm(pssm, trim_frac)
@@ -481,9 +479,9 @@ class ModiscoFile:
         ax.set_xlabel("Position")
         return fig
 
-    def plot_pssm(self, metacluster, pattern, rc=False,
+    def plot_pssm(self, pattern_name, rc=False,
                   letter_width=0.2, height=0.8, trim_frac=None, title=None):
-        pssm = self.get_pssm(metacluster, pattern, rc, trim_frac=trim_frac)
+        pssm = self.get_pssm(pattern_name, rc, trim_frac=trim_frac)
         return seqlogo_clean(pssm, letter_width, height, title)
 
     def plot_pattern(self,
@@ -497,7 +495,7 @@ class ModiscoFile:
                      ylab=True):
         pattern = self.get_pattern(pattern_name)
         pattern = pattern.trim_seq_ic(trim_frac)
-        ns = self.n_seqlets(*pattern_name.split("/"))
+        ns = self.n_seqlets(pattern_name)
         pattern.name = shorten_pattern(pattern_name) + f" ({ns})"
         if rc:
             pattern = pattern.rc()
@@ -520,8 +518,8 @@ class ModiscoFile:
           kind:
         """
         self.stats()  # print stats
-        for pattern in self.patterns():
-            if n_min_seqlets is not None and self.n_seqlets(*pattern.split("/")) < n_min_seqlets:
+        for pattern in self.pattern_names():
+            if n_min_seqlets is not None and self.n_seqlets(pattern) < n_min_seqlets:
                 continue
             self.plot_pattern(pattern,
                               kind=kind,
@@ -560,7 +558,7 @@ class ModiscoFileGroup:
 
     def n_seqlets(self, pattern_name):
         task, name = self.parse_pattern_name(pattern_name)
-        return self.mf_dict[task].n_seqlets(*name.split("/"))
+        return self.mf_dict[task].n_seqlets(name)
 
     def tasks(self):
         return list({x for mf in self.mf_dict.values()
@@ -576,16 +574,16 @@ class ModiscoFileGroup:
                                        trim_frac=trim_frac,
                                        as_df=as_df)
 
-    def patterns(self):
-        """List all patterns
+    def pattern_names(self):
+        """List all pattern_names
         """
         return [task + "/" + pn
                 for task, mf in self.mf_dict.items()
-                for pn in mf.patterns()]
+                for pn in mf.pattern_names()]
 
-    def get_all_patterns(self):
+    def patterns(self):
         return [self.get_pattern(pn)
-                for pn in self.patterns()]
+                for pn in self.pattern_names()]
 
     def _get_seqlets(self, pattern_name, trim_frac=0):
         task, name = self.parse_pattern_name(pattern_name)

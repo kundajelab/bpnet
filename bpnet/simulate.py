@@ -293,5 +293,5 @@ def plot_motif_table(mr, motif_consensus):
     from vdom import p, div, img
     from bpnet.plot.vdom import fig2vdom, vdom_pssm
     from bpnet.modisco.table import longer_pattern
-    return div([fig2vdom(mr.plot_pssm(*longer_pattern(pattern).split("/"), trim_frac=0.08, title=f"{motif} ({pattern})"), height=80)
+    return div([fig2vdom(mr.plot_pssm(longer_pattern(pattern), trim_frac=0.08, title=f"{motif} ({pattern})"), height=80)
                 for motif, (pattern, motif_seq) in motif_consensus.items()])

@@ -74,6 +74,7 @@ optional = [
 
 test_requirements = [
     "pytest",
+    "gdown",   # download files from google drive
     "virtualenv",
 ]
 

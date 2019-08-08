@@ -29,15 +29,6 @@ def fig2vdom(fig, **kwargs):
     return img(src='data:image/png;base64,' + urllib.parse.quote(string), **kwargs)
 
 
-def n_seqlets(self, metacluster, pattern):
-    pattern_grp = self.get_pattern_grp(metacluster, pattern)
-    return pattern_grp['seqlets_and_alnmts/seqlets'].shape[0]
-
-
-def get_pattern_grp(mr, metacluster, pattern):
-    return mr.f.f[f'/metacluster_idx_to_submetacluster_results/{metacluster}/seqlets_to_patterns_result/patterns/{pattern}']
-
-
 def vdom_pssm(pssm, letter_width=0.2, letter_height=0.8, **kwargs):
     """Nicely plot the pssm
     """
@@ -136,11 +127,11 @@ def vdom_pattern(mr, metacluster, pattern,
                  letter_width=0.2, height=0.8):
 
     # get the trimmed motifs
-    trimmed_motif = vdom_pssm(mr.get_pssm(metacluster, pattern,
+    trimmed_motif = vdom_pssm(mr.get_pssm(metacluster + '/' + pattern,
                                           rc=False, trim_frac=trim_frac),
                               letter_width=letter_width,
                               height=height)
-    full_motif = vdom_pssm(mr.get_pssm(metacluster, pattern,
+    full_motif = vdom_pssm(mr.get_pssm(metacluster + '/' + pattern,
                                        rc=False, trim_frac=0),
                            letter_width=letter_width,
                            height=height)
@@ -164,7 +155,7 @@ def vdom_pattern(mr, metacluster, pattern,
     # ----------------
 
     return template_vdom_pattern(name=pattern,
-                                 n_seqlets=mr.n_seqlets(metacluster, pattern),
+                                 n_seqlets=mr.n_seqlets(metacluster + "/" + pattern),
                                  trimmed_motif=trimmed_motif,
                                  full_motif=full_motif,
                                  figures_url=os.path.join(figdir, f"{metacluster}/{pattern}"),
@@ -184,8 +175,8 @@ def template_vdom_metacluster(name, n_patterns, n_seqlets, important_for, patter
 
 def vdom_metacluster(mr, metacluster, figdir, total_counts, dfp=None, is_open=True,
                      **kwargs):
-    patterns = mr.patterns(metacluster)
-    n_seqlets = sum([mr.n_seqlets(metacluster, pattern)
+    patterns = mr.pattern_names(metacluster)
+    n_seqlets = sum([mr.n_seqlets(metacluster + "/" + pattern)
                      for pattern in patterns])
     n_patterns = len(patterns)
 
@@ -224,7 +215,7 @@ def vdom_modisco(mr, figdir, total_counts, dfp=None, is_open=True, **kwargs):
     return div([vdom_metacluster(mr, metacluster, figdir, total_counts, dfp=dfp,
                                  is_open=is_open, **kwargs)
                 for metacluster in mr.metaclusters()
-                if len(mr.patterns(metacluster)) > 0])
+                if len(mr.pattern_names(metacluster)) > 0])
 
 
 def get_signal(seqlets, d: ContribFile, tasks, resize_width=200):
@@ -267,8 +258,9 @@ def get_signal(seqlets, d: ContribFile, tasks, resize_width=200):
     return ex_signal, ex_contrib_profile, ex_contrib_counts, ex_seq, sort_idx
 
 
-def vdm_heatmaps(seqlets, d, included_samples, tasks, pattern, top_n=None, pssm_fig=None, opened=False):
-    ex_signal, ex_contrib_profile, ex_contrib_counts, ex_seq, sort_idx = get_signal(seqlets, d, included_samples, tasks)
+def vdm_heatmaps(seqlets, d, included_samples, tasks, pattern, top_n=None, pssm_fig=None, opened=False, resize_width=200):
+    ex_signal, ex_contrib_profile, ex_contrib_counts, ex_seq, sort_idx = get_signal(seqlets, d, included_samples, tasks,
+                                                                                    resize_width=resize_width)
 
     if top_n is not None:
         sort_idx = sort_idx[:top_n]
@@ -296,11 +288,12 @@ def vdm_heatmaps(seqlets, d, included_samples, tasks, pattern, top_n=None, pssm_
                )
 
 
-def write_heatmap_pngs(seqlets, d, tasks, pattern, output_dir):
+def write_heatmap_pngs(seqlets, d, tasks, pattern, output_dir, resize_width=200):
     """Write out histogram png's
     """
     # get the data
-    ex_signal, ex_contrib_profile, ex_contrib_counts, ex_seq, sort_idx = get_signal(seqlets, d, tasks)
+    ex_signal, ex_contrib_profile, ex_contrib_counts, ex_seq, sort_idx = get_signal(seqlets, d, tasks,
+                                                                                    resize_width=resize_width)
     # get the plots
     figs = dict(
         heatmap_seq=heatmap_sequence(ex_seq, sort_idx=sort_idx, figsize_tmpl=(10, 15), aspect='auto'),

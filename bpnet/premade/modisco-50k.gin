@@ -37,7 +37,7 @@ TfModiscoSeqletsToPatternsFactory.final_min_cluster_size = 60
 # report file
 # use modisco-template.ipynb from https://github.com/kundajelab/bpnet/tree/master/bpnet/templates
 modisco_run.report = @report_template()
-report_template.name = 'modisco-template.ipynb'
+report_template.name = 'modisco.ipynb'
 
 # ---------------------------------
 # macros overriden by the CLI

@@ -6,4 +6,4 @@ test_chr = ['chr1', 'chr8', 'chr9',
 seq_width = 200
 n_dil_layers = 3
 bpnet_data.interval_augmentation_shift = 100
-train.seed = 42
+train.seed = 1

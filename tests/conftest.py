@@ -3,6 +3,7 @@
 import os
 from pytest import fixture
 from pathlib import Path
+import gdown
 from bpnet.cli.train import bpnet_train
 from bpnet.cli.contrib import bpnet_contrib
 import gin
@@ -107,3 +108,63 @@ def contrib_score_grad_null(trained_model):
                   max_regions=16,
                   overwrite=True)
     return fpath
+
+
+@fixture(scope='session')
+def download_dir():
+    dir_path = '/tmp/bpnet'
+    os.makedirs(dir_path, exist_ok=True)
+    return Path(dir_path)
+
+
+@fixture(scope='session')
+def contrib_file(download_dir):
+    """Download the contributon file
+    """
+    contrib_file = download_dir / 'contrib.deeplift.h5'
+    url = 'https://drive.google.com/uc?id=1-70VlFvcOCwwt4SrEXoqkaXyBQPnlQGZ'
+    md5 = '56e456f0d1aeffc9d3fcdfead0520c17'
+    gdown.cached_download(url, str(contrib_file), md5=md5)
+    return contrib_file
+
+
+@fixture(scope='session')
+def modisco_dir(download_dir):
+    """Download the contributon file
+    """
+    _modisco_dir = download_dir / 'Oct4'
+    _modisco_dir.mkdir(exist_ok=True)
+
+    path = _modisco_dir / 'modisco-run.subset-contrib-file.npy'
+    url = 'https://drive.google.com/uc?id=11uW8WaJ2EZuXQXUPq9g_TqrmWYTF-59V'
+    md5 = '5b1425618cf87127f5a02cf54b2e361a'
+    gdown.cached_download(url, str(path), md5=md5)
+
+    path = _modisco_dir / 'modisco-run.kwargs.json'
+    url = 'https://drive.google.com/uc?id=1zExhfQZ0-3irlpK6RrG1M-FBXvjHuQdm'
+    md5 = '6bb33a8a0a2d0745ea9bf1ab2f5d241d'
+    gdown.cached_download(url, str(path), md5=md5)
+
+    path = _modisco_dir / 'modisco.h5'
+    url = 'https://drive.google.com/uc?id=10owbBEB3PasIBSnMJ6KZQmJjbsyzhEgG'
+    md5 = '8132fdbe7095748e8b229e81db45a6c9'
+    gdown.cached_download(url, str(path), md5=md5)
+
+    return _modisco_dir
+
+
+@fixture(scope='session')
+def mf(modisco_dir):
+    """ModiscoFile
+    """
+    from bpnet.modisco.files import ModiscoFile
+    mf = ModiscoFile(modisco_dir / 'modisco.h5')
+    return mf
+
+
+@fixture(scope='session')
+def mfg(mf):
+    """ModiscoFile
+    """
+    from bpnet.modisco.files import ModiscoFileGroup
+    return ModiscoFileGroup({"Oct4": mf, "Sox2": mf})
