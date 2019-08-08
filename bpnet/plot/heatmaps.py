@@ -145,7 +145,8 @@ def multiple_heatmaps(signal_dict, plot_fn, sort_idx=None, figsize=(20, 20), **k
     return fig
 
 
-def heatmap_sequence(one_hot, ax=None, sort_idx=None, aspect='auto', figsize_tmpl=(8, 4), cbar=True):
+def heatmap_sequence(one_hot, ax=None, sort_idx=None, aspect='auto',
+                     figsize_tmpl=(8, 4), cbar=True, title=None):
     """Plot a heatmap of sequences
     """
     if ax is None:
@@ -177,4 +178,6 @@ def heatmap_sequence(one_hot, ax=None, sort_idx=None, aspect='auto', figsize_tmp
     ax.set_xticklabels(ticks - seq_len // 2)
     ax.set_ylabel("Seqlet index")
     ax.set_xlabel("Position")
+    if title is not None:
+        ax.set_title(title)
     return fig
