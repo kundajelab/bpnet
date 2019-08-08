@@ -20,71 +20,86 @@ bpnet train --premade=bpnet9 dataspec.yml --override='seq_width=200;n_dil_layers
 bpnet contrib $model_dir --method=deeplift $model_dir/imp.scores.h5
 ```
 
-
-## Run TF-MoDISco
+## Discover motifs with TF-MoDISco
 
 ```bash
-bpnet modisco-run $model_dir/imp.scores.h5 --premade=modisco-50k modisco_dir
+bpnet modisco-run $model_dir/imp.scores.h5 --premade=modisco-50k $modisco_dir
 ```
 
-## Dependencies
+## Determine motif instances with CWM scanning
 
-modisco
-plotnine - hidden
+```bash
+bpnet cwm-scan $modisco_dir $modisco_dir/motif-instances.tsv.gz
+```
 
-
-argh
-attr
-
-concise
-deepexplain
-
-gin
-h5py
-joblib
-keras
-kipoi - can we use kipoi_utils?
-kipoiseq
-matplotlib
-numpy
-pandas
-
-pyBigWig
-related
-scipy
-sklearn
-seaborn
-statsmodels
-tensorflow
-tqdm
-
-papermill
-vdom
-ipython - available by default with nbconvert?
+See the end-to-end tutorial https://colab.research.google.com/drive/1VNsNBfugPJfJ02LBgvPwj-gPK0L_djsD for more information.
 
 
-## Optional
-
-torch
-pprint
-fastparquet
-
-ipywidgets
-genomelake
-
-pygam - remove?
-
-## remove 
-
-genomelake   # implement your own bigwigextractor
-gin_train
-
-pybedtools -> replace with pyranges
-pysam  # replace to pyfaidx?
+# Installation
 
 
-## TODO
+```bash
+pip install bpnet
+```
 
-- [ ] try to get rid of pybedtools entirely
-  - [ ] replace with pyranges
+<!-- ## Dependencies -->
+
+<!-- modisco -->
+<!-- plotnine - hidden -->
+
+
+<!-- argh -->
+<!-- attr -->
+
+<!-- concise -->
+<!-- deepexplain -->
+
+<!-- gin -->
+<!-- h5py -->
+<!-- joblib -->
+<!-- keras -->
+<!-- kipoi - can we use kipoi_utils? -->
+<!-- kipoiseq -->
+<!-- matplotlib -->
+<!-- numpy -->
+<!-- pandas -->
+
+<!-- pyBigWig -->
+<!-- related -->
+<!-- scipy -->
+<!-- sklearn -->
+<!-- seaborn -->
+<!-- statsmodels -->
+<!-- tensorflow -->
+<!-- tqdm -->
+
+<!-- papermill -->
+<!-- vdom -->
+<!-- ipython - available by default with nbconvert? -->
+
+
+<!-- ## Optional -->
+
+<!-- torch -->
+<!-- pprint -->
+<!-- fastparquet -->
+
+<!-- ipywidgets -->
+<!-- genomelake -->
+
+<!-- pygam - remove? -->
+
+<!-- ## remove  -->
+
+<!-- genomelake   # implement your own bigwigextractor -->
+<!-- gin_train -->
+
+<!-- pybedtools -> replace with pyranges -->
+<!-- pysam  # replace to pyfaidx? -->
+
+
+<!-- ## TODO -->
+
+<!-- - [ ] try to get rid of pybedtools entirely -->
+<!--   - [ ] replace with pyranges -->
 
