@@ -11,6 +11,7 @@ variables:
       command: |
         # for no good reason the wrong version of pytest is choosen by default...
         echo 'export PYTEST=$(conda info --base)/envs/bpnet/bin/pytest' >> $BASH_ENV
+        echo 'export HDF5_USE_FILE_LOCKING=FALSE' >> $BASH_ENV
   install_bpnet_env: &install_bpnet_env
     run:
       name: Install bpnet enviroment
@@ -22,7 +23,7 @@ variables:
       command: |
         source activate bpnet
         mkdir test-reports
-        $PYTEST --cov=bpnet/ tests/ -n 1 --no-cov-on-fail --junitxml=test-reports/junit.xml
+        $PYTEST --cov=bpnet/ tests/ -x --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 15m
   run_coveralls: &run_coveralls
     run:

@@ -69,7 +69,7 @@ optional = [
 test_requirements = [
     "pytest>=3.3.1",
     "pytest-cov>=2.6.1",
-    "pytest-xdist",
+    # "pytest-xdist",
     "gdown",   # download files from google drive
     "virtualenv",
 ]
