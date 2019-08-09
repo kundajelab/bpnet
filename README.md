@@ -16,39 +16,33 @@ Specifically, it tries to answer the following questions:
 
 ## Getting started
 
-Main documentation of the bpnet package and an end-to-end example higlighting the main features are contained in the following colab notebook **<https://colab.research.google.com/drive/1VNsNBfugPJfJ02LBgvPwj-gPK0L_djsD>**. You can run this notebook yourself by clicking on '**Open in playground**'. Individual cells of this notebook can be executed by pressing the Shift+Enter keyboard shortcut. To learn more about colab, visit <https://colab.research.google.com> and follow the 'Welcome To Colaboratory' notebook.
+Main documentation of the bpnet package and an end-to-end example higlighting the main features are contained in the following colab notebook **<https://colab.research.google.com/drive/1VNsNBfugPJfJ02LBgvPwj-gPK0L_djsD>**. You can run this notebook yourself by clicking on '**Open in playground**'. Individual cells of this notebook can be executed by pressing the Shift+Enter keyboard shortcut.
 
 <img src="./docs/theme_dir/bpnet/colab-header.png" alt="BPNet" style="width: 300px;"/>
 
+To learn more about colab, visit <https://colab.research.google.com> and follow the 'Welcome To Colaboratory' notebook.
+
 ## Main commands
 
-### Train BPNet
-
-Train a model using an existing architecture [bpnet9](bpnet/premade/bpnet9.gin)
+Train a model using an existing architecture [bpnet9](bpnet/premade/bpnet9.gin) and use a differnet number of layers and a smaller sequence:
 
 ```bash
-bpnet train --premade=bpnet9 dataspec.yml output_dir
+bpnet train --premade=bpnet9 dataspec.yml --override='seq_width=200;n_dil_layers=6' output_dir
 ```
 
-Train a model by overriding some of the hyper-parameters:
+Compute contribution scores
 
 ```bash
-bpnet train --premade=bpnet9 dataspec.yml --override='seq_width=200;n_dil_layers=3' output_dir
+bpnet contrib $model_dir --method=deeplift $model_dir/contrib.scores.h5
 ```
 
-### Compute contribution scores
+Discover motifs with TF-MoDISco
 
 ```bash
-bpnet contrib $model_dir --method=deeplift $model_dir/imp.scores.h5
+bpnet modisco-run $model_dir/contrib.scores.h5 --premade=modisco-50k $modisco_dir
 ```
 
-### Discover motifs with TF-MoDISco
-
-```bash
-bpnet modisco-run $model_dir/imp.scores.h5 --premade=modisco-50k $modisco_dir
-```
-
-### Determine motif instances with CWM scanning
+Determine motif instances with CWM scanning
 
 ```bash
 bpnet cwm-scan $modisco_dir $modisco_dir/motif-instances.tsv.gz
