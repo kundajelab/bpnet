@@ -310,6 +310,11 @@ def dataspec_stats(dataspec,
         for stat_key, stat_value in stats.items():
             print(f"  {stat_key}: {stat_value}")
 
+    lamb = np.mean([v["total median"] for v in count_stats.values()]) / 10
+    print("")
+    print(f"We recommend to set lambda=total_count_median / 10 = {lamb:.2f} (default=10) in `bpnet train --override=` "
+          "to put 5x more weight on profile prediction than on total count prediction.")
+
 
 @gin.configurable
 def train(output_dir,

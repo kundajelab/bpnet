@@ -24,16 +24,16 @@ To learn more about colab, visit <https://colab.research.google.com> and follow 
 
 ## Main commands
 
+Compute data statistics to inform hyper-parameter selection such as choosing to trade off profile vs total count loss (`lambda` hyper-parameter):
+
+```bash
+bpnet dataspec-stats dataspec.yml
+```
+
 Train a model on BigWig tracks specified in [dataspec.yml](examples/chip-nexus/dataspec.yml) using an existing architecture [bpnet9](bpnet/premade/bpnet9.gin) on 200 bp sequences with 6 dilated convolutional layers:
 
 ```bash
 bpnet train --premade=bpnet9 dataspec.yml --override='seq_width=200;n_dil_layers=6' .
-```
-
-Compute data statistics useful to adopt 
-
-```bash
-bpnet dataspec-stats dataspec.yml
 ```
 
 Compute contribution scores for regions specified in the `dataspec.yml` file and store them into `contrib.scores.h5`
