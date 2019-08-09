@@ -10,11 +10,14 @@ Specifically, it tries to answer the following questions:
 - Where are they located in the genome?
 - How do they interact?
 
+## Overview
+
+<img src="./docs/theme_dir/bpnet/overview.png" alt="BPNet" style="width: 400px;"/>
+
 ## Getting started
 
 Main documentation of the bpnet package and an end-to-end example higlighting the main features are contained in the following colab notebook **<https://colab.research.google.com/drive/1VNsNBfugPJfJ02LBgvPwj-gPK0L_djsD>**. You can run this notebook yourself by clicking on '**Open in playground**'. Individual cells of this notebook can be executed by pressing the Shift+Enter keyboard shortcut. To learn more about colab, visit <https://colab.research.google.com> and follow the 'Welcome To Colaboratory' notebook.
 
-<img src="./docs/theme_dir/bpnet/overview.png" alt="BPNet" style="width: 400px;"/>
 
 ## Main commands
 
@@ -49,6 +52,24 @@ bpnet modisco-run $model_dir/imp.scores.h5 --premade=modisco-50k $modisco_dir
 ```bash
 bpnet cwm-scan $modisco_dir $modisco_dir/motif-instances.tsv.gz
 ```
+
+Note: these commands are also accessible as python functions:
+- `bpnet.cli.train.bpnet_train`
+- `bpnet.cli.contrib.bpnet_contrib`
+- `bpnet.cli.modisco.bpnet_modisco_run`
+- `bpnet.cli.modisco.cwm_scan`
+
+## Main python classes
+
+- `bpnet.seqmodel.SeqModel` - Keras model container specified by implementing output 'heads' and a common 'body'. It contains methods to compute the contribution scores of the input sequence w.r.t. differnet output heads.
+- `bpnet.BPNet.BPNetSeqModel` - Wrapper around `SeqModel` consolidating profile and total count predictions into a single output per task. It provides methods to export predictions and contribution scores to BigWig files as well as methods to simulate the spacing between two motifs.
+- `bpnet.cli.contrib.ContribFile` - File handle to the HDF5 containing the contribution scores
+- `bpnet.modisco.files.ModiscoFile` - File handle to the HDF5 file produced by TF-MoDISco.
+  - `bpnet.modisco.core.Pattern` - Object containing the PFM, CWM and optionally the signal footprint
+  - `bpnet.modisco.core.Seqlet` - Object containing the seqlet coordinates.
+  - `bpnet.modisco.core.StackedSeqletContrib` - Object containing the sequence, contribution scores and raw data at seqlet locations.
+- `bpnet.dataspecs.DataSpec` - class representing the `dataspec.yml` file
+- `dfi` - Frequently used alias for a pandas `DataFrame` containing motif instance coordinates. See the [colab notebook](https://colab.research.google.com/drive/1VNsNBfugPJfJ02LBgvPwj-gPK0L_djsD) for the column description.
 
 ## Installation
 

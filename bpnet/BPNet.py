@@ -100,7 +100,8 @@ class BPNetSeqModel:
         return s2s[s]
 
     def sim_pred(self, central_motif, side_motif=None, side_distances=[], repeat=128, contribution=[]):
-        """
+        """Embed two motifs in random sequences and obtain their average predictions.
+
         Args:
           contribution: list of contribution scores
         """
