@@ -1,8 +1,5 @@
 # BPNet
-
-<a href='https://circleci.com/gh/kundajelab/bpnet>
-	<img alt='CircleCI' src='https://circleci.com/gh/kundajelab/bpnet.svg?style=svg&circle-token=f55c1cf580b05df76e260993f7645e35d5302e76 style="max-height:20px;width:auto">
-</a>
+[![CircleCI](https://circleci.com/gh/kundajelab/bpnet.svg?style=svg&circle-token=f55c1cf580b05df76e260993f7645e35d5302e76)](https://circleci.com/gh/kundajelab/bpnet)
 
 ## Getting started
 
