@@ -24,35 +24,56 @@ To learn more about colab, visit <https://colab.research.google.com> and follow 
 
 ## Main commands
 
-Train a model using an existing architecture [bpnet9](bpnet/premade/bpnet9.gin) and use a differnet number of layers and a smaller sequence:
+Train a model on BigWig tracks specified in [dataspec.yml](examples/chip-nexus/dataspec.yml) using an existing architecture [bpnet9](bpnet/premade/bpnet9.gin) on 200 bp sequences with 6 dilated convolutional layers:
 
 ```bash
-bpnet train --premade=bpnet9 dataspec.yml --override='seq_width=200;n_dil_layers=6' output_dir
+bpnet train --premade=bpnet9 dataspec.yml --override='seq_width=200;n_dil_layers=6' .
 ```
 
-Compute contribution scores
+Compute data statistics useful to adopt 
 
 ```bash
-bpnet contrib $model_dir --method=deeplift $model_dir/contrib.scores.h5
+bpnet dataspec-stats dataspec.yml
 ```
 
-Discover motifs with TF-MoDISco
+Compute contribution scores for regions specified in the `dataspec.yml` file and store them into `contrib.scores.h5`
 
 ```bash
-bpnet modisco-run $model_dir/contrib.scores.h5 --premade=modisco-50k $modisco_dir
+bpnet contrib . --method=deeplift contrib.scores.h5
 ```
 
-Determine motif instances with CWM scanning
+Export BigWig tracks containing model predictions and contribution scores
 
 ```bash
-bpnet cwm-scan $modisco_dir $modisco_dir/motif-instances.tsv.gz
+bpnet export-bw . --regions=intervals.bed --scale-contribution bigwigs/
+```
+
+Discover motifs with TF-MoDISco using contribution scores stored in `contrib.scores.h5`, premade configuration [modisco-50k](bpnet/premade/modisco-50k.gin) and restricting the number of seqlets per metacluster to 20k:
+
+```bash
+bpnet modisco-run contrib.scores.h5 --premade=modisco-50k --override='TfModiscoWorkflow.max_seqlets_per_metacluster=20000' modisco/
+```
+
+Determine motif instances with CWM scanning and store them to `motif-instances.tsv.gz`
+
+```bash
+bpnet cwm-scan modisco/ --contrib-file=contrib.scores.h5 modisco/motif-instances.tsv.gz
+```
+
+Generate additional reports suitable for ChIP-nexus or ChIP-seq data:
+
+```bash
+bpnet chip-nexus-analysis modisco/
 ```
 
 Note: these commands are also accessible as python functions:
 - `bpnet.cli.train.bpnet_train`
+- `bpnet.cli.train.dataspec_stats`
 - `bpnet.cli.contrib.bpnet_contrib`
+- `bpnet.cli.export_bw.bpnet_export_bw`
 - `bpnet.cli.modisco.bpnet_modisco_run`
 - `bpnet.cli.modisco.cwm_scan`
+- `bpnet.cli.modisco.chip_nexus_analysis`
 
 ## Main python classes
 
