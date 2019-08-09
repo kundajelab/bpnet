@@ -15,14 +15,17 @@ from kipoi.data import BaseDataLoader
 try:
     import torch
     from torch.utils.data import DataLoader
+    USE_TORCH = True
 except Exception:
     # use the Kipoi dataloader as a fall-back strategy
     from kipoi.data import DataLoader
+    USE_TORCH = False
 import abc
 
 
 def to_numpy(data):
-    # import torch
+    if not USE_TORCH:
+        return data
     if isinstance(data, torch.Tensor):
         return data.numpy()
     elif isinstance(data, collections.Mapping):

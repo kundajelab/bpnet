@@ -23,7 +23,7 @@ variables:
       command: |
         source activate bpnet
         mkdir test-reports
-        $PYTEST --cov=bpnet/ tests/ -x --no-cov-on-fail --junitxml=test-reports/junit.xml
+        $PYTEST --cov=bpnet/ tests/ --disable-warnings --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 15m
   run_coveralls: &run_coveralls
     run:
