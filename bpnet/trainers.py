@@ -57,6 +57,7 @@ class SeqModelTrainer:
               train_samples_per_epoch=None,
               validation_samples=None,
               train_batch_sampler=None,
+              # TODO - add the functionality to run `self.model.body_unfreeze()` after some epochs
               tensorboard=True):
         """Train the model
         Args:

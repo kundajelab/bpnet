@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import keras.layers as kl
 from keras.optimizers import Adam
@@ -171,6 +172,31 @@ def bpnet_model(tasks,
         seqlen=seqlen,
     )
     return m
+
+
+def transfer_model(model_dir,
+                   heads,
+                   tasks,
+                   seqlen,
+                   optimizer,
+                   freeze_body=True):
+    from bpnet.seqmodel import SeqModel
+    import keras.backend as K
+
+    sm = SeqModel.from_mdir(model_dir)
+    K.clear_session()
+
+    sm2 = SeqModel(body=sm.body,
+                   heads=heads,
+                   tasks=tasks,
+                   seqlen=seqlen,
+                   optimizer=optimizer)
+    sm2.model.load_weights(os.path.join(model_dir, 'model.h5'),
+                           by_name=True,
+                           skip_mismatch=True)
+    if freeze_body:
+        sm2.body_freeze()
+    return sm2
 
 
 @gin.configurable

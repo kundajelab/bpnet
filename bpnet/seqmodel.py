@@ -27,7 +27,7 @@ class SeqModel:
                  # will be used for each task
                  heads,
                  tasks,
-                 optimizer=Adam(lr=0.004),
+                 optimizer=None,  # use Adam(lr=0.004) by default
                  seqlen=None,
                  input_shape=None,
                  input_name='seq'
@@ -48,6 +48,12 @@ class SeqModel:
         self.heads = heads
         self.seqlen = seqlen
 
+        if optimizer is None:
+            optimizer = Adam(lr=0.004)
+
+        self.optimizer_cfg = optimizer.get_config()
+        self.optimizer_cls = type(optimizer)
+
         if input_shape is None:
             input_shape = (self.seqlen, 4)
         inp = kl.Input(shape=input_shape, name=input_name)
@@ -62,6 +68,7 @@ class SeqModel:
         self.target_names = []
         self.postproc_fns = []
         bias_inputs = []
+
         for task in tasks:
             for head in heads:
                 head = head.copy()
@@ -77,10 +84,19 @@ class SeqModel:
         # create and compile the model
         self.model = Model([inp] + bias_inputs, outputs)
         self.model.compile(optimizer=optimizer,
-                           loss=self.losses, loss_weights=self.loss_weights)
+                           loss=self.losses,
+                           loss_weights=self.loss_weights)
 
         # start without any contribution function
         self.contrib_fns = {}
+
+    def _get_optimizer(self):
+        return self.optimizer_cls.from_config(self.optimizer_cfg)
+
+    def _recompile(self):
+        self.model.compile(optimizer=self._get_optimizer(),
+                           loss=self.losses,
+                           loss_weights=self.loss_weights)
 
     def _get_input_tensor(self):
         return self.model.inputs[0]
@@ -89,6 +105,30 @@ class SeqModel:
         if graph is None:
             graph = tf.get_default_graph()
         return graph.get_tensor_by_name(self.bottleneck_name)
+
+    def body_layers(self):
+        layers = []
+        for layer in self.model.layers:
+            layers.append(layer)
+            if layer.output.name == self.bottleneck_name:
+                # we hit the bottleneck layer
+                break
+        assert len(layers) < len(self.model.layers)
+        return layers
+
+    def body_freeze(self):
+        """Set all layers in the body to trainable
+        """
+        for layer in self.body_layers():
+            layer.trainable = False
+        self._recompile()
+
+    def body_unfreeze(self):
+        """Set all layers in the body to trainable
+        """
+        for layer in self.body_layers():
+            layer.trainable = True
+        self._recompile()
 
     def bottleneck_model(self):
         return Model(self._get_input_tensor(),
@@ -161,6 +201,8 @@ class SeqModel:
         with deepexplain.tensorflow.DeepExplain(session=K.get_session()) as de:
             fModel = Model(inputs=input_tensor, outputs=intp_tensors)
             target_tensors = fModel(input_tensor)
+            if not isinstance(target_tensors, list):
+                target_tensors = [target_tensors]
             for name, target_tensor in zip(intp_names, target_tensors):
                 # input_tensor = fModel.inputs[0]
                 self.contrib_fns["deeplift/" + name] = de.explain('deeplift',
@@ -201,6 +243,8 @@ class SeqModel:
 
         fModel = Model(inputs=input_tensor, outputs=intp_tensors)
         target_tensors = fModel(input_tensor)
+        if not isinstance(target_tensors, list):
+            target_tensors = [target_tensors]
         for name, target_tensor in zip(intp_names, target_tensors):
             # input_tensor = fModel.inputs[0]
             self.contrib_fns["grad/" + name] = K.function(input_tensor,
