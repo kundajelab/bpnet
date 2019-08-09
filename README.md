@@ -5,7 +5,7 @@ BPNet is a python package with a CLI to train and interpret base-resolution deep
 
 <img src="./docs/theme_dir/bpnet/dna-words.png" alt="BPNet" style="width: 600px;"/>
 
-Specifically, it tries to answer the following questions:
+Specifically, it aims to answer the following questions:
 - What are the sequence motifs?
 - Where are they located in the genome?
 - How do they interact?
@@ -30,7 +30,7 @@ Compute data statistics to inform hyper-parameter selection such as choosing to 
 bpnet dataspec-stats dataspec.yml
 ```
 
-Train a model on BigWig tracks specified in [dataspec.yml](examples/chip-nexus/dataspec.yml) using an existing architecture [bpnet9](bpnet/premade/bpnet9.gin) on 200 bp sequences with 6 dilated convolutional layers:
+Train a model on BigWig tracks specified in [dataspec.yml](examples/chip-nexus/dataspec.yml) using an existing architecture [bpnet9](bpnet/premade/bpnet9-pyspec.gin) on 200 bp sequences with 6 dilated convolutional layers:
 
 ```bash
 bpnet train --premade=bpnet9 dataspec.yml --override='seq_width=200;n_dil_layers=6' .
@@ -84,8 +84,8 @@ Note: these commands are also accessible as python functions:
   - `bpnet.modisco.core.Pattern` - Object containing the PFM, CWM and optionally the signal footprint
   - `bpnet.modisco.core.Seqlet` - Object containing the seqlet coordinates.
   - `bpnet.modisco.core.StackedSeqletContrib` - Object containing the sequence, contribution scores and raw data at seqlet locations.
-- `bpnet.dataspecs.DataSpec` - class representing the `dataspec.yml` file
-- `dfi` - Frequently used alias for a pandas `DataFrame` containing motif instance coordinates. See the [colab notebook](https://colab.research.google.com/drive/1VNsNBfugPJfJ02LBgvPwj-gPK0L_djsD) for the column description.
+- `bpnet.dataspecs.DataSpec` - File handle to the `dataspec.yml` file
+- `dfi` - Frequently used alias for a pandas `DataFrame` containing motif instance coordinates produced by `bpnet cwm-scan`. See the [colab notebook](https://colab.research.google.com/drive/1VNsNBfugPJfJ02LBgvPwj-gPK0L_djsD) for the column description.
 
 ## Installation
 
