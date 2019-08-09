@@ -37,69 +37,66 @@ See the end-to-end tutorial https://colab.research.google.com/drive/1VNsNBfugPJf
 
 # Installation
 
+Supported python version is 3.6. After installing anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)), create a new bpnet environment by executing the following code:
 
 ```bash
+# Clone this repository
+git clone git@github.com:kundajelab/bpnet.git
+cd bpnet
+
+# create 'bpnet' conda environment
+conda env create -f conda-env.yml
+
+# Activate the conda environment
+source activate bpnet
+```
+
+Alternatively, you could also start a fresh conda environment by running the following
+
+```bash
+conda env create -n bpnet python=3.6
+source activate bpnet
+conda install -c bioconda pybedtools bedtools pybigwig pysam genomelake
+pip install git+https://github.com/kundajelab/DeepExplain.git
+pip install tensorflow # or tensorflow-gpu if you are using a GPU
 pip install bpnet
 ```
 
-<!-- ## Dependencies -->
+To make sure saving the Keras model in HDF5 file format works (https://github.com/h5py/h5py/issues/1082), add `export HDF5_USE_FILE_LOCKING=FALSE` to your `~/.bashrc`:
 
-<!-- modisco -->
-<!-- plotnine - hidden -->
+```bash
+echo 'export HDF5_USE_FILE_LOCKING=FALSE' >> ~/.bashrc
+```
 
+When using bpnet from the command line, don't forget to activate the `bpnet` conda environment before:
 
-<!-- argh -->
-<!-- attr -->
+```bash
+# activate the bpnet conda environment
+source activate bpnet
 
-<!-- concise -->
-<!-- deepexplain -->
+# run bpnet
+bpnet <command> ...
+```
 
-<!-- gin -->
-<!-- h5py -->
-<!-- joblib -->
-<!-- keras -->
-<!-- kipoi - can we use kipoi_utils? -->
-<!-- kipoiseq -->
-<!-- matplotlib -->
-<!-- numpy -->
-<!-- pandas -->
+## Optional install `vmtouch` to use with `bpnet train --vmtouch`
 
-<!-- pyBigWig -->
-<!-- related -->
-<!-- scipy -->
-<!-- sklearn -->
-<!-- seaborn -->
-<!-- statsmodels -->
-<!-- tensorflow -->
-<!-- tqdm -->
+To use the `--vmtouch` in `bpnet train` command and thereby speed-up data-loading, install [vmtouch](https://hoytech.com/vmtouch/). vmtouch is used to load the bigWig files into system memory cache which allows multiple processes to access
+the bigWigs loaded into memory. 
 
-<!-- papermill -->
-<!-- vdom -->
-<!-- ipython - available by default with nbconvert? -->
+Here's how to build and install vmtouch:
 
+```bash
+# ~/bin = directory for localy compiled binaries
+mkdir -p ~/bin
+cd ~/bin
+# Clone and build
+git clone https://github.com/hoytech/vmtouch.git vmtouch_src
+cd vmtouch_src
+make
+# Move the binary to ~/bin
+cp vmtouch ../
+# Add ~/bin to $PATH
+echo 'export PATH=$PATH:~/bin' >> ~/.bashrc
+```
 
-<!-- ## Optional -->
-
-<!-- torch -->
-<!-- pprint -->
-<!-- fastparquet -->
-
-<!-- ipywidgets -->
-<!-- genomelake -->
-
-<!-- pygam - remove? -->
-
-<!-- ## remove  -->
-
-<!-- genomelake   # implement your own bigwigextractor -->
-<!-- gin_train -->
-
-<!-- pybedtools -> replace with pyranges -->
-<!-- pysam  # replace to pyfaidx? -->
-
-
-<!-- ## TODO -->
-
-<!-- - [ ] try to get rid of pybedtools entirely -->
-<!--   - [ ] replace with pyranges -->
 

@@ -16,9 +16,9 @@ set -eou pipefail
 # keypair (docs/key.enc, and the corresponding public key in the setting of the
 # repo) need to be updated.
 BRANCH="master"
-ORIGIN="gagneurlab.github.io"
-GITHUB_USERNAME="kipoi"
-TARGET_FOLDER="kipoiseq/"
+ORIGIN="kundajelab.github.io"
+GITHUB_USERNAME="kundajelab"
+TARGET_FOLDER="bpnet/"
 
 # DOCSOURCE is directory containing the Makefile, relative to the directory
 # containing this bash script.
@@ -40,8 +40,8 @@ BUILD_DOCS_FROM_BRANCH="master"
 #
 # ----------------------------------------------------------------------------
 
-if [[ $CIRCLE_PROJECT_USERNAME != kipoi ]]; then
-    echo "$CIRCLE_PROJECT_USERNAME != kipoi"
+if [[ $CIRCLE_PROJECT_USERNAME != kundajelab ]]; then
+    echo "$CIRCLE_PROJECT_USERNAME != kundajelab"
     exit 1
 fi
 
@@ -80,7 +80,7 @@ cd $STAGING
 
 # Add, commit, and push
 echo ".*" >> .gitignore
-git config user.name "Circle-CI-kipoi"
+git config user.name "Circle-CI-kundajelab"
 git config user.email "${GITHUB_USERNAME}@users.noreply.github.com"
 git add -A .
 git commit --all -m "Updated docs to commit ${SHA}."

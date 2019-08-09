@@ -8,13 +8,15 @@ dependencies:
 - python=3.6
 
 # genomics
-- pybedtools
-- genomelake
-- pysam
+- pybedtools>=0.7.10
+- bedtools>=2.27.1
+- pybigwig>=0.3.10
+- pysam>=0.14.0
+- genomelake>=0.1.4
 
-- pytorch
+- pytorch  # optional for data-loading
 - cython
-- h5py
+- h5py>=2.7.0
 - numpy
 
 - pandas>=0.23.0
@@ -24,38 +26,10 @@ dependencies:
 - nb_conda
 - pip
 - pip:
-  # in-house packages
-  - urllib3==1.24.1
-  - kipoi>=0.6.8
-  - kipoiseq>=0.2.2
-  - concise==0.6.8
-  - modisco==0.5.1.1
-  - gin-train
   - git+https://github.com/kundajelab/DeepExplain.git
 
   # ML & numerics
   - tensorflow>=1.7  # tensorflow-gpu==1.7 for gpu
-  - keras==2.2.4
-  - scikit-learn
-  - joblib==0.12.5
-  - comet_ml
-  - wandb
-  - gin-config
 
-  # Plotting
-  - matplotlib==3.0.2
-  - plotnine
-  - seaborn
-
-  # Utils
-  - tqdm
-  - ipykernel
-  - ipython
-  - pytest
-
-  # rendering notebooks
-  - papermill
-  - nbconvert==5.5.0  # for snakemake conversion
-
-  # basepair package
-  - -e .  # install the local basepair package
+  # bpnet package
+  - .[dev,extras]  # install the local basepair package. All the other required pip packages are specified in the setup.py

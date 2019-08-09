@@ -18,8 +18,8 @@ train.model = @SeqModel()
 SeqModel.seqlen = %seq_width
 SeqModel.tasks = %tasks
 SeqModel.optimizer = @keras.optimizers.Adam()
-SeqModel.heads = [@ProfileHead(), @ScalarHead()]
-SeqModel.body = @DilatedConv1D()
+SeqModel.heads = [@ProfileHead(), @ScalarHead()]  # Heads
+SeqModel.body = @DilatedConv1D()  # Body
 keras.optimizers.Adam.lr = %lr
 
 # - Body

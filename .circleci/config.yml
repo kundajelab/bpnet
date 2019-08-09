@@ -5,34 +5,31 @@ variables:
     run:
       name: Update conda
       command: conda update --yes conda
-  install_git_lfs: &install_git_lfs
+  export_shortcuts: &export_shortcuts
     run:
-      name: Install git-lfs
+      name: Export shortcuts 
       command: |
-        conda install --yes -c conda-forge git-lfs
-        cp .circleci/gitconfig ~/.gitconfig
-  install_bpnet: &install_bpnet
+        # for no good reason the wrong version of pytest is choosen by default...
+        echo 'export PYTEST=$(conda info --base)/envs/bpnet/bin/pytest' >> $BASH_ENV
+  install_bpnet_env: &install_bpnet_env
     run:
-      name: Install bpnet
-      command: pip install '.[develop]'
-  install_requests: &install_requests
-    run:
-      name: Install requirements for requests correctly
-      command: pip install requests
-  kipoi_ls: &kipoi_ls
-    run:
-      name: List kipoi packages
-      command: kipoi ls
+      name: Install bpnet enviroment
+      command: |
+        conda env create -f conda-env.yml
   run_tests: &run_tests
     run:
       name: Run tests
       command: |
+        source activate bpnet
         mkdir test-reports
-        py.test --cov=bpnet/ tests/ -n 1 --no-cov-on-fail --junitxml=test-reports/junit.xml
+        $PYTEST --cov=bpnet/ tests/ -n 1 --no-cov-on-fail --junitxml=test-reports/junit.xml
+      no_output_timeout: 15m
   run_coveralls: &run_coveralls
     run:
       name: run coveralls
-      command: coveralls || true
+      command: |
+        source activate bpnet
+        coveralls || true
   store_test_results: &store_test_results
     store_test_results:
       path: test-reports
@@ -43,20 +40,15 @@ variables:
 
 
 jobs:
-
-  # TODO generate a new environment
   test-py36:
     docker:
       - image: continuumio/anaconda3:5.0.1
-      # - image: kipoi/miniconda3:4.3.14
     working_directory: ~/repo
     steps:
       - checkout
       - *update_conda
-      # - *install_git_lfs
-      # - *update_pytorch
-      - *install_pip_deps
-      - *install_bpnet
+      - *install_bpnet_env
+      - *export_shortcuts
       - *run_tests
       - *run_coveralls
       - *store_test_results
@@ -64,8 +56,6 @@ jobs:
 
   build-deploy-docs:
     docker:
-      # - image: continuumio/miniconda3
-      # - image: kipoi/miniconda3:4.3.14
       - image: continuumio/anaconda3:5.0.1
     working_directory: ~/repo
     steps:

@@ -7,9 +7,9 @@ requirements = [
     "argh",
     "attr",
     "related",
-    "cloudpickle",
+    "cloudpickle>=1.0.0",
 
-    "concise",
+    "concise>=0.6.7",
     "deepexplain",
 
     # ml
@@ -38,14 +38,14 @@ requirements = [
 
     "joblib",
     "cloudpickle>=1.0.0",  # - remove?
-    "kipoi",
+    "kipoi>=0.6.8",
     "kipoi-utils>=0.3.0",
-    "kipoiseq",
+    "kipoiseq>=0.2.2",
 
     "papermill",
     "jupyter_client",
     "ipykernel",
-    "nbconvert",
+    "nbconvert>=5.5.0",
     "vdom>=0.6",
 
     # utils
@@ -66,14 +66,10 @@ optional = [
     "ipywidgets",  # for motif simulation
 ]
 
-
-# optional2 = [
-#     "pygam",
-#     "pytorch",
-# ]
-
 test_requirements = [
-    "pytest",
+    "pytest>=3.3.1",
+    "pytest-cov>=2.6.1",
+    "pytest-xdist",
     "gdown",   # download files from google drive
     "virtualenv",
 ]
@@ -94,7 +90,7 @@ setup(
     packages=find_packages(),
     install_requires=requirements,
     extras_require={
-        "develop": test_requirements,
+        "dev": test_requirements,
         "extras": optional,
     },
     license="MIT license",
