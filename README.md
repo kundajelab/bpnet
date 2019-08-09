@@ -1,13 +1,20 @@
 # BPNet
 [![CircleCI](https://circleci.com/gh/kundajelab/bpnet.svg?style=svg&circle-token=f55c1cf580b05df76e260993f7645e35d5302e76)](https://circleci.com/gh/kundajelab/bpnet)
 
+BPNet is a python package with a CLI to train and interpret base-resolution deep neural networks trained on functional genomics data such as ChIP-nexus or ChIP-seq. It addresses the problem of pinpointing the regulatory elements in the genome:
+
+<img src="./docs/theme_dir/bpnet/dna-words.png" alt="BPNet" style="width: 600px;"/>
+
+Specifically, it tries to answer the following questions:
+- What are the sequence motifs?
+- Where are they located in the genome?
+- How do they interact?
+
 ## Getting started
 
-Main documentation of the bpnet package and an end-to-end example higlighting the main features are contained in the following colab notebook <https://colab.research.google.com/drive/1VNsNBfugPJfJ02LBgvPwj-gPK0L_djsD>. You can run this notebook yourself by clicking on '**Open in playground**'. Individual cells of this notebook can be executed by pressing the Shift+Enter keyboard shortcut. To learn more about colab, visit <https://colab.research.google.com> and follow the 'Welcome To Colaboratory' notebook.
+Main documentation of the bpnet package and an end-to-end example higlighting the main features are contained in the following colab notebook **<https://colab.research.google.com/drive/1VNsNBfugPJfJ02LBgvPwj-gPK0L_djsD>**. You can run this notebook yourself by clicking on '**Open in playground**'. Individual cells of this notebook can be executed by pressing the Shift+Enter keyboard shortcut. To learn more about colab, visit <https://colab.research.google.com> and follow the 'Welcome To Colaboratory' notebook.
 
-<img src="./docs/theme_dir/bpnet/colab-header.png" alt="BPNet" style="width: 300px;"/>
-
-<!-- <img src="./notebooks/figs/bpnet-arch.png" alt="BPNet" style="width: 300px;"/> -->
+<img src="./docs/theme_dir/bpnet/overview.png" alt="BPNet" style="width: 400px;"/>
 
 ## Main commands
 
@@ -84,7 +91,7 @@ source activate bpnet
 bpnet <command> ...
 ```
 
-### (Optional) Install `vmtouch` to use with `bpnet train --vmtouch`
+### (Optional) Install `vmtouch` to use `bpnet train --vmtouch`
 
 To use the `--vmtouch` in `bpnet train` command and thereby speed-up data-loading, install [vmtouch](https://hoytech.com/vmtouch/). vmtouch is used to load the bigWig files into system memory cache which allows multiple processes to access
 the bigWigs loaded into memory. 
