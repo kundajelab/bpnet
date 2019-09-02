@@ -331,7 +331,9 @@ class SeqModel:
     def save(self, file_path):
         """Save model to a file
         """
-        from bpnet.utils import write_pkl
+        from bpnet.utils import write_pkl, SerializableLock
+        # fix the serialization of _OPERATIVE_CONFIG_LOCK
+        gin.config._OPERATIVE_CONFIG_LOCK = SerializableLock()
         write_pkl(self, file_path)
 
     @classmethod
