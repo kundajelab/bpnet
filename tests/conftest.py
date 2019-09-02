@@ -48,8 +48,14 @@ def dataspec_bias(data_dir):
 
 
 @fixture(scope='session')
+def dataspec_bed6(data_dir):
+    return data_dir / 'dataspec.bed6.yml'
+
+
+@fixture(scope='session')
 def config_gin(data_dir):
     return data_dir / 'config.gin'
+
 
 @fixture(scope='session')
 def modisco_config_gin(data_dir):

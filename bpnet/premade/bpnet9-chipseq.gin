@@ -93,6 +93,7 @@ bpnet_data.tasks = %tasks
 bpnet_data.exclude_chr = %exclude_chr
 bpnet_data.augment_interval = %augment_interval
 bpnet_data.interval_augmentation_shift = 200
+bpnet_data.intervals_format = 'bed'
 
 # transform the bias track by aggregating it in a
 # sliding window fashion with window sizes of 1 bp (no aggregation) and 50 bp
