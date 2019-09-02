@@ -13,7 +13,7 @@ requirements = [
     "deepexplain",
 
     # ml
-    "gin-config",
+    "gin-config==0.2.0",
     "keras==2.2.4",
     "scikit-learn",
     # "tensorflow",
