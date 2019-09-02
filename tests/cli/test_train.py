@@ -56,6 +56,18 @@ def test_output_files_model_w_bias(trained_model_w_bias):
     m.predict(encodeDNA(["A" * 200]))
 
 
+def test_trained_model_bed6(tmp_path, data_dir, config_gin, dataspec_bed6):
+    K.clear_session()
+    gin.clear_config()
+    bpnet_train(dataspec=str(dataspec_bed6),
+                output_dir=str(tmp_path),
+                premade='bpnet9',
+                config=str(config_gin),
+                override='seq_width=100;train.batch_size=8',
+                num_workers=2
+                )
+
+
 def test_trained_model_override_in_memory(tmp_path, data_dir, config_gin, dataspec_bias):
     K.clear_session()
     gin.clear_config()

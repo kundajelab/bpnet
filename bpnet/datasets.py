@@ -95,13 +95,16 @@ class TsvReader:
             # make sure the task-names match
             assert self.n_tasks == len(self.tasknames)
 
+        if self.label_dtype is None:
+            dtypes = {i: d for i, d in enumerate([str, int, int])}
+        else:
+            dtypes = {i: d for i, d in enumerate([str, int, int] + [self.label_dtype] * self.n_tasks)}
+
         self.df = pd.read_csv(self.tsv_file,
                               header=None,
                               comment='#',
                               skiprows=skiprows,
-                              dtype={i: d
-                                     for i, d in enumerate([str, int, int] +
-                                                           [self.label_dtype] * self.n_tasks)},
+                              dtype=dtypes,
                               sep='\t')
         if self.num_chr and self.df.iloc[0][0].startswith("chr"):
             self.df[0] = self.df[0].str.replace("^chr", "")
@@ -210,6 +213,7 @@ class StrandedProfile(Dataset):
                  incl_chromosomes=None,
                  excl_chromosomes=None,
                  intervals_file=None,
+                 intervals_format='bed',
                  include_metadata=True,
                  tasks=None,
                  include_classes=False,
@@ -226,6 +230,7 @@ class StrandedProfile(Dataset):
           peak_width: resize the bed file to a certain width
           intervals_file: if specified, use these regions to train the model.
             If not specified, the regions are inferred from the dataspec.
+          intervals_format: interval_file format. Available: bed, bed3, bed3+labels
           shuffle: True
           track_transform: function to be applied to transform the tracks (shape=(batch, seqlen, channels))
           total_count_transform: transform to apply to the total counts
@@ -240,8 +245,12 @@ class StrandedProfile(Dataset):
             self.seq_width = peak_width
         else:
             self.seq_width = seq_width
+
+        assert intervals_format in ['bed3', 'bed3+labels', 'bed']
+
         self.shuffle = shuffle
         self.intervals_file = intervals_file
+        self.intervals_format = intervals_format
         self.incl_chromosomes = incl_chromosomes
         self.excl_chromosomes = excl_chromosomes
         self.total_count_transform = total_count_transform
@@ -276,8 +285,10 @@ class StrandedProfile(Dataset):
         else:
             self.tsv = TsvReader(self.intervals_file,
                                  num_chr=False,
-                                 label_dtype=int,
-                                 mask_ambigous=-1,
+                                 # optional
+                                 label_dtype=int if self.intervals_format == 'bed3+labels' else None,
+                                 mask_ambigous=-1 if self.intervals_format == 'bed3+labels' else None,
+                                 # --------------------------------------------
                                  incl_chromosomes=incl_chromosomes,
                                  excl_chromosomes=excl_chromosomes,
                                  chromosome_lens=self.chrom_lens,
@@ -413,6 +424,7 @@ class StrandedProfile(Dataset):
 def bpnet_data(dataspec,
                peak_width=1000,
                intervals_file=None,
+               intervals_format='bed',
                seq_width=None,
                shuffle=True,
                total_count_transform=lambda x: np.log(1 + x),
@@ -452,6 +464,7 @@ def bpnet_data(dataspec,
 
     return (StrandedProfile(dataspec, peak_width,
                             intervals_file=intervals_file,
+                            intervals_format=intervals_format,
                             seq_width=seq_width,
                             include_metadata=include_metadata,
                             incl_chromosomes=[c for c in all_chr
@@ -465,6 +478,7 @@ def bpnet_data(dataspec,
             [('valid-peaks', StrandedProfile(dataspec,
                                              peak_width,
                                              intervals_file=intervals_file,
+                                             intervals_format=intervals_format,
                                              seq_width=seq_width,
                                              include_metadata=include_metadata,
                                              incl_chromosomes=valid_chr,
@@ -475,6 +489,7 @@ def bpnet_data(dataspec,
                                              total_count_transform=total_count_transform)),
              ('train-peaks', StrandedProfile(dataspec, peak_width,
                                              intervals_file=intervals_file,
+                                             intervals_format=intervals_format,
                                              seq_width=seq_width,
                                              include_metadata=include_metadata,
                                              incl_chromosomes=[c for c in all_chr
@@ -524,6 +539,7 @@ def bpnet_data_gw(dataspec,
     train = StrandedProfile(dataspec, peak_width,
                             seq_width=seq_width,
                             intervals_file=intervals_file,
+                            intervals_format='bed3+labels',
                             include_metadata=include_metadata,
                             include_classes=include_classes,
                             tasks=tasks,
@@ -538,6 +554,7 @@ def bpnet_data_gw(dataspec,
               StrandedProfile(dataspec, peak_width,
                               seq_width=seq_width,
                               intervals_file=intervals_file,
+                              intervals_format='bed3+labels',
                               include_metadata=include_metadata,
                               include_classes=include_classes,
                               tasks=tasks,
@@ -551,6 +568,7 @@ def bpnet_data_gw(dataspec,
                           StrandedProfile(dataspec, peak_width,
                                           seq_width=seq_width,
                                           intervals_file=intervals_file,
+                                          intervals_format='bed3+labels',
                                           include_metadata=include_metadata,
                                           include_classes=True,
                                           tasks=tasks,
@@ -564,6 +582,7 @@ def bpnet_data_gw(dataspec,
         ('valid-peaks', StrandedProfile(dataspec, peak_width,
                                         seq_width=seq_width,
                                         intervals_file=None,
+                                        intervals_format='bed3+labels',
                                         include_metadata=include_metadata,
                                         tasks=tasks,
                                         include_classes=False,  # dataspec doesn't contain labels
@@ -574,6 +593,7 @@ def bpnet_data_gw(dataspec,
         ('train-peaks', StrandedProfile(dataspec, peak_width,
                                         seq_width=seq_width,
                                         intervals_file=None,
+                                        intervals_format='bed3+labels',
                                         include_metadata=include_metadata,
                                         tasks=tasks,
                                         include_classes=False,  # dataspec doesn't contain labels
