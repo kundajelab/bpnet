@@ -419,8 +419,8 @@ class BPNetSeqModel:
                     si_profile = 1
                     si_counts = 1
 
-                # profile - multipl
-                if np.all(seq.astype(bool).sum(axis=-1).max() == 1):
+                # Assertion to prevent multiple nucleotides being encoded at a genomic position.
+                if not np.all(seq.astype(bool).sum(axis=-1).max() == 1):
                     continue
 
                 add_entry(bws[task]['contrib.profile'],
