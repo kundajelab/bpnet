@@ -29,7 +29,7 @@ dependencies:
   - git+https://github.com/kundajelab/DeepExplain.git
 
   # ML & numerics
-  - tensorflow>=1.7  # tensorflow-gpu==1.7 for gpu
+  - tensorflow>=1.7,<=1.14  # tensorflow-gpu==1.7 for gpu
 
   # bpnet package
   - .[dev,extras]  # install the local basepair package. All the other required pip packages are specified in the setup.py
