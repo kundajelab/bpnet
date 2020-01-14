@@ -547,7 +547,7 @@ def cwm_scan(modisco_dir,
         '.bed',
         '.bed.gz',
     ]
-    if not any([output_file.endswith(suffix) for suffix in valid_suffixes]):
+    if not any([str(output_file).endswith(suffix) for suffix in valid_suffixes]):
         raise ValueError(f"output_file doesn't have a valid file suffix. Valid file suffixes are: {valid_suffixes}")
 
     # Centroid matches path
