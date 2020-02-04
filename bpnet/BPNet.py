@@ -423,12 +423,14 @@ class BPNetSeqModel:
                 if not np.all(seq.astype(bool).sum(axis=-1).max() == 1):
                     continue
 
-                add_entry(bws[task]['contrib.profile'],
-                          to_1d_contrib(hyp_contrib[f'{task}/profile'], seq) * si_profile,
-                          interval, start_idx)
-                add_entry(bws[task]['contrib.counts'],
-                          to_1d_contrib(hyp_contrib[f'{task}/count'], seq) * si_counts,
-                          interval, start_idx)
+                if 'profile/wn' in pred_summaries:
+                    add_entry(bws[task]['contrib.profile'],
+                              to_1d_contrib(hyp_contrib[f'{task}/profile'], seq) * si_profile,
+                              interval, start_idx)
+                if 'counts/pre-act' in pred_summaries:
+                    add_entry(bws[task]['contrib.counts'],
+                              to_1d_contrib(hyp_contrib[f'{task}/count'], seq) * si_counts,
+                              interval, start_idx)
 
             prev_stop = max(interval.stop, prev_stop)
 
