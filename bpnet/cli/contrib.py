@@ -370,17 +370,17 @@ class ContribFile:
                              })
 
     def _get_profile_key(self):
-        template = '/targets/profile/{t}'
+        template = '/hyp_contrib/profile/{t}'
         if isinstance(self.data, dict):
             if template.format(t=self.get_tasks()[0]) in self.data:
                 return template
             else:
-                return '/targets/{t}/profile'
+                return '/hyp_contrib/{t}/profile/wn'
         else:
-            if 'profile' in self.data['targets']:
+            if 'profile' in self.data['hyp_contrib']:
                 return template
             else:
-                return '/targets/{t}/profile'
+                return '/hyp_contrib/{t}/profile/wn'
 
     def get_profiles(self, idx=None):
         tmpl = self._get_profile_key()
