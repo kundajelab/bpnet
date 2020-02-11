@@ -375,12 +375,12 @@ class ContribFile:
             if template.format(t=self.get_tasks()[0]) in self.data:
                 return template
             else:
-                return '/hyp_contrib/{t}/profile'
+                return '/hyp_contrib/{t}/profile/wn'
         else:
             if 'profile' in self.data['hyp_contrib']:
                 return template
             else:
-                return '/hyp_contrib/{t}/profile'
+                return '/hyp_contrib/{t}/profile/wn'
 
     def get_profiles(self, idx=None):
         tmpl = self._get_profile_key()
