@@ -77,13 +77,21 @@ def multiple_heatmap_stranded_profile(signal_dict, figsize=(20, 20), sort_idx=No
         total_counts = sum([x.sum(axis=-1).sum(axis=-1) for x in signal_dict.values()])
         sort_idx = np.argsort(-total_counts)
 
-    for i, (task, ax) in enumerate(zip(tasks, axes)):
+    if len(tasks)==1: #If only one task, then can't zip axes
+        ax = axes
+        task = tasks[0]
         heatmap_stranded_profile(signal_dict[task][sort_idx], ax=ax, **kwargs)
         ax.set_title(task)
-    fig.subplots_adjust(wspace=0)  # no space between plots
-    plt.setp([a.get_yticklabels() for a in fig.axes[1:]], visible=False)  # no numbers
-    plt.setp([a.get_yaxis() for a in fig.axes[1:]], visible=False)  # no numbers
-    return fig
+        return fig
+    else:
+        for i, (task, ax) in enumerate(zip(tasks, axes)):
+            heatmap_stranded_profile(signal_dict[task][sort_idx], ax=ax, **kwargs)
+            ax.set_title(task)
+
+        fig.subplots_adjust(wspace=0)  # no space between plots
+        plt.setp([a.get_yticklabels() for a in fig.axes[1:]], visible=False)  # no numbers
+        plt.setp([a.get_yaxis() for a in fig.axes[1:]], visible=False)  # no numbers
+        return fig
 
 
 def heatmap_contribution_profile(signal, ax=None, figsize=(5, 20), aspect=0.2, sort_idx=None, tick_step=25):
@@ -118,15 +126,22 @@ def multiple_heatmap_contribution_profile(signal_dict, sort_idx=None,
     if sort_idx is None:
         sort_idx = np.arange([x for x in signal_dict.values()][0].shape[0])
 
-    for i, (task, ax) in enumerate(zip(tasks, axes)):
-        heatmap_contribution_profile(signal_dict[task][sort_idx],
-                                     ax=ax, **kwargs)
-        # --------------------
+    if len(tasks)==1: #If only one task, then can't zip axes
+        ax = axes
+        task = tasks[0]
+        heatmap_contribution_profile(signal_dict[task][sort_idx],ax=ax, **kwargs)
         ax.set_title(task)
-    fig.subplots_adjust(wspace=0)  # no space between plots
-    plt.setp([a.get_yticklabels() for a in fig.axes[1:]], visible=False)  # no numbers
-    plt.setp([a.get_yaxis() for a in fig.axes[1:]], visible=False)  # no numbers
-    return fig
+        return fig
+    else:
+        for i, (task, ax) in enumerate(zip(tasks, axes)):
+            heatmap_contribution_profile(signal_dict[task][sort_idx],
+                                         ax=ax, **kwargs)
+            # --------------------
+            ax.set_title(task)
+        fig.subplots_adjust(wspace=0)  # no space between plots
+        plt.setp([a.get_yticklabels() for a in fig.axes[1:]], visible=False)  # no numbers
+        plt.setp([a.get_yaxis() for a in fig.axes[1:]], visible=False)  # no numbers
+        return fig
 
 
 def multiple_heatmaps(signal_dict, plot_fn, sort_idx=None, figsize=(20, 20), **kwargs):

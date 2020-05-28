@@ -361,10 +361,10 @@ class ContribFile:
         return np.arange(len(self))[idx]
 
     def get_ranges(self, idx=None):
-        return pd.DataFrame({"chrom": self._subset(self.data["/metadata/ranges/chr"], idx),
-                             "start": self._subset(self.data["/metadata/ranges/start"], idx),
-                             "end": self._subset(self.data["/metadata/ranges/end"], idx),
-                             "strand": self._subset(self.data["/metadata/ranges/strand"], idx),
+        return pd.DataFrame({"chrom": self._subset(self.data["/metadata/range/chr"], idx),
+                             "start": self._subset(self.data["/metadata/range/start"], idx),
+                             "end": self._subset(self.data["/metadata/range/end"], idx),
+                             "strand": self._subset(self.data["/metadata/range/strand"], idx),
                              "interval_from_task": self._subset(self.data["/metadata/interval_from_task"], idx),
                              "idx": self.get_example_idx(idx),
                              })

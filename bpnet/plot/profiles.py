@@ -59,17 +59,30 @@ def multiple_plot_stranded_profile(d_profile, figsize_tmpl=(4, 3), normalize=Fal
     fig, axes = plt.subplots(1, len(d_profile),
                              figsize=(figsize_tmpl[0] * len(d_profile), figsize_tmpl[1]),
                              sharey=True)
-    for i, (task, ax) in enumerate(zip(d_profile, axes)):
+    if len(d_profile)==1: #If only one task, then can't zip axes
+        ax = axes
+        task = [*d_profile][0]
         arr = d_profile[task].mean(axis=0)
         if normalize:
             arr = arr / arr.max()
         plot_stranded_profile(arr, ax=ax, set_ylim=False)
         ax.set_title(task)
-        if i == 0:
-            ax.set_ylabel("Avg. counts")
-            ax.set_xlabel("Position")
-    fig.subplots_adjust(wspace=0)  # no space between plots
-    return fig
+        ax.set_ylabel("Avg. counts")
+        ax.set_xlabel("Position")
+        fig.subplots_adjust(wspace=0)  # no space between plots
+        return fig
+    else:
+        for i, (task, ax) in enumerate(zip(d_profile, axes)):
+            arr = d_profile[task].mean(axis=0)
+            if normalize:
+                arr = arr / arr.max()
+            plot_stranded_profile(arr, ax=ax, set_ylim=False)
+            ax.set_title(task)
+            if i == 0:
+                ax.set_ylabel("Avg. counts")
+                ax.set_xlabel("Position")
+        fig.subplots_adjust(wspace=0)  # no space between plots
+        return fig
 
 
 def aggregate_profiles(profile_arr, n_bootstrap=None, only_idx=None):
@@ -371,7 +384,7 @@ def box_counts(total_counts, pattern_idx):
 
     Args:
       total_counts: dict per task
-      pattern_idx: array with example_idx of the pattern 
+      pattern_idx: array with example_idx of the pattern
     """
     dfs = pd.concat([total_counts.melt().assign(subset="all peaks"),
                      total_counts.iloc[pattern_idx].melt().assign(subset="contains pattern")])
