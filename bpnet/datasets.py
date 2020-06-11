@@ -661,7 +661,7 @@ class SeqClassification(Dataset):
             "inputs": {"seq": seq},
             "targets": labels,
             "metadata": {
-                "ranges": GenomicRanges(chr=interval.chrom,
+                "range": GenomicRanges(chr=interval.chrom,
                                         start=interval.start,
                                         end=interval.stop,
                                         id=str(idx),
