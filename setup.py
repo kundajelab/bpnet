@@ -43,7 +43,7 @@ requirements = [
     "kipoiseq>=0.2.2",
 
     "papermill",
-    "jupyter_client",
+    "jupyter_client>=6.1.2",
     "ipykernel",
     "nbconvert>=5.5.0",
     "vdom>=0.6",
