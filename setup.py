@@ -81,7 +81,7 @@ dependency_links = [
 
 setup(
     name="bpnet",
-    version='0.0.22',
+    version='0.0.23',
     description=("BPNet: toolkit to learn motif synthax from high-resolution functional genomics data"
                  " using convolutional neural networks"),
     author="Ziga Avsec",
