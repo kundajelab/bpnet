@@ -9,7 +9,7 @@ requirements = [
     "related",
     "cloudpickle>=1.0.0",
 
-    "concise>=0.6.7",
+    "concise==0.6.7",
     "deepexplain",
 
     # ml
@@ -33,7 +33,7 @@ requirements = [
     # genomics
     "pybigwig",
     "pybedtools",  # remove?
-    "modisco>=0.5.1.2",
+    "modisco==0.5.3.0",
     # "pyranges",
 
     "joblib",
