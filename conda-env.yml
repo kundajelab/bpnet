@@ -11,7 +11,7 @@ dependencies:
 - pybedtools==0.7.10
 - bedtools==2.27.1
 - pybigwig>=0.3.10
-- pysam==0.14.0
+- pysam==0.15.3
 - genomelake==0.1.4
 
 - pytorch  # optional for data-loading
