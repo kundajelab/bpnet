@@ -405,8 +405,9 @@ class BPNetSeqModel:
                 preds = out[i]['pred'][task]
                 add_entry(bws[task]['preds.pos'], preds[:, 0],
                           interval, start_idx)
-                add_entry(bws[task]['preds.neg'], preds[:, 1],
-                          interval, start_idx)
+                if preds.shape[1] == 2:
+                    add_entry(bws[task]['preds.neg'], preds[:, 1],
+                              interval, start_idx)
 
                 # Get the contribution scores
                 seq = out[i]['seq']
