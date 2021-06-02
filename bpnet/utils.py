@@ -359,9 +359,14 @@ def create_tf_session(visiblegpus, per_process_gpu_memory_fraction=0.45):
     os.environ['CUDA_VISIBLE_DEVICES'] = str(visiblegpus)
     session_config = tf.ConfigProto()
     # session_config.gpu_options.deferred_deletion_bytes = DEFER_DELETE_SIZE
-    session_config.gpu_options.per_process_gpu_memory_fraction = per_process_gpu_memory_fraction
+    if per_process_gpu_memory_fraction==1:
+        session_config.gpu_options.allow_growth = True
+    else:
+        session_config.gpu_options.per_process_gpu_memory_fraction = per_process_gpu_memory_fraction
+    session_config.gpu_options.polling_inactive_delay_msecs = 50
     session = tf.Session(config=session_config)
     K.set_session(session)
+    #K.backend.set_session(session)
     return session
 
 
