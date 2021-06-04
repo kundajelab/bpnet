@@ -26,8 +26,8 @@ def multinomial_nll(true_counts, logits):
     dist = tf.contrib.distributions.Multinomial(total_count=counts_per_example,
                                                 logits=logits_perm)
 
-    # Normalize by batch size. NOTE: In the paper we say that
-    # the loss is normalized by sequence length.
+    # Normalize by batch size. One could also normalize by
+    # sequence length here.
     batch_size = tf.to_float(tf.shape(true_counts)[0])
 
     return -tf.reduce_sum(dist.log_prob(true_counts_perm)) / batch_size
