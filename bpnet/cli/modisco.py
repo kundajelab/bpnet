@@ -900,12 +900,12 @@ def chip_nexus_analysis(modisco_dir, trim_frac=0.08, num_workers=20, run_cwm_sca
         cr.write()
     sync.append("modisco-chip.html")
 
-    if not cr.set_cmd('modisco_table').done():
-        modisco_table(modisco_dir, contrib_scores, modisco_dir, report_url=None, contribsf=contribsf,
-                      footprint_width=footprint_width)
+    # Export bed-files and bigwigs
+    # Seqlets
+    if not cr.set_cmd('modisco_export_seqlets').done():
+        modisco_export_seqlets(str(modisco_dir), str(modisco_dir / 'seqlets'), trim_frac=trim_frac)
         cr.write()
-    sync.append("footprints.pkl")
-    sync.append("pattern_table.*")
+    sync.append("seqlets")
 
     if not cr.set_cmd('modisco_export_patterns').done():
         modisco_export_patterns(modisco_dir,
@@ -925,14 +925,16 @@ def chip_nexus_analysis(modisco_dir, trim_frac=0.08, num_workers=20, run_cwm_sca
                      num_workers=num_workers)
             cr.write()
 
-    # --------------------------------------------
-    # Export bed-files and bigwigs
-
-    # Seqlets
-    if not cr.set_cmd('modisco_export_seqlets').done():
-        modisco_export_seqlets(str(modisco_dir), str(modisco_dir / 'seqlets'), trim_frac=trim_frac)
+    if not cr.set_cmd('modisco_table').done():
+        modisco_table(modisco_dir, contrib_scores, modisco_dir, report_url=None, contribsf=contribsf,
+                      footprint_width=footprint_width)
         cr.write()
-    sync.append("seqlets")
+    sync.append("footprints.pkl")
+    sync.append("pattern_table.*")
+
+
+
+    # --------------------------------------------
 
     # print the rsync command to run in order to sync the output
     # directories to the webserver

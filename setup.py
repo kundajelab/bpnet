@@ -51,6 +51,8 @@ requirements = [
     # utils
     "ipython",
     "tqdm",
+    # "pprint",
+
 
     # Remove
     "genomelake",

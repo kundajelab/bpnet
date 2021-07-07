@@ -299,7 +299,8 @@ class BPNetSeqModel:
                   contrib_method='grad',
                   pred_summaries=['profile/wn', 'counts/pre-act'],
                   batch_size=512,
-                  scale_contribution=False,
+                  scale_contribution= False,
+                  flip_negative_strand = False,
                   chromosomes=None):
         """Export predictions and model contributions to big-wig files
 
@@ -320,6 +321,15 @@ class BPNetSeqModel:
                                    fasta_file=fasta_file,
                                    batch_size=batch_size)
 
+
+        #Determine how many strands to write in export-bw
+        n_tracks = out[0]['pred'][self.tasks[0]].shape[1]
+        assert n_tracks <= 2, "More than 2 tracks predicted...please evaluate application of exporting bigwig tracks..."
+        if n_tracks == 1:
+            output_feats = ['preds', 'contrib.profile', 'contrib.counts']
+        elif n_tracks == 2:
+            output_feats = ['preds.pos', 'preds.neg', 'contrib.profile', 'contrib.counts']
+
         logger.info("Setup bigWigs for writing")
         # Get the genome lengths
         if fasta_file is None:
@@ -331,8 +341,6 @@ class BPNetSeqModel:
         else:
             genome = OrderedDict([(c, l) for c, l in zip(fa.references, fa.lengths) if c in chromosomes])
         fa.close()
-
-        output_feats = ['preds.pos', 'preds.neg', 'contrib.profile', 'contrib.counts']
 
         # make sure the regions are in the right order
         first_chr = list(np.unique(np.array([interval.chrom for interval in regions])))
@@ -403,12 +411,19 @@ class BPNetSeqModel:
             for tid, task in enumerate(self.tasks):
                 # Write predictions
                 preds = out[i]['pred'][task]
-                add_entry(bws[task]['preds.pos'], preds[:, 0],
-                          interval, start_idx)
-                if preds.shape[1] == 2:
-                    add_entry(bws[task]['preds.neg'], preds[:, 1],
+                if n_tracks == 1:
+                    add_entry(bws[task]['preds'], preds[:, 0],
                               interval, start_idx)
-
+                elif n_tracks == 2:
+                    add_entry(bws[task]['preds.pos'], preds[:, 0],
+                              interval, start_idx)
+                    if flip_negative_strand:
+                        add_entry(bws[task]['preds.neg'], preds[:, 1]*-1,
+                                  interval, start_idx)
+                    else:
+                        add_entry(bws[task]['preds.neg'], preds[:, 1],
+                                  interval, start_idx)
+                        
                 # Get the contribution scores
                 seq = out[i]['seq']
                 hyp_contrib = out[i]['contrib_score']

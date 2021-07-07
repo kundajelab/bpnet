@@ -30,6 +30,8 @@ logger.addHandler(logging.NullHandler())
      "of prediction heads. Multiple wildcards can be by comma-separating them.")
 @arg("--scale-contribution",
      help='if True, multiple the contribution scores by the predicted count value')
+@arg("--flip-negative-strand",
+     help='if True, multiply the negative strand predictions by -1')
 @arg("--batch-size",
      help='Batch size for computing the predictions and contribution scores')
 @arg('--gpu',
@@ -44,6 +46,7 @@ def bpnet_export_bw(model_dir,
                     contrib_wildcard='*/profile/wn,*/counts/pre-act',  # specifies which contrib. scores to compute
                     batch_size=256,
                     scale_contribution=False,
+                    flip_negative_strand = False,
                     gpu=0,
                     memfrac_gpu=0.45):
     """Export model predictions and contribution scores to big-wig files
@@ -78,10 +81,10 @@ def bpnet_export_bw(model_dir,
                  output_prefix=output_prefix,
                  contrib_method=contrib_method,
                  fasta_file=fasta_file,
-                 # TODO - rename pred_summaries
                  pred_summaries=contrib_wildcard.replace("*/", "").split(","),
                  batch_size=batch_size,
                  scale_contribution=scale_contribution,
+                 flip_negative_strand = flip_negative_strand,
                  chromosomes=None)  # infer chromosomes from the fasta file
 
 

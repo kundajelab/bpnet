@@ -55,8 +55,12 @@ def heatmap_stranded_profile(signal, ax=None, figsize=(5, 20),
     else:
         fig = None
     norm_signal = normalizer(signal)
+
+    #20200706: Added single-channel for ChIP-seq functionality in this plot.
+    #Instead of imposing a second strand, just keep the first feature.
     ax.imshow(norm_signal[:, :, 0], cmap=plt.cm.Reds, interpolation=interpolation, aspect=aspect)
-    ax.imshow(norm_signal[:, :, 1], alpha=0.5, cmap=plt.cm.Blues, interpolation=interpolation, aspect=aspect)
+    if norm_signal.shape[2]==2:
+        ax.imshow(norm_signal[:, :, 1], alpha=0.5, cmap=plt.cm.Blues, interpolation=interpolation, aspect=aspect)
     seq_len = signal.shape[1]
     ticks = np.arange(0, seq_len + 1 - tick_step, tick_step)
     ax.set_xticks(ticks)
