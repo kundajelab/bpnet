@@ -411,7 +411,6 @@ class BPNetSeqModel:
             for tid, task in enumerate(self.tasks):
                 # Write predictions
                 preds = out[i]['pred'][task]
-
                 if n_tracks == 1:
                     add_entry(bws[task]['preds'], preds[:, 0],
                               interval, start_idx)
@@ -424,7 +423,7 @@ class BPNetSeqModel:
                     else:
                         add_entry(bws[task]['preds.neg'], preds[:, 1],
                                   interval, start_idx)
-
+                        
                 # Get the contribution scores
                 seq = out[i]['seq']
                 hyp_contrib = out[i]['contrib_score']

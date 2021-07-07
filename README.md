@@ -117,7 +117,7 @@ conda env create -n bpnet python=3.6
 source activate bpnet
 conda install -c bioconda pybedtools bedtools pybigwig pysam genomelake
 pip install git+https://github.com/kundajelab/DeepExplain.git
-pip install tensorflow # or tensorflow-gpu if you are using a GPU
+pip install tensorflow~=1.0 # or tensorflow-gpu if you are using a GPU
 pip install bpnet
 echo 'export HDF5_USE_FILE_LOCKING=FALSE' >> ~/.bashrc
 ```

@@ -26,10 +26,11 @@ def multinomial_nll(true_counts, logits):
     dist = tf.contrib.distributions.Multinomial(total_count=counts_per_example,
                                                 logits=logits_perm)
 
-    # get the sequence length for normalization
-    seqlen = tf.to_float(tf.shape(true_counts)[0])
+    # Normalize by batch size. One could also normalize by
+    # sequence length here.
+    batch_size = tf.to_float(tf.shape(true_counts)[0])
 
-    return -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen
+    return -tf.reduce_sum(dist.log_prob(true_counts_perm)) / batch_size
 
 
 @gin.configurable

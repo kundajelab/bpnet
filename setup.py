@@ -9,7 +9,7 @@ requirements = [
     "related",
     "cloudpickle>=1.0.0",
 
-    "concise>=0.6.7",
+    "concise==0.6.7",
     "deepexplain",
 
     # ml
@@ -33,7 +33,7 @@ requirements = [
     # genomics
     "pybigwig",
     "pybedtools",  # remove?
-    "modisco>=0.5.1.2",
+    "modisco==0.5.3.0",
     # "pyranges",
 
     "joblib",
@@ -43,7 +43,7 @@ requirements = [
     "kipoiseq>=0.2.2",
 
     "papermill",
-    "jupyter_client",
+    "jupyter_client>=6.1.2",
     "ipykernel",
     "nbconvert>=5.5.0",
     "vdom>=0.6",
@@ -52,6 +52,7 @@ requirements = [
     "ipython",
     "tqdm",
     # "pprint",
+
 
     # Remove
     "genomelake",
@@ -81,7 +82,7 @@ dependency_links = [
 
 setup(
     name="bpnet",
-    version='0.0.21',
+    version='0.0.23',
     description=("BPNet: toolkit to learn motif synthax from high-resolution functional genomics data"
                  " using convolutional neural networks"),
     author="Ziga Avsec",
