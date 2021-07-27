@@ -1,0 +1,151 @@
+# --------------------------------------------
+# model
+import bpnet
+import bpnet.models
+import bpnet.heads
+import bpnet.layers
+import bpnet.seqmodel
+import my_trainers_bpp_neat
+import bpnet.losses
+import my_datasets_bpp_neat
+import bpnet.metrics
+import bpnet.configurables
+
+train.model = @SeqModel()
+# Shape of 7 since we are excluding DNA and there are 7 additional channels
+SeqModel.input_shape = (2500, 7)
+SeqModel.seqlen = %seq_width
+SeqModel.tasks = %tasks
+SeqModel.optimizer = @keras.optimizers.Adam()
+SeqModel.heads = [@ProfileHead(), @ScalarHead()]  # Heads
+SeqModel.body = @DilatedConv1D()  # Body
+keras.optimizers.Adam.lr = %lr
+
+# changed the trainer class to my trainer class in order to batchnorm
+train.trainer_cls = @my_SeqModelTrainer
+
+# Need to specify extra channels in StrandedProfile
+AddedChannels_StrandedProfile.additional_bw_channels = ['/share/quonlab/workspaces/ricsharma/data/bpp_250_f.bw',
+                                          '/share/quonlab/workspaces/ricsharma/data/bpp_250_f.bw',
+                                          '/share/quonlab/workspaces/ricsharma/data/real_gene_annotations/hg19_better_ga_pos.bw',
+                                          '/share/quonlab/workspaces/ricsharma/data/real_gene_annotations/hg19_better_ga_neg.bw',
+                                          '/share/quonlab/workspaces/ricsharma/data/dripc/Methyl.bw',
+                                          '/share/quonlab/workspaces/ricsharma/data/dripc/rep1/NT2_RNAseq_rep1.bw',
+                                          '/share/quonlab/workspaces/ricsharma/data/dripc/rep2/NT2_RNAseq_rep2.bw']
+AddedChannels_StrandedProfile.exclude_dna = False
+# - Body
+DilatedConv1D.filters = %filters
+DilatedConv1D.conv1_kernel_size = 25
+DilatedConv1D.n_dil_layers = %n_dil_layers
+DilatedConv1D.padding = 'same'
+DilatedConv1D.batchnorm = %batchnorm
+DilatedConv1D.skip_type = 'residual'
+
+# - Heads
+#   - Profile prediction
+ProfileHead.target_name = '{task}/profile'
+ProfileHead.net = @DeConv1D()
+
+DeConv1D.n_tasks = %tracks_per_task
+DeConv1D.filters = %filters
+DeConv1D.tconv_kernel_size = %tconv_kernel_size
+DeConv1D.padding = 'same'
+DeConv1D.n_hidden = 0
+DeConv1D.batchnorm = %batchnorm
+
+ProfileHead.loss = @multinomial_nll
+ProfileHead.loss_weight = 1
+ProfileHead.postproc_fn = @softmax
+ProfileHead.use_bias = %use_bias
+ProfileHead.bias_input = 'bias/{task}/profile'
+ProfileHead.bias_shape = (None, %n_bias_tracks)
+ProfileHead.bias_net = @MovingAverages()
+MovingAverages.window_sizes = [1, 50]
+
+#      - evaluate
+ProfileHead.metric = @PeakPredictionProfileMetric()
+PeakPredictionProfileMetric.pos_min_threshold = 0.015
+PeakPredictionProfileMetric.neg_max_threshold = 0.005
+PeakPredictionProfileMetric.required_min_pos_counts = 2.5
+PeakPredictionProfileMetric.binsizes = [1, 10]
+# ---------------------
+
+#   - Total count prediction
+ScalarHead.target_name = '{task}/counts'
+ScalarHead.net = @GlobalAvgPoolFCN()
+GlobalAvgPoolFCN.n_tasks = %tracks_per_task
+GlobalAvgPoolFCN.n_splines = 0
+GlobalAvgPoolFCN.batchnorm = %batchnorm
+ScalarHead.loss = 'mse'
+ScalarHead.loss_weight = %lambda
+ScalarHead.bias_input = 'bias/{task}/counts'
+ScalarHead.use_bias = %use_bias
+ScalarHead.bias_shape = (%n_bias_tracks, )
+ScalarHead.metric = @RegressionMetrics()
+
+# --------------------------------------------
+# training
+train.seed = 1
+train.batch_size = 128
+train.epochs = 1
+train.early_stop_patience = 100
+train.num_workers = 6
+
+# --------------------------------------------
+# data
+# TODO - shall we try to avoid macros as much as possible?
+
+# seq_width  -> specified from gin-bindings
+train.data = @my_bpnet_data()
+my_bpnet_data.peak_width = %seq_width
+my_bpnet_data.valid_chr = %valid_chr
+my_bpnet_data.test_chr = %test_chr
+my_bpnet_data.include_metadata = False
+my_bpnet_data.tasks = %tasks
+my_bpnet_data.exclude_chr = %exclude_chr
+my_bpnet_data.augment_interval = %augment_interval
+my_bpnet_data.interval_augmentation_shift = 200
+my_bpnet_data.intervals_format = 'bed'
+
+# transform the bias track by aggregating it in a
+# sliding window fashion with window sizes of 1 bp (no aggregation) and 50 bp
+
+# TODO - move that into the model -> apply two convolutional layers with constant width
+
+# specified from the CLI
+my_bpnet_data.dataspec = %dataspec
+my_bpnet_data.seq_width = %seq_width
+train.train_epoch_frac = 1.0
+train.valid_epoch_frac = 1.0
+
+train.eval_report = @report_template()
+report_template.name = 'evaluate.ipynb'
+
+# ============================================
+# Macros
+augment_interval = True
+
+lambda = 10  # count loss weight
+filters = 64
+tconv_kernel_size = 25
+lr = 0.004
+n_dil_layers = 1
+train.batch_size = 128
+batchnorm = False
+seq_width = 2500
+# TODO - mention the usage of macros
+
+# TODO - important parameters you might want to adjust
+valid_chr = ['chr5']
+test_chr = ['chr6', 'chr7', 'chr8']
+# ============================================
+# These parameters will be specified from the command line
+# (i.e. in `bpnet.cli.train.bpnet_train` function)
+
+# TODO - specified in the training function
+# tracks_per_task = 2
+# use_bias = True  # set to False if you would like to not use the bias in the model
+# n_bias_tracks = 2
+# dataspec = 'ChIP-nexus.dataspec.yml'
+# tasks = ['Oct4', 'Sox2', 'Nanog', 'Klf4']
+
