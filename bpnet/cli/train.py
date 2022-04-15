@@ -419,7 +419,7 @@ def train(output_dir,
             valid_dataset = NumpyDataset(valid_dataset.load_all(batch_size=batch_size,
                                                                 num_workers=num_workers))
 
-        num_workers = 1  # don't use multi-processing any more
+        num_workers = 0  # don't use multi-processing any more
 
     tr = trainer_cls(model,
                      train_dataset,
