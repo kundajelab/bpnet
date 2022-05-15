@@ -39,6 +39,8 @@ def render_ipynb(template_ipynb, rendered_ipynb, params=dict()):
 
     os.makedirs(os.path.dirname(rendered_ipynb), exist_ok=True)
     kernel_name = os.environ.get("CONDA_DEFAULT_ENV", 'python3')
+    # Get rid of '/' characters which are unsupported.
+    kernel_name = kernel_name.replace('/', '_')
     if kernel_name not in jupyter_client.kernelspec.find_kernel_specs():
         logger.info(f"Installing the ipython kernel for the current conda environment: {kernel_name}")
         from ipykernel.kernelspec import install
