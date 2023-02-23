@@ -1,0 +1,18 @@
+.. toctree::
+   :maxdepth: 2
+   :caption: BPNet Documentatation
+
+   installation
+   documentation
+   tutorial
+   modules
+   miscellaneous
+   
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

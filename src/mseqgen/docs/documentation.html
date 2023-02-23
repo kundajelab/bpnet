@@ -1,0 +1,631 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Documentation &mdash; mseqgen 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="&lt;no title&gt;" href="tutorial.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> mseqgen
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">MSEQGEN</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#modules">Modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#generators">1. generators</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#msequencegenerator">1.1 MSequenceGenerator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mbpnetsequencegenerator">1.2 MBPNetSequenceGenerator</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sequtils">2. sequtils</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mseqgen</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Documentation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/documentation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="modules">
+<h2>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="generators">
+<h3>1. generators<a class="headerlink" href="#generators" title="Permalink to this headline">¶</a></h3>
+<p>This module contains classes for all the sequence data generators</p>
+<p><strong>Classes</strong></p>
+<p><em>MSequenceGenerator</em> - The main base class for all generators.</p>
+<p>Multi task batch data generation for training deep neural networks on
+high-throughput sequencing data of various geonmics assays</p>
+<p><em>MBPNetSequenceGenerator</em> - Derives from MSequenceGenerator.</p>
+<p>Multi task batch data generation for training BPNet on high-throughput
+sequencing data of various geonmics assays</p>
+<div class="section" id="msequencegenerator">
+<h4>1.1 MSequenceGenerator<a class="headerlink" href="#msequencegenerator" title="Permalink to this headline">¶</a></h4>
+<dl class="class">
+<dt id="mseqgen.generators.MSequenceGenerator">
+<em class="property">class </em><code class="sig-prename descclassname">mseqgen.generators.</code><code class="sig-name descname">MSequenceGenerator</code><span class="sig-paren">(</span><em class="sig-param">input_config</em>, <em class="sig-param">batch_gen_params</em>, <em class="sig-param">reference_genome</em>, <em class="sig-param">chrom_sizes</em>, <em class="sig-param">chroms</em>, <em class="sig-param">num_threads=10</em>, <em class="sig-param">epochs=1</em>, <em class="sig-param">batch_size=64</em>, <em class="sig-param">samples=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MSequenceGenerator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multi task batch data generation for training deep neural
+networks on high-throughput sequencing data of various
+geonmics assays</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_config</strong> (<em>dict</em>) – <p>python dictionary with information
+about the input data. Contains the following keys -</p>
+<dl class="simple">
+<dt><em>data (str)</em></dt><dd><p>path to the json file containing task information.
+See README for more information on the format of
+the json file</p>
+</dd>
+<dt><em>stranded (boolean)</em></dt><dd><p>True if data is stranded</p>
+</dd>
+<dt><em>has_control (boolean)</em></dt><dd><p>True if control data has been included</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>batch_gen_params</strong> (<em>dictionary</em>) – <p>python dictionary with batch
+generation parameters. Contains the following keys -</p>
+<dl class="simple">
+<dt><em>input_seq_len (int)</em></dt><dd><p>length of input DNA sequence</p>
+</dd>
+<dt><em>output_len (int)</em></dt><dd><p>length of output profile</p>
+</dd>
+<dt><em>max_jitter (int)</em></dt><dd><p>maximum value for randomized jitter to offset the
+peaks from the exact center of the input</p>
+</dd>
+<dt><em>rev_comp_aug (boolean)</em></dt><dd><p>enable reverse complement augmentation</p>
+</dd>
+<dt><em>negative_sampling_rate (float)</em></dt><dd><p>the fraction of batch_size that determines how many
+negative samples are added to each batch</p>
+</dd>
+<dt><em>sampling_mode (str)</em></dt><dd><p>the mode of sampling chromosome positions - one of
+[‘peaks’, ‘sequential’, ‘random’, ‘manual’]. In
+‘peaks’ mode the data samples are fetched from the
+peaks bed file specified in the json file
+input_config[‘data’]. In ‘manual’ mode, the two
+column pandas dataframe containing the chromosome
+position information is passed to the ‘samples’
+argument of the class</p>
+</dd>
+<dt><em>shuffle (boolean)</em></dt><dd><p>specify whether input data is shuffled at the
+begininning of each epoch</p>
+</dd>
+<dt><em>mode (str)</em></dt><dd><p>’train’, ‘val’ or ‘test’</p>
+</dd>
+<dt><em>num_positions” (int)</em></dt><dd><p>specify how many chromosome positions to sample if
+sampling_mode is ‘sequential’ or ‘random’. Can be
+omitted if sampling_mode is “peaks”, has no effect if
+present.</p>
+</dd>
+<dt><em>step_size (int)</em></dt><dd><p>specify step size for sampling chromosome positions if
+sampling_mode is “sequential”. Can be omitted if
+sampling_mode is “peaks” or “random”, has no effect if
+present.</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>reference_genome</strong> (<em>str</em>) – the path to the reference genome
+fasta file</p></li>
+<li><p><strong>chrom_sizes</strong> (<em>str</em>) – path to the chromosome sizes file</p></li>
+<li><p><strong>chroms</strong> (<em>str</em>) – the list of chromosomes that will be sampled
+for batch generation</p></li>
+<li><p><strong>num_threads</strong> (<em>int</em>) – number of parallel threads for batch
+generation, default = 10</p></li>
+<li><p><strong>epochs</strong> (<em>int</em>) – number of iterations for looping over input
+data, default = 1</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em>) – size of each generated batch of data,
+default = 64</p></li>
+<li><p><strong>samples</strong> (<em>pandas.Dataframe</em>) – two column pandas dataframe
+with chromosome position information. Required column
+names are column 1:’chrom’, column 2:’pos’. Use this
+parameter if you set batch_gen_params[‘sampling_mode’]
+to ‘manual’. default = None</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Members</strong></p>
+<dl class="method">
+<dt id="mseqgen.generators.MSequenceGenerator.gen">
+<code class="sig-name descname">gen</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MSequenceGenerator.gen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator function to yield batches of data</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mseqgen.generators.MSequenceGenerator.len">
+<code class="sig-name descname">len</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MSequenceGenerator.len" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of batches per epoch</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>number of batches of data generated in each epoch</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="mseqgen.generators.MSequenceGenerator.set_early_stopping">
+<code class="sig-name descname">set_early_stopping</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MSequenceGenerator.set_early_stopping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set early stopping flag to True</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mseqgen.generators.MSequenceGenerator.set_ready_for_next_epoch">
+<code class="sig-name descname">set_ready_for_next_epoch</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MSequenceGenerator.set_ready_for_next_epoch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the variable that controls batch generation for the
+next epoch to True</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mseqgen.generators.MSequenceGenerator.set_stop">
+<code class="sig-name descname">set_stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MSequenceGenerator.set_stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set stop flag to True</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="mbpnetsequencegenerator">
+<h4>1.2 MBPNetSequenceGenerator<a class="headerlink" href="#mbpnetsequencegenerator" title="Permalink to this headline">¶</a></h4>
+<dl class="class">
+<dt id="mseqgen.generators.MBPNetSequenceGenerator">
+<em class="property">class </em><code class="sig-prename descclassname">mseqgen.generators.</code><code class="sig-name descname">MBPNetSequenceGenerator</code><span class="sig-paren">(</span><em class="sig-param">input_config</em>, <em class="sig-param">batch_gen_params</em>, <em class="sig-param">bpnet_params</em>, <em class="sig-param">reference_genome</em>, <em class="sig-param">chrom_sizes</em>, <em class="sig-param">chroms</em>, <em class="sig-param">num_threads=10</em>, <em class="sig-param">epochs=100</em>, <em class="sig-param">batch_size=64</em>, <em class="sig-param">samples=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MBPNetSequenceGenerator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multi task batch data generation for training BPNet
+on high-throughput sequencing data of various
+geonmics assays</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_config</strong> (<em>dict</em>) – <p>python dictionary with information
+about the input data. Contains the following keys -</p>
+<dl class="simple">
+<dt><em>data (str)</em></dt><dd><p>path to the json file containing task information.
+See README for more information on the format of
+the json file</p>
+</dd>
+<dt><em>stranded (boolean)</em></dt><dd><p>True if data is stranded</p>
+</dd>
+<dt><em>has_control (boolean)</em></dt><dd><p>True if control data has been included</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>batch_gen_params</strong> (<em>dictionary</em>) – <p>python dictionary with batch
+generation parameters. Contains the following keys -</p>
+<dl class="simple">
+<dt><em>input_seq_len (int)</em></dt><dd><p>length of input DNA sequence</p>
+</dd>
+<dt><em>output_len (int)</em></dt><dd><p>length of output profile</p>
+</dd>
+<dt><em>max_jitter (int)</em></dt><dd><p>maximum value for randomized jitter to offset the
+peaks from the exact center of the input</p>
+</dd>
+<dt><em>rev_comp_aug (boolean)</em></dt><dd><p>enable reverse complement augmentation</p>
+</dd>
+<dt><em>negative_sampling_rate (float)</em></dt><dd><p>the fraction of batch_size that determines how many
+negative samples are added to each batch</p>
+</dd>
+<dt><em>sampling_mode (str)</em></dt><dd><p>the mode of sampling chromosome positions - one of
+[‘peaks’, ‘sequential’, ‘random’, ‘manual’]. In
+‘peaks’ mode the data samples are fetched from the
+peaks bed file specified in the json file
+input_config[‘data’]. In ‘manual’ mode, the bed
+file containing the chromosome position information
+is passed to the ‘samples’ argument of the class</p>
+</dd>
+<dt><em>shuffle (boolean)</em></dt><dd><p>specify whether input data is shuffled at the
+begininning of each epoch</p>
+</dd>
+<dt><em>mode (str)</em></dt><dd><p>’train’, ‘val’ or ‘test’</p>
+</dd>
+<dt><em>num_positions” (int)</em></dt><dd><p>specify how many chromosome positions to sample if
+sampling_mode is ‘sequential’ or ‘random’. Can be
+omitted if sampling_mode is “peaks”, has no effect if
+present.</p>
+</dd>
+<dt><em>step_size (int)</em></dt><dd><p>specify step size for sampling chromosome positions if
+sampling_mode is “sequential”. Can be omitted if
+sampling_mode is “peaks” or “random”, has no effect if
+present.</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>bpnet_params</strong> (<em>dictionary</em>) – <p>python dictionary containing
+parameters specific to BPNet. Contains the following
+keys -</p>
+<dl class="simple">
+<dt><em>name (str)</em></dt><dd><p>model architecture name</p>
+</dd>
+<dt><em>filters (int)</em></dt><dd><p>number of filters for BPNet</p>
+</dd>
+<dt><em>control_smoothing (list)</em></dt><dd><p>nested list of gaussiam smoothing parameters. Each
+inner list has two values - [sigma, window_size] for
+supplemental control tracks</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>reference_genome</strong> (<em>str</em>) – the path to the reference genome
+fasta file</p></li>
+<li><p><strong>chrom_sizes</strong> (<em>str</em>) – path to the chromosome sizes file</p></li>
+<li><p><strong>chroms</strong> (<em>str</em>) – the list of chromosomes that will be sampled
+for batch generation</p></li>
+<li><p><strong>num_threads</strong> (<em>int</em>) – number of parallel threads for batch
+generation</p></li>
+<li><p><strong>epochs</strong> (<em>int</em>) – number of iterations for looping over input
+data</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em>) – size of each generated batch of data</p></li>
+<li><p><strong>samples</strong> (<em>pandas.Dataframe</em>) – two column pandas dataframe
+with chromosome position information. Required column
+names are column 1:’chrom’, column 2:’pos’. Use this
+parameter if you set batch_gen_params[‘sampling_mode’]
+to ‘manual’. default = None</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Members</strong></p>
+<dl class="method">
+<dt id="mseqgen.generators.MBPNetSequenceGenerator.gen">
+<code class="sig-name descname">gen</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MBPNetSequenceGenerator.gen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator function to yield batches of data</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mseqgen.generators.MBPNetSequenceGenerator.len">
+<code class="sig-name descname">len</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MBPNetSequenceGenerator.len" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of batches per epoch</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>number of batches of data generated in each epoch</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="mseqgen.generators.MBPNetSequenceGenerator.set_early_stopping">
+<code class="sig-name descname">set_early_stopping</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MBPNetSequenceGenerator.set_early_stopping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set early stopping flag to True</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mseqgen.generators.MBPNetSequenceGenerator.set_ready_for_next_epoch">
+<code class="sig-name descname">set_ready_for_next_epoch</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MBPNetSequenceGenerator.set_ready_for_next_epoch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the variable that controls batch generation for the
+next epoch to True</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mseqgen.generators.MBPNetSequenceGenerator.set_stop">
+<code class="sig-name descname">set_stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.generators.MBPNetSequenceGenerator.set_stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set stop flag to True</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="sequtils">
+<h3>2. sequtils<a class="headerlink" href="#sequtils" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="mseqgen.sequtils.one_hot_encode">
+<code class="sig-prename descclassname">mseqgen.sequtils.</code><code class="sig-name descname">one_hot_encode</code><span class="sig-paren">(</span><em class="sig-param">sequences</em><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.sequtils.one_hot_encode" title="Permalink to this definition">¶</a></dt>
+<dd><p>One hot encoding of a list of DNA sequences</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sequences</strong> (<em>list</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>3-dimension numpy array with shape
+(len(sequences), len(list_item), 4)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mseqgen.sequtils.reverse_complement_of_sequences">
+<code class="sig-prename descclassname">mseqgen.sequtils.</code><code class="sig-name descname">reverse_complement_of_sequences</code><span class="sig-paren">(</span><em class="sig-param">sequences</em><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.sequtils.reverse_complement_of_sequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reverse complement of DNA sequences</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sequences</strong> (<em>list</em>) – python list of strings of DNA sequence of
+arbitraty length</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>python list of strings</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mseqgen.sequtils.reverse_complement_of_profiles">
+<code class="sig-prename descclassname">mseqgen.sequtils.</code><code class="sig-name descname">reverse_complement_of_profiles</code><span class="sig-paren">(</span><em class="sig-param">profiles</em>, <em class="sig-param">stranded=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.sequtils.reverse_complement_of_profiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reverse complement of an genomics assay signal profile</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>profiles</strong> (<em>numpy.ndarray</em>) – 3-dimensional numpy array, a
+batch of multitask profiles of shape
+(#examples, seq_len, #assays) if unstranded and
+(#examples, seq_len, #assays*2) if stranded. In the
+stranded case the assumption is: the postive &amp; negative
+strands occur in pairs on axis=2(i.e. 3rd dimension)
+e.g. 0th &amp; 1st index, 2nd &amp; 3rd…</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>3-dimensional numpy array</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mseqgen.sequtils.getChromPositions">
+<code class="sig-prename descclassname">mseqgen.sequtils.</code><code class="sig-name descname">getChromPositions</code><span class="sig-paren">(</span><em class="sig-param">chroms</em>, <em class="sig-param">chrom_sizes</em>, <em class="sig-param">flank</em>, <em class="sig-param">mode='sequential'</em>, <em class="sig-param">num_positions=-1</em>, <em class="sig-param">step=50</em><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.sequtils.getChromPositions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chromosome positions spanning the entire chromosome at
+a) regular intervals or b) random locations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>chroms</strong> (<em>list</em>) – The list of required chromosomes</p></li>
+<li><p><strong>chrom_sizes</strong> (<em>pandas.Dataframe</em>) – dataframe of chromosome
+sizes with ‘chrom’ and ‘size’ columns</p></li>
+<li><p><strong>flank</strong> (<em>int</em>) – Buffer size before &amp; after the position to
+ensure we dont fetch values at index &lt; 0 &amp; &gt; chrom size</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – mode of returned position ‘sequential’ (from
+the beginning) or ‘random’</p></li>
+<li><p><strong>num_positions</strong> (<em>int</em>) – number of chromosome positions
+to return on each chromosome, use -1 to return
+positions across the entrire chromosome for all given
+chromosomes in <cite>chroms</cite>. mode=’random’ cannot be used
+with num_positions=-1</p></li>
+<li><p><strong>step</strong> (<em>int</em>) – the interval between consecutive chromosome
+positions in ‘sequential’ mode</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>two column dataframe of chromosome positions (chrom, pos)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mseqgen.sequtils.getPeakPositions">
+<code class="sig-prename descclassname">mseqgen.sequtils.</code><code class="sig-name descname">getPeakPositions</code><span class="sig-paren">(</span><em class="sig-param">tasks</em>, <em class="sig-param">chroms</em>, <em class="sig-param">chrom_sizes</em>, <em class="sig-param">flank</em>, <em class="sig-param">drop_duplicates=False</em><span class="sig-paren">)</span><a class="headerlink" href="#mseqgen.sequtils.getPeakPositions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Peak positions for all the tasks filtered based on required
+chromosomes and other qc filters. Since ‘task’ here refers
+one strand of input/output, if the data is stranded the peaks
+will be duplicated for the plus and minus strand.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tasks</strong> (<em>dict</em>) – A python dictionary containing the task
+information. Each task in tasks should have the
+key ‘peaks’ that has the path to he peaks file</p></li>
+<li><p><strong>chroms</strong> (<em>list</em>) – The list of required test chromosomes</p></li>
+<li><p><strong>chrom_sizes</strong> (<em>pandas.Dataframe</em>) – dataframe of chromosome
+sizes with ‘chrom’ and ‘size’ columns</p></li>
+<li><p><strong>flank</strong> (<em>int</em>) – Buffer size before &amp; after the position to
+ensure we dont fetch values at index &lt; 0 &amp; &gt; chrom size</p></li>
+<li><p><strong>drop_duplicates</strong> (<em>boolean</em>) – True if duplicates should be
+dropped from returned dataframe.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>two column dataframe of peak positions (chrom, pos)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tutorial.html" class="btn btn-neutral float-right" title="&lt;no title&gt;" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Zahoor Zafrulla, Anshul Kundaje
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

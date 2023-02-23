@@ -1,0 +1,27 @@
+*************
+Installation 
+*************
+
+1. Install Miniconda
+--------------------
+
+Download and install the latest version of Miniconda for your platform. Check to see your python verion ``python --version`` before downloading Miniconda. Install the matching Miniconda version for your version of python (this does not affect the version of python that you install in the new environments you create). Here is the link for the installers
+`Miniconda <https://docs.conda.io/en/latest/miniconda.html>`__
+
+2. Create new virtual environment
+---------------------------------
+
+Create a new virtual environment and activate it as shown below
+
+.. code-block:: bash
+
+    conda create --name basepairmodels python=3.6.8
+    conda activate basepairmodels
+
+
+3. Install basepairmodels
+-------------------------
+.. code-block:: bash
+
+    pip install git+https://github.com/kundajelab/basepairmodels.git
+

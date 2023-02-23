@@ -1,0 +1,8 @@
+numpy
+pandas
+scipy
+deeptools
+pyfaidx
+pytest
+pytest-cov
+pycodestyle
