@@ -561,30 +561,14 @@ def load_params(params):
     if 'counts_loss' in params:
         counts_loss = params['counts_loss']
         
-    bias_model = None
-    if 'bias_model' in params:
-        bias_model_path = params['bias_model']
-        print(bias_model_path)
-        if not os.path.isfile(bias_model_path): 
-            raise NoTracebackException(
-                "FileNotFound 'bias_model': Check the path of the bias model")
-        with CustomObjectScope({'MultichannelMultinomialNLL': 
-                                MultichannelMultinomialNLL, 
-                                'CustomMeanSquaredError': 
-                                CustomMeanSquaredError,
-                                'AttributionPriorModel': 
-                                AttributionPriorModel}):
-            bias_model = load_model(bias_model_path)
-        
     return (input_len, output_profile_len, motif_module_params, 
             syntax_module_params, profile_head_params, counts_head_params,
             profile_bias_module_params, counts_bias_module_params,
-            use_attribution_prior, attribution_prior_params, loss_weights, counts_loss,
-            bias_model)
+            use_attribution_prior, attribution_prior_params, loss_weights, counts_loss)
 
     
 def BPNet(
-    tasks, bpnet_params, initiliaze_as_bias_model=False, one_hot_input=None, orig_multi_loss=False,
+    tasks, bpnet_params, orig_multi_loss=False,
     name_prefix=None):
 
     """
@@ -624,12 +608,7 @@ def BPNet(
                     'profile_grad_loss_weight' (float)
                     'counts_grad_loss_weight' (float)
                 'loss_weights': (list)
-                'counts_loss': (str)
-            initialize_as_bias_model (boolean): specify if this 
-                definition is to be used as a placeholder for 
-                initializing weights from the bias model
-            one_hot_input (keras.layers.Input): one_hot_input if 
-                initialize_as_bias_model is True 
+                'counts_loss': (str)            
             name_prefix (str): prefix to use for layer names
                 
         Returns:
@@ -652,8 +631,7 @@ def BPNet(
      _) = load_params(bpnet_params)    
 
     # Step 1 - sequence input
-    if not initiliaze_as_bias_model:
-        one_hot_input = layers.Input(shape=(input_len, 4), name='sequence')
+    one_hot_input = layers.Input(shape=(input_len, 4), name='sequence')
     
     # Step 2 - Motif module (one or more conv layers)
     motif_module_out = motif_module(
@@ -696,9 +674,7 @@ def BPNet(
         total_bias_tracks += task_bias_tracks[i]
 
     # Step 4.1.3 crop profile head to match output_len
-    if total_bias_tracks == 0 and initiliaze_as_bias_model:
-        profile_head_name = '{}_profile_predictions'.format(name_prefix)
-    elif total_bias_tracks == 0:
+    if total_bias_tracks == 0:
         profile_head_name = 'profile_predictions'
     else:
         profile_head_name = '{}_profile_head_cropped'.format(name_prefix)
@@ -709,9 +685,7 @@ def BPNet(
         crop_size, name=profile_head_name)(profile_head_out)
     
     # Step 4.2 - Counts head (global average pooling)
-    if total_bias_tracks == 0 and initiliaze_as_bias_model:
-        counts_head_name = '{}_logcounts_predictions'.format(name_prefix)
-    elif total_bias_tracks == 0:
+    if total_bias_tracks == 0:
         counts_head_name = 'logcounts_predictions'
     else:
         counts_head_name = '{}_counts_head'.format(name_prefix)
