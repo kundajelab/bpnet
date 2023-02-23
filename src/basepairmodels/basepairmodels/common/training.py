@@ -399,15 +399,11 @@ def train_and_validate(
     # get an instance of the model
     logging.debug("New {} model".format(model_arch_name))
     get_model = getattr(archs, model_arch_name)
-    if model_arch_name == "BPNet_ATAC_DNase":
-        model = get_model(
-            tasks, bias_tasks, model_arch_params, bias_model_arch_params, 
-            name_prefix="main")
-    else:        
-        model = get_model(tasks, 
-                          model_arch_params, 
-                          orig_multi_loss=orig_multi_loss, 
-                          name_prefix="main")
+    
+    model = get_model(tasks, 
+                        model_arch_params, 
+                        orig_multi_loss=orig_multi_loss, 
+                        name_prefix="main")
     
     # print out the model summary
     model.summary()
