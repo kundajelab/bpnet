@@ -448,7 +448,7 @@ def counts_bias_module(counts_head, counts_bias_inputs, tasks_info,
                     name="{}_concat_with_counts_bias_{}".format(name_prefix, i),
                     axis=-1)
             else:
-                
+                # summing over strands
                 counts_bias_input_out_logcounts = layers.Lambda(
                     lambda x: tf.math.reduce_logsumexp(x, axis=-1, keepdims=True),
                     name="{}_logsumexp_counts_bias_{}".format(name_prefix, i))(counts_bias_inputs[i])
