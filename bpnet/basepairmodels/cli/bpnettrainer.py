@@ -41,10 +41,10 @@ import logging
 import os
 import sys
 
-from basepairmodels.cli import argparsers
-from basepairmodels.cli.exceptionhandler import NoTracebackException
-from basepairmodels.common import training
-from genomicsdlarchsandlosses.bpnet import archs
+from bpnet.basepairmodels.cli import argparsers
+from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.basepairmodels.common import training
+from bpnet.genomicsdlarchsandlosses.bpnet import archs
 
 
 def main():
