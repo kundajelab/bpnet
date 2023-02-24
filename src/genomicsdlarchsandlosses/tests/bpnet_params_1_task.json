@@ -27,13 +27,5 @@
         "kernel_sizes": [1]
     },
     "counts_bias_module_params": {
-    },
-    "use_attribution_prior": false,
-    "attribution_prior_params": {
-        "frequency_limit": 150,
-        "limit_softness": 0.2,
-        "grad_smooth_sigma": 3,
-        "profile_grad_loss_weight": 200,
-        "counts_grad_loss_weight": 100        
     }
 }

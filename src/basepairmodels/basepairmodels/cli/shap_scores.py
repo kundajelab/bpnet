@@ -13,8 +13,6 @@ from basepairmodels.cli.bpnetutils import *
 from basepairmodels.cli.exceptionhandler import NoTracebackException
 from basepairmodels.cli.shaputils import *
 from basepairmodels.cli.logger import *
-from genomicsdlarchsandlosses.bpnet.attribution_prior \
-    import AttributionPriorModel
 from genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
 from genomicsdlarchsandlosses.bpnet.losses import \
@@ -423,8 +421,7 @@ def shap_scores_main():
     logging.info("Loading {}".format(args.model))
     with CustomObjectScope({'MultichannelMultinomialNLL': 
                             MultichannelMultinomialNLL, 'tf': tf,  
-                            'CustomMeanSquaredError': CustomMeanSquaredError,
-                            'AttributionPriorModel': AttributionPriorModel, 
+                            'CustomMeanSquaredError': CustomMeanSquaredError,                            
                             'CustomModel': CustomModel}):
             
         shap_scores(args, shap_scores_dir)

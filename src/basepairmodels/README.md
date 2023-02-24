@@ -215,14 +215,6 @@ file to specify parameters for the BPNet architecture. Let's call this json file
     },
     "counts_bias_module_params": {
     },
-    "use_attribution_prior": false,
-    "attribution_prior_params": {
-        "frequency_limit": 150,
-        "limit_softness": 0.2,
-        "grad_smooth_sigma": 3,
-        "profile_grad_loss_weight": 200,
-        "counts_grad_loss_weight": 100        
-    },
     "loss_weights": [1, 42]
 }
 ```

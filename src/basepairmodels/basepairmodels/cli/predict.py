@@ -17,8 +17,6 @@ from basepairmodels.cli.bigwig_helper import write_bigwig
 from basepairmodels.cli.bpnetutils import *
 from basepairmodels.cli.exceptionhandler import NoTracebackException
 
-from genomicsdlarchsandlosses.bpnet.attribution_prior \
-    import AttributionPriorModel
 from genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
 from genomicsdlarchsandlosses.bpnet.losses import \
@@ -859,8 +857,7 @@ def predict_main():
     logging.info("Loading {}".format(args.model))
     with CustomObjectScope({'MultichannelMultinomialNLL': 
                             MultichannelMultinomialNLL, 'tf': tf,  
-                            'CustomMeanSquaredError': CustomMeanSquaredError,
-                            'AttributionPriorModel': AttributionPriorModel, 
+                            'CustomMeanSquaredError': CustomMeanSquaredError,                            
                             'CustomModel': CustomModel}):
             
         predict(args, pred_dir)

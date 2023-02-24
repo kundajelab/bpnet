@@ -8,8 +8,6 @@ seed(1234)
 from tensorflow.random import set_seed 
 set_seed(1234)
 
-from genomicsdlarchsandlosses.bpnet.attribution_prior \
-    import AttributionPriorModel
 from genomicsdlarchsandlosses.bpnet.losses import MultichannelMultinomialNLL
 from genomicsdlarchsandlosses.bpnet.custommodel import CustomModel
 from genomicsdlarchsandlosses.utils.exceptionhandler \
@@ -543,16 +541,6 @@ def load_params(params):
             counts_bias_module_params[key] = \
                 params['counts_bias_module_params'][key]
             
-    use_attribution_prior = bpnetdefaults.USE_ATTRIBUTION_PRIOR
-    if 'use_attribution_prior' in params:
-        use_attribution_prior = params['use_attribution_prior']
-        
-    attribution_prior_params = bpnetdefaults.ATTRIBUTION_PRIOR_PARAMS
-    if 'attribution_prior_params' in params:
-        for key in params['attribution_prior_params']:
-            attribution_prior_params[key] = \
-                params['attribution_prior_params'][key]
-    
     loss_weights = bpnetdefaults.LOSS_WEIGHTS
     if 'loss_weights' in params:
         loss_weights = params['loss_weights']
@@ -564,7 +552,7 @@ def load_params(params):
     return (input_len, output_profile_len, motif_module_params, 
             syntax_module_params, profile_head_params, counts_head_params,
             profile_bias_module_params, counts_bias_module_params,
-            use_attribution_prior, attribution_prior_params, loss_weights, counts_loss)
+            loss_weights, counts_loss)
 
     
 def BPNet(
@@ -600,13 +588,6 @@ def BPNet(
                 'profile_bias_module_params': (dict) - 
                     'kernel_sizes' (list)
                 'counts_bias_module_params': (dict) - N/A
-                'use_attribution_prior': (boolean)
-                'attribution_prior_params': (dict) -
-                    'frequency_limit' (int)
-                    'limit_softness' (float)
-                    'grad_smooth_sigma' (int)
-                    'profile_grad_loss_weight' (float)
-                    'counts_grad_loss_weight' (float)
                 'loss_weights': (list)
                 'counts_loss': (str)            
             name_prefix (str): prefix to use for layer names
@@ -624,8 +605,6 @@ def BPNet(
      counts_head_params,
      profile_bias_module_params,
      counts_bias_module_params,
-     use_attribution_prior, 
-     attribution_prior_params, 
      loss_weights,
      counts_loss,
      _) = load_params(bpnet_params)    
@@ -757,32 +736,20 @@ def BPNet(
             counts_head_out, counts_bias_inputs, tasks, 
             name_prefix=name_prefix,orig_multi_loss=orig_multi_loss)
     
-    if use_attribution_prior:            
-        # instantiate attribution prior Model with inputs and outputs
-        return AttributionPriorModel(
-            attribution_prior_params['frequency_limit'],
-            attribution_prior_params['limit_softness'],
-            attribution_prior_params['grad_smooth_sigma'],     
-            attribution_prior_params['profile_grad_loss_weight'],
-            attribution_prior_params['counts_grad_loss_weight'],
-            inputs=inputs,
-            outputs=[profile_outputs, logcounts_outputs])
-        
-    else:
-        # instantiate keras Model with inputs and outputs
-        # print({'num_tasks':num_tasks,\
-        #        'tracks_for_each_task':tracks_for_each_task,\
-        #        'output_profile_len':output_profile_len,\
-        #        'loss_weights':loss_weights,\
-        #        'inputs':inputs, 'outputs':[profile_outputs, logcounts_outputs]})
-        return CustomModel(num_tasks,
-                           total_tracks, 
-                           tracks_for_each_task, 
-                           output_profile_len, 
-                           loss_weights, 
-                           counts_loss,
-                           orig_multi_loss,
-                           inputs=inputs, 
-                           outputs=[profile_outputs, logcounts_outputs])
+    # instantiate keras Model with inputs and outputs
+    # print({'num_tasks':num_tasks,\
+    #        'tracks_for_each_task':tracks_for_each_task,\
+    #        'output_profile_len':output_profile_len,\
+    #        'loss_weights':loss_weights,\
+    #        'inputs':inputs, 'outputs':[profile_outputs, logcounts_outputs]})
+    return CustomModel(num_tasks,
+                        total_tracks, 
+                        tracks_for_each_task, 
+                        output_profile_len, 
+                        loss_weights, 
+                        counts_loss,
+                        orig_multi_loss,
+                        inputs=inputs, 
+                        outputs=[profile_outputs, logcounts_outputs])
 
 

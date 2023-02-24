@@ -48,8 +48,6 @@
 from basepairmodels.cli.argparsers import embeddings_argsparser
 from basepairmodels.cli.exceptionhandler import NoTracebackException
 from basepairmodels.cli.logger import *
-from genomicsdlarchsandlosses.bpnet.attribution_prior \
-    import AttributionPriorModel
 from genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
 from genomicsdlarchsandlosses.bpnet.losses import \
@@ -295,8 +293,7 @@ def embeddings_main():
 
     with CustomObjectScope({'MultichannelMultinomialNLL': 
                             MultichannelMultinomialNLL, 'tf': tf,  
-                            'CustomMeanSquaredError': CustomMeanSquaredError,
-                            'AttributionPriorModel': AttributionPriorModel, 
+                            'CustomMeanSquaredError': CustomMeanSquaredError,                            
                             'CustomModel': CustomModel}):
         
         # load the model 
