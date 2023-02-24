@@ -8,9 +8,9 @@ seed(1234)
 from tensorflow.random import set_seed 
 set_seed(1234)
 
-from genomicsdlarchsandlosses.bpnet.losses import MultichannelMultinomialNLL
-from genomicsdlarchsandlosses.bpnet.custommodel import CustomModel
-from genomicsdlarchsandlosses.utils.exceptionhandler \
+from bpnet.genomicsdlarchsandlosses.bpnet.losses import MultichannelMultinomialNLL
+from bpnet.genomicsdlarchsandlosses.bpnet.custommodel import CustomModel
+from bpnet.genomicsdlarchsandlosses.utils.exceptionhandler \
     import NoTracebackException
 from tensorflow.keras import layers, Model
 from tensorflow.keras.models import load_model
@@ -22,7 +22,7 @@ import os
 import sys
 import tensorflow as tf
 import tensorflow.keras.backend as K
-import genomicsdlarchsandlosses.bpnet.bpnetdefaults as bpnetdefaults
+import bpnet.genomicsdlarchsandlosses.bpnet.bpnetdefaults as bpnetdefaults
 
 def _crop_layer(layer, new_size):
     """

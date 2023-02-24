@@ -8,17 +8,17 @@ import shap
 import tensorflow as tf
 import tensorflow_probability as tfp
 
-from basepairmodels.cli.argparsers import shap_scores_argsparser
-from basepairmodels.cli.bpnetutils import *
-from basepairmodels.cli.exceptionhandler import NoTracebackException
-from basepairmodels.cli.shaputils import *
-from basepairmodels.cli.logger import *
-from genomicsdlarchsandlosses.bpnet.custommodel \
+from bpnet.basepairmodels.cli.argparsers import shap_scores_argsparser
+from bpnet.basepairmodels.cli.bpnetutils import *
+from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.basepairmodels.cli.shaputils import *
+from bpnet.basepairmodels.cli.logger import *
+from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
-from genomicsdlarchsandlosses.bpnet.losses import \
+from bpnet.genomicsdlarchsandlosses.bpnet.losses import \
 MultichannelMultinomialNLL, multinomial_nll, CustomMeanSquaredError
-from mseqgen.sequtils import one_hot_encode
-from mseqgen.utils import gaussian1D_smoothing
+from bpnet.mseqgen.sequtils import one_hot_encode
+from bpnet.mseqgen.utils import gaussian1D_smoothing
 from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import CustomObjectScope
 

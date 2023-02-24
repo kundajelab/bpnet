@@ -1,4 +1,4 @@
-from basepairmodels.api.profilemodel import ProfileModel
+from bpnet.basepairmodels.api.profilemodel import ProfileModel
 
 class BPNet(ProfileModel):
     

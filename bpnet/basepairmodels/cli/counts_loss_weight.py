@@ -28,9 +28,9 @@
     SOFTWARE.
 
 """
-from basepairmodels.cli.argparsers import counts_loss_weight_argsparser
-from basepairmodels.cli.exceptionhandler import NoTracebackException
-from basepairmodels.common import stats
+from bpnet.basepairmodels.cli.argparsers import counts_loss_weight_argsparser
+from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.basepairmodels.common import stats
 
 import json
 import pandas as pd

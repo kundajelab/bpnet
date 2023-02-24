@@ -59,15 +59,15 @@ import tensorflow.keras.backend as kb
 import time
 import warnings
 
-from basepairmodels.cli.bpnetutils import *
-from basepairmodels.cli.exceptionhandler import NoTracebackException
-from basepairmodels.cli import logger
-from genomicsdlarchsandlosses.bpnet import archs
-from genomicsdlarchsandlosses.bpnet.losses import MultichannelMultinomialNLL, CustomMeanSquaredError
+from bpnet.basepairmodels.cli.bpnetutils import *
+from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.basepairmodels.cli import logger
+from bpnet.genomicsdlarchsandlosses.bpnet import archs
+from bpnet.genomicsdlarchsandlosses.bpnet.losses import MultichannelMultinomialNLL, CustomMeanSquaredError
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.optimizers import Adam
-from mseqgen import generators 
-from mseqgen import sequtils
+from bpnet.mseqgen import generators 
+from bpnet.mseqgen import sequtils
 
 
 def early_stopping_check(losses, patience=5, min_delta=1e-3):

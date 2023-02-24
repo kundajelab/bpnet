@@ -5,9 +5,9 @@ import os
 import pandas as pd
 import pyBigWig
 
-from basepairmodels.cli.argparsers import outliers_argsparser
-from basepairmodels.cli.exceptionhandler import NoTracebackException
-from basepairmodels.cli import logger
+from bpnet.basepairmodels.cli.argparsers import outliers_argsparser
+from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.basepairmodels.cli import logger
 from tqdm import tqdm
 
 def getPeakPositions(task, chroms, chrom_sizes, flank, drop_duplicates=False):

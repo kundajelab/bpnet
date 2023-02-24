@@ -1,5 +1,5 @@
 import json
-from basepairmodels.common import training
+from bpnet.basepairmodels.common import training
 
 class ProfileModel:
     

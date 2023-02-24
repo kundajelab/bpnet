@@ -45,14 +45,14 @@
 """
 
 
-from basepairmodels.cli.argparsers import embeddings_argsparser
-from basepairmodels.cli.exceptionhandler import NoTracebackException
-from basepairmodels.cli.logger import *
-from genomicsdlarchsandlosses.bpnet.custommodel \
+from bpnet.basepairmodels.cli.argparsers import embeddings_argsparser
+from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.basepairmodels.cli.logger import *
+from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
-from genomicsdlarchsandlosses.bpnet.losses import \
+from bpnet.genomicsdlarchsandlosses.bpnet.losses import \
 MultichannelMultinomialNLL, multinomial_nll, CustomMeanSquaredError
-from mseqgen.sequtils import one_hot_encode
+from bpnet.mseqgen.sequtils import one_hot_encode
 
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.utils import CustomObjectScope

@@ -66,9 +66,9 @@ import pyfaidx
 
 import re
 
-from mseqgen import sequtils
-from mseqgen.exceptionhandler import NoTracebackException
-from mseqgen import utils
+from bpnet.mseqgen import sequtils
+from bpnet.mseqgen.exceptionhandler import NoTracebackException
+from bpnet.mseqgen import utils
 from queue import Queue
 from threading import Thread
 

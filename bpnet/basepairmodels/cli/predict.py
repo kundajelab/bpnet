@@ -10,16 +10,16 @@ import sys
 import time
 import tensorflow as tf
 
-from basepairmodels.cli import argparsers
-from basepairmodels.cli import logger
+from bpnet.basepairmodels.cli import argparsers
+from bpnet.basepairmodels.cli import logger
 
-from basepairmodels.cli.bigwig_helper import write_bigwig
-from basepairmodels.cli.bpnetutils import *
-from basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.basepairmodels.cli.bigwig_helper import write_bigwig
+from bpnet.basepairmodels.cli.bpnetutils import *
+from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
 
-from genomicsdlarchsandlosses.bpnet.custommodel \
+from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
-from genomicsdlarchsandlosses.bpnet.losses import \
+from bpnet.genomicsdlarchsandlosses.bpnet.losses import \
 MultichannelMultinomialNLL, multinomial_nll, CustomMeanSquaredError
 from mseqgen import generators
 from scipy.ndimage import gaussian_filter1d

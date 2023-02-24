@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras.backend as kb
 
-from genomicsdlarchsandlosses.bpnet.losses import multinomial_nll
+from bpnet.genomicsdlarchsandlosses.bpnet.losses import multinomial_nll
 
 from tensorflow import keras
 from tensorflow.keras import Model

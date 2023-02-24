@@ -78,7 +78,7 @@ import os
 import pandas as pd
 
 from collections import OrderedDict
-from mseqgen.exceptionhandler import NoTracebackException
+from bpnet.mseqgen.exceptionhandler import NoTracebackException
 
 
 
