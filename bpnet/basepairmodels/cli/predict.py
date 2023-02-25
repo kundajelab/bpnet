@@ -21,7 +21,7 @@ from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
 from bpnet.genomicsdlarchsandlosses.bpnet.losses import \
 MultichannelMultinomialNLL, multinomial_nll, CustomMeanSquaredError
-from mseqgen import generators
+from bpnet.mseqgen import generators
 from scipy.ndimage import gaussian_filter1d
 from scipy.spatial.distance import jensenshannon
 from scipy.special import logsumexp, softmax
