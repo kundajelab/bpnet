@@ -606,8 +606,7 @@ def BPNet(
      profile_bias_module_params,
      counts_bias_module_params,
      loss_weights,
-     counts_loss,
-     _) = load_params(bpnet_params)    
+     counts_loss) = load_params(bpnet_params)    
 
     # Step 1 - sequence input
     one_hot_input = layers.Input(shape=(input_len, 4), name='sequence')
