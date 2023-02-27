@@ -5,7 +5,7 @@ import tensorflow.keras.backend as kb
 
 def mse_loss_function(y_log_true, y_log_pred):
     # logcounts mse loss without sample weights
-    mse_loss = keras.losses.mean_squared_error(
+    mse_loss = tf.keras.losses.mean_squared_error(
         y_log_true, y_log_pred)
     return mse_loss
 
