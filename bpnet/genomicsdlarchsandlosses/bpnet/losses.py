@@ -3,64 +3,36 @@ import tensorflow_probability as tfp
 import tensorflow.keras.backend as kb
 
 
-class CustomMeanSquaredError(object):
-    """ Custom class to compute mean squared error
-        but ignore the incoming sample weights
+def mse_loss_function(y_log_true, y_log_pred):
+    # logcounts mse loss without sample weights
+    mse_loss = keras.losses.mean_squared_error(
+        y_log_true, y_log_pred)
+    return mse_loss
+
+def poisson_loss_function(y_log_true, y_log_pred):
+    # we can use the Possion PMF from TensorFlow as well
+    # dist = tf.contrib.distributions
+    # return -tf.reduce_mean(dist.Poisson(y_pred).log_pmf(y_true))
+
+    # last term can be avoided since it doesn't depend on y_pred
+    # however keeping it gives a nice lower bound to zero
     
-    """
-    
-    def __init__(self):
-        self.__name__ = "CustomMeanSquaredError"
+    y_true = tf.math.exp(y_log_true) # -1? 
+    y_pred = tf.math.exp(y_log_pred)
+    y_true = tf.cast(y_true,tf.float32)
+    y_pred = tf.cast(y_pred,tf.float32)
+    loss = y_pred - y_true*tf.math.log(y_pred+1e-8) + tf.math.lgamma(y_true+1.0)
 
-    def __call__(self, y_true, y_pred):
-        
-        mse = tf.keras.losses.MeanSquaredError()
-        
-        return mse(y_true, y_pred)
-
-    def get_config(self):
-        return {}
-
+    return loss
 
 def multinomial_nll(true_counts, logits):
     """Compute the multinomial negative log-likelihood
     Args:
-      true_counts: observed count values
-      logits: predicted logits values
+        true_counts: observed count values
+        logits: predicted logits values
     """
     counts_per_example = tf.reduce_sum(true_counts, axis=-1)
     dist = tfp.distributions.Multinomial(total_count=counts_per_example,
-                                         logits=logits)
+                                            logits=logits)
     return (-tf.reduce_sum(dist.log_prob(true_counts)) / 
             tf.cast(tf.shape(true_counts)[0], dtype=tf.float32))
-
-
-#from https://github.com/kundajelab/basepair/blob/cda0875571066343cdf90aed031f7c51714d991a/basepair/losses.py#L87
-class MultichannelMultinomialNLL(object):
-    """ Class to compute combined loss from 'n' tasks
-    
-        Args:
-            n (int): the number of channels / tasks 
-    """
-    
-    def __init__(self, n):
-        self.__name__ = "MultichannelMultinomialNLL"
-        self.n = n
-
-    def __call__(self, true_counts, logits):
-        total = 0
-        
-        # only keep those samples with non zero weight,
-        # here we assume non-zero is 1
-        
-        for i in range(self.n):
-            loss = multinomial_nll(true_counts[..., i], logits[..., i])
-            if i == 0:
-                total = loss
-            else:
-                total += loss
-        return total
-
-    def get_config(self):
-        return {"n": self.n}
-
