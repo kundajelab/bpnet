@@ -1,7 +1,6 @@
 ## Av's code with a bit of reformatting
 
 import numpy as np
-import shap
 import tensorflow as tf
 
 # from deeplift.dinuc_shuffle import dinuc_shuffle

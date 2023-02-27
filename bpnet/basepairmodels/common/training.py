@@ -45,28 +45,19 @@ from tensorflow.random import set_seed
 set_seed(1234)
 
 import copy
-import datetime
 import json
 import logging
 import multiprocessing as mp
 import os
 import pandas as pd
-import pyBigWig
-import pyfaidx
-import numpy as np
-import sys
-import tensorflow.keras.backend as kb
 import time
-import warnings
 
 from bpnet.basepairmodels.cli.bpnetutils import *
 from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
 from bpnet.basepairmodels.cli import logger
 from bpnet.genomicsdlarchsandlosses.bpnet import archs
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.optimizers import Adam
 from bpnet.mseqgen import generators 
-from bpnet.mseqgen import sequtils
 
 
 def early_stopping_check(losses, patience=5, min_delta=1e-3):

@@ -6,7 +6,6 @@ import pyBigWig
 import pysam
 import shap
 import tensorflow as tf
-import tensorflow_probability as tfp
 
 from bpnet.basepairmodels.cli.argparsers import shap_scores_argsparser
 from bpnet.basepairmodels.cli.bpnetutils import *

@@ -1,4 +1,3 @@
-import datetime
 import h5py
 import json
 import logging
@@ -6,7 +5,6 @@ import math
 import numpy as np
 import os
 import pandas as pd
-import sys
 import time
 import tensorflow as tf
 

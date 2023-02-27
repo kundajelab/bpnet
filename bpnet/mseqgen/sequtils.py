@@ -71,13 +71,10 @@ seed(1234)
 
 import pandas as pd
 import hashlib
-import glob
 import logging
 import numpy as np
-import os
 import pandas as pd
 
-from collections import OrderedDict
 from bpnet.mseqgen.exceptionhandler import NoTracebackException
 
 

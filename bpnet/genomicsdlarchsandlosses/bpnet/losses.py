@@ -1,6 +1,5 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
-import tensorflow.keras.backend as kb
 
 
 def mse_loss_function(y_log_true, y_log_pred):

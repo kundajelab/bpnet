@@ -37,9 +37,7 @@ from tensorflow.random import set_seed
 set_seed(1234)
 
 import json
-import logging
 import os
-import sys
 
 from bpnet.basepairmodels.cli import argparsers
 from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException

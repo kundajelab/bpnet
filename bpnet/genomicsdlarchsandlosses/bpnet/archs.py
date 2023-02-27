@@ -11,16 +11,10 @@ set_seed(1234)
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel import CustomModel
 from bpnet.genomicsdlarchsandlosses.utils.exceptionhandler \
     import NoTracebackException
-from tensorflow.keras import layers, Model
-from tensorflow.keras.models import load_model
+from tensorflow.keras import layers
 from tensorflow.keras.backend import int_shape
 
-import json
-import numpy as np
-import os
-import sys
 import tensorflow as tf
-import tensorflow.keras.backend as K
 import bpnet.genomicsdlarchsandlosses.bpnet.bpnetdefaults as bpnetdefaults
 
 def _crop_layer(layer, new_size):
