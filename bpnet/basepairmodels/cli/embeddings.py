@@ -50,8 +50,6 @@ from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
 from bpnet.basepairmodels.cli.logger import *
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
-from bpnet.genomicsdlarchsandlosses.bpnet.losses import \
-MultichannelMultinomialNLL, multinomial_nll, CustomMeanSquaredError
 from bpnet.mseqgen.sequtils import one_hot_encode
 
 from tensorflow.keras.models import Model, load_model
@@ -291,9 +289,7 @@ def embeddings_main():
     # set up the loggers
     init_logger(logfname)
 
-    with CustomObjectScope({'MultichannelMultinomialNLL': 
-                            MultichannelMultinomialNLL, 'tf': tf,  
-                            'CustomMeanSquaredError': CustomMeanSquaredError,                            
+    with CustomObjectScope({'tf': tf,  
                             'CustomModel': CustomModel}):
         
         # load the model 

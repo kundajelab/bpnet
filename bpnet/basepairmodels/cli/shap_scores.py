@@ -15,8 +15,6 @@ from bpnet.basepairmodels.cli.shaputils import *
 from bpnet.basepairmodels.cli.logger import *
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
-from bpnet.genomicsdlarchsandlosses.bpnet.losses import \
-MultichannelMultinomialNLL, multinomial_nll, CustomMeanSquaredError
 from bpnet.mseqgen.sequtils import one_hot_encode
 from bpnet.mseqgen.utils import gaussian1D_smoothing
 from tensorflow.keras.models import load_model
@@ -419,9 +417,7 @@ def shap_scores_main():
     
     # shap
     logging.info("Loading {}".format(args.model))
-    with CustomObjectScope({'MultichannelMultinomialNLL': 
-                            MultichannelMultinomialNLL, 'tf': tf,  
-                            'CustomMeanSquaredError': CustomMeanSquaredError,                            
+    with CustomObjectScope({'tf': tf,                          
                             'CustomModel': CustomModel}):
             
         shap_scores(args, shap_scores_dir)

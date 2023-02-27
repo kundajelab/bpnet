@@ -63,7 +63,6 @@ from bpnet.basepairmodels.cli.bpnetutils import *
 from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
 from bpnet.basepairmodels.cli import logger
 from bpnet.genomicsdlarchsandlosses.bpnet import archs
-from bpnet.genomicsdlarchsandlosses.bpnet.losses import MultichannelMultinomialNLL, CustomMeanSquaredError
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.optimizers import Adam
 from bpnet.mseqgen import generators 

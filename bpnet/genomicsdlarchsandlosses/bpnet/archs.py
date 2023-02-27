@@ -8,7 +8,6 @@ seed(1234)
 from tensorflow.random import set_seed 
 set_seed(1234)
 
-from bpnet.genomicsdlarchsandlosses.bpnet.losses import MultichannelMultinomialNLL
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel import CustomModel
 from bpnet.genomicsdlarchsandlosses.utils.exceptionhandler \
     import NoTracebackException

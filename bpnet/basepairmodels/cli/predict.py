@@ -19,8 +19,6 @@ from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
 
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
-from bpnet.genomicsdlarchsandlosses.bpnet.losses import \
-MultichannelMultinomialNLL, multinomial_nll, CustomMeanSquaredError
 from bpnet.mseqgen import generators
 from scipy.ndimage import gaussian_filter1d
 from scipy.spatial.distance import jensenshannon
@@ -855,9 +853,7 @@ def predict_main():
 
     # predict
     logging.info("Loading {}".format(args.model))
-    with CustomObjectScope({'MultichannelMultinomialNLL': 
-                            MultichannelMultinomialNLL, 'tf': tf,  
-                            'CustomMeanSquaredError': CustomMeanSquaredError,                            
+    with CustomObjectScope({'tf': tf,                             
                             'CustomModel': CustomModel}):
             
         predict(args, pred_dir)
