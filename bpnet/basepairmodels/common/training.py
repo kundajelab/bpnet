@@ -54,7 +54,7 @@ import time
 
 from bpnet.basepairmodels.cli.bpnetutils import *
 from bpnet.utils.exceptionhandler import NoTracebackException
-from bpnet.basepairmodels.cli import logger
+from bpnet.utils import logger
 from bpnet.arch import arch
 from tensorflow.keras.optimizers import Adam
 from bpnet.generators import generators 

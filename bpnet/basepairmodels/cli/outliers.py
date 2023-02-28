@@ -7,7 +7,7 @@ import pyBigWig
 
 from bpnet.basepairmodels.cli.argparsers import outliers_argsparser
 from bpnet.utils.exceptionhandler import NoTracebackException
-from bpnet.basepairmodels.cli import logger
+from bpnet.utils import logger
 from tqdm import tqdm
 
 def getPeakPositions(task, chroms, chrom_sizes, flank, drop_duplicates=False):

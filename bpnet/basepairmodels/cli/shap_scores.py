@@ -11,7 +11,7 @@ from bpnet.basepairmodels.cli.argparsers import shap_scores_argsparser
 from bpnet.basepairmodels.cli.bpnetutils import *
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.basepairmodels.cli.shaputils import *
-from bpnet.basepairmodels.cli.logger import *
+from bpnet.utils.logger import *
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
 from bpnet.generators.sequtils import one_hot_encode
