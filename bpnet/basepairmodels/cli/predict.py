@@ -13,7 +13,7 @@ from bpnet.utils import logger
 
 from bpnet.utils.bigwig_helper import write_bigwig
 from bpnet.basepairmodels.cli.bpnetutils import *
-from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.utils.exceptionhandler import NoTracebackException
 
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
