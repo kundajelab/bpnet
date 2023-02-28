@@ -30,7 +30,7 @@
 """
 from bpnet.basepairmodels.cli.argparsers import counts_loss_weight_argsparser
 from bpnet.utils.exceptionhandler import NoTracebackException
-from bpnet.basepairmodels.common import stats
+from bpnet.utils import counts_loss_weight
 
 import json
 import pandas as pd
@@ -132,7 +132,7 @@ def counts_loss_weight_main():
     peaks_df = pd.concat(peaks_dfs)
     
     # compute the counts loss weight using the stats module function
-    clw = stats.get_recommended_counts_loss_weight(
+    clw = counts_loss_weight.get_recommended_counts_loss_weight(
         bigWigs, peaks_df, args.alpha, args.orig_multi_loss)
     
     print(clw)
