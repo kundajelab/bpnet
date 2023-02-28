@@ -4,7 +4,7 @@ import numpy as np
 from decimal import Decimal
 from genomicsdlarchsandlosses.bpnet.archs import BPNet
 from tensorflow.keras.utils import plot_model
-from genomicsdlarchsandlosses.utils.exceptionhandler \
+from bpnet.utils.exceptionhandler \
     import NoTracebackException
 
 import os

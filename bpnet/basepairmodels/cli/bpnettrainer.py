@@ -40,7 +40,7 @@ import json
 import os
 
 from bpnet.basepairmodels.cli import argparsers
-from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.basepairmodels.common import training
 from bpnet.genomicsdlarchsandlosses.bpnet import archs
 

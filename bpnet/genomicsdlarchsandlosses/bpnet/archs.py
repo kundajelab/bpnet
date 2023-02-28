@@ -9,7 +9,7 @@ from tensorflow.random import set_seed
 set_seed(1234)
 
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel import CustomModel
-from bpnet.genomicsdlarchsandlosses.utils.exceptionhandler \
+from bpnet.utils.exceptionhandler \
     import NoTracebackException
 from tensorflow.keras import layers
 from tensorflow.keras.backend import int_shape

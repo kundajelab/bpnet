@@ -9,13 +9,13 @@ import tensorflow as tf
 
 from bpnet.basepairmodels.cli.argparsers import shap_scores_argsparser
 from bpnet.basepairmodels.cli.bpnetutils import *
-from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.basepairmodels.cli.shaputils import *
 from bpnet.basepairmodels.cli.logger import *
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
-from bpnet.mseqgen.sequtils import one_hot_encode
-from bpnet.mseqgen.utils import gaussian1D_smoothing
+from bpnet.generators.sequtils import one_hot_encode
+from bpnet.utils.misc import gaussian1D_smoothing
 from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import CustomObjectScope
 

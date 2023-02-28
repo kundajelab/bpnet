@@ -75,7 +75,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from bpnet.mseqgen.exceptionhandler import NoTracebackException
+from bpnet.utils.exceptionhandler import NoTracebackException
 
 
 

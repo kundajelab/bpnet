@@ -46,11 +46,11 @@
 
 
 from bpnet.basepairmodels.cli.argparsers import embeddings_argsparser
-from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.basepairmodels.cli.logger import *
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
-from bpnet.mseqgen.sequtils import one_hot_encode
+from bpnet.generators.sequtils import one_hot_encode
 
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.utils import CustomObjectScope

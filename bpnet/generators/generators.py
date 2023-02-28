@@ -66,14 +66,11 @@ import pyfaidx
 
 import re
 
-from bpnet.mseqgen import sequtils
-from bpnet.mseqgen.exceptionhandler import NoTracebackException
-from bpnet.mseqgen import utils
+from bpnet.generators import sequtils
+from bpnet.utils.exceptionhandler import NoTracebackException
+from bpnet.utils.misc import gaussian1D_smoothing
 from queue import Queue
 from threading import Thread
-
-
-
 
 
 class MSequenceGenerator:
@@ -1183,7 +1180,7 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
                             # follow the original bias track in the last
                             # dimension
                             profile_bias_input[i][rowCnt, :, bias_track_idx] = \
-                                utils.gaussian1D_smoothing(
+                                gaussian1D_smoothing(
                                     profile_bias_input[i][
                                         rowCnt, :, bias_track_idx - 1],
                                     sigma, window_size)

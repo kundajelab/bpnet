@@ -9,7 +9,7 @@ import os
 import pyBigWig
 import numpy as np
 
-from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
+from bpnet.utils.exceptionhandler import NoTracebackException
 
 
 def get_recommended_counts_loss_weight(input_bigWigs, peaks, 

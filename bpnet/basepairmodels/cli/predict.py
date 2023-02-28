@@ -17,7 +17,7 @@ from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
 
 from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
     import CustomModel
-from bpnet.mseqgen import generators
+from bpnet.generators import generators
 from scipy.ndimage import gaussian_filter1d
 from scipy.spatial.distance import jensenshannon
 from scipy.special import logsumexp, softmax
