@@ -11,7 +11,7 @@ import tensorflow as tf
 from bpnet.basepairmodels.cli import argparsers
 from bpnet.utils import logger
 
-from bpnet.basepairmodels.cli.bigwig_helper import write_bigwig
+from bpnet.utils.bigwig_helper import write_bigwig
 from bpnet.basepairmodels.cli.bpnetutils import *
 from bpnet.basepairmodels.cli.exceptionhandler import NoTracebackException
 
