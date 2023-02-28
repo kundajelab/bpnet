@@ -42,7 +42,7 @@ import os
 from bpnet.basepairmodels.cli import argparsers
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.basepairmodels.common import training
-from bpnet.genomicsdlarchsandlosses.bpnet import archs
+from bpnet.arch import arch
 
 
 def main():
@@ -111,7 +111,7 @@ def main():
             genome_params['chrom_sizes']))
         
     try:
-        get_model = getattr(archs, args.model_arch_name)
+        get_model = getattr(arch, args.model_arch_name)
     except AttributeError:
         raise NoTracebackException(
             "Network {} not found in model definitions".format(

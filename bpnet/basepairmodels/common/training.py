@@ -55,7 +55,7 @@ import time
 from bpnet.basepairmodels.cli.bpnetutils import *
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.basepairmodels.cli import logger
-from bpnet.genomicsdlarchsandlosses.bpnet import archs
+from bpnet.arch import arch
 from tensorflow.keras.optimizers import Adam
 from bpnet.generators import generators 
 
@@ -339,7 +339,7 @@ def train_and_validate(
 
     # get an instance of the model
     logging.debug("New {} model".format(model_arch_name))
-    get_model = getattr(archs, model_arch_name)
+    get_model = getattr(arch, model_arch_name)
     
     model = get_model(tasks, 
                         model_arch_params, 

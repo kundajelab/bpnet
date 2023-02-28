@@ -15,7 +15,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.backend import int_shape
 
 import tensorflow as tf
-import bpnet.genomicsdlarchsandlosses.bpnet.bpnetdefaults as bpnetdefaults
+from bpnet.arch import bpnetdefaults
 
 def _crop_layer(layer, new_size):
     """
