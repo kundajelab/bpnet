@@ -8,7 +8,7 @@ import shap
 import tensorflow as tf
 
 from bpnet.basepairmodels.cli.argparsers import shap_scores_argsparser
-from bpnet.basepairmodels.cli.bpnetutils import *
+from bpnet.utils.datetime import *
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.utils.shaputils import *
 from bpnet.utils.logger import *
