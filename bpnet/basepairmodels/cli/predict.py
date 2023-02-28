@@ -9,7 +9,7 @@ import time
 import tensorflow as tf
 
 from bpnet.basepairmodels.cli import argparsers
-from bpnet.basepairmodels.cli import logger
+from bpnet.utils import logger
 
 from bpnet.basepairmodels.cli.bigwig_helper import write_bigwig
 from bpnet.basepairmodels.cli.bpnetutils import *
