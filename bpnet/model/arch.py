@@ -8,14 +8,14 @@ seed(1234)
 from tensorflow.random import set_seed 
 set_seed(1234)
 
-from bpnet.genomicsdlarchsandlosses.bpnet.custommodel import CustomModel
+from bpnet.model.custommodel import CustomModel
 from bpnet.utils.exceptionhandler \
     import NoTracebackException
 from tensorflow.keras import layers
 from tensorflow.keras.backend import int_shape
 
 import tensorflow as tf
-from bpnet.arch import bpnetdefaults
+from bpnet.model import bpnetdefaults
 
 def _crop_layer(layer, new_size):
     """

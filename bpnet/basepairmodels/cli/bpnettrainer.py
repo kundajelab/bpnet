@@ -42,7 +42,7 @@ import os
 from bpnet.basepairmodels.cli import argparsers
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.basepairmodels.common import training
-from bpnet.arch import arch
+from bpnet.model import arch
 
 
 def main():

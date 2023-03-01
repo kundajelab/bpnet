@@ -15,7 +15,7 @@ from bpnet.utils.bigwig_helper import write_bigwig
 from bpnet.utils.datetime import *
 from bpnet.utils.exceptionhandler import NoTracebackException
 
-from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
+from bpnet.model.custommodel \
     import CustomModel
 from bpnet.generators import generators
 from scipy.ndimage import gaussian_filter1d

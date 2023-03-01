@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras.backend as kb
 
-from bpnet.genomicsdlarchsandlosses.bpnet.losses import multinomial_nll, poisson_loss_function, mse_loss_function
+from bpnet.model.losses import multinomial_nll, poisson_loss_function, mse_loss_function
 
 from tensorflow import keras
 from tensorflow.keras import Model

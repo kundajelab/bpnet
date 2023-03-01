@@ -48,7 +48,7 @@
 from bpnet.basepairmodels.cli.argparsers import embeddings_argsparser
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.utils.logger import *
-from bpnet.genomicsdlarchsandlosses.bpnet.custommodel \
+from bpnet.model.custommodel \
     import CustomModel
 from bpnet.generators.sequtils import one_hot_encode
 
