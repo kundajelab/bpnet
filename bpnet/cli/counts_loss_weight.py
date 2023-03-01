@@ -28,7 +28,7 @@
     SOFTWARE.
 
 """
-from bpnet.basepairmodels.cli.argparsers import counts_loss_weight_argsparser
+from bpnet.cli.argparsers import counts_loss_weight_argsparser
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.utils import counts_loss_weight
 

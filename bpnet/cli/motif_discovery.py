@@ -21,7 +21,7 @@ import modisco.coordproducers
 import modisco.metaclusterers
 import modisco.util
 
-from bpnet.basepairmodels.cli.argparsers import motif_discovery_argsparser
+from bpnet.cli.argparsers import motif_discovery_argsparser
 from bpnet.utils.exceptionhandler import NoTracebackException
 from modisco.tfmodisco_workflow.seqlets_to_patterns \
     import TfModiscoSeqletsToPatternsFactory

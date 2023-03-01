@@ -45,7 +45,7 @@
 """
 
 
-from bpnet.basepairmodels.cli.argparsers import embeddings_argsparser
+from bpnet.cli.argparsers import embeddings_argsparser
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.utils.logger import *
 from bpnet.model.custommodel \

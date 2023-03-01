@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import pyBigWig
 
-from bpnet.basepairmodels.cli.argparsers import outliers_argsparser
+from bpnet.cli.argparsers import outliers_argsparser
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.utils import logger
 from tqdm import tqdm

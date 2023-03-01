@@ -8,7 +8,7 @@ import pandas as pd
 import time
 import tensorflow as tf
 
-from bpnet.basepairmodels.cli import argparsers
+from bpnet.cli import argparsers
 from bpnet.utils import logger
 
 from bpnet.utils.bigwig_helper import write_bigwig
