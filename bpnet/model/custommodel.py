@@ -41,54 +41,31 @@ class CustomModel(Model):
         # boolean mask for sample weights != 0                
         y_pred = self(x, training=training)  # Forward pass        
         
-        def _poisson_loss_function(_y_log_true,_y_log_pred):
-            total_poisson_loss = 0
+        def _count_loss_function(_y_log_true,_y_log_pred, count_loss_fn):
+            # count_loss_fn: either poisson_loss_function or mse_loss_function
+            total_count_loss = 0
             track_count_cuml = 0
             if self.orig_multi_loss:
                 for i in range(self.num_output_tracks):
                     y_log_true = _y_log_true[:,i:(i+1)][:,-1]
                     y_log_pred = _y_log_pred[:,i:(i+1)][:,-1]
-                    loss = poisson_loss_function(y_log_true, y_log_pred)
-                    total_poisson_loss += loss               
+                    loss = count_loss_fn(y_log_true, y_log_pred)
+                    total_count_loss += loss               
             else:
                 for i in range(self.num_tasks):
                     num_of_tracks = self.tracks_for_each_task[i]
                     y_log_true = tf.reduce_logsumexp(_y_log_true[:,track_count_cuml:(track_count_cuml+num_of_tracks)],axis=1)
                     y_log_pred = _y_log_pred[:,i:(i+1)][:,-1]
-                    loss = poisson_loss_function(y_log_true, y_log_pred)
+                    loss = count_loss_fn(y_log_true, y_log_pred)
+                    total_count_loss += loss
                     track_count_cuml += num_of_tracks
-                    total_poisson_loss += loss
-            return total_poisson_loss
-        
-        def _mse_loss_function(_y_log_true,_y_log_pred):
-            total_mse_loss = 0
-            track_count_cuml = 0
-            num_tasks_count_cuml = 0
-            
-            if self.orig_multi_loss:
-                for i in range(self.num_output_tracks):
-                    y_log_true = _y_log_true[:,i:(i+1)][:,-1]
-                    y_log_pred = _y_log_pred[:,i:(i+1)][:,-1]
-                    loss = mse_loss_function(y_log_true, y_log_pred)
-                    total_mse_loss += loss
-            else:
-
-                for i in range(self.num_tasks):
-                    num_of_tracks = self.tracks_for_each_task[i]
-                    y_log_true = tf.reduce_logsumexp(_y_log_true[:,track_count_cuml:(track_count_cuml+num_of_tracks)],axis=1)
-                    y_log_pred = _y_log_pred[:,i:(i+1)][:,-1]
-
-                    loss = mse_loss_function(y_log_true, y_log_pred)
-                    track_count_cuml += num_of_tracks
-                    num_tasks_count_cuml += 1
-                    total_mse_loss += loss
-            return total_mse_loss
+            return total_count_loss
         
         if self.counts_loss == "MSE":
-            total_counts_loss = _mse_loss_function(y['logcounts_predictions'],y_pred[1])
+            total_counts_loss = _count_loss_function(y['logcounts_predictions'],y_pred[1], mse_loss_function)
         
         elif self.counts_loss == "POISSON":        
-            total_counts_loss = _poisson_loss_function(y['logcounts_predictions'],y_pred[1])
+            total_counts_loss = _count_loss_function(y['logcounts_predictions'],y_pred[1], poisson_loss_function)            
             
         else:
             raise Exception("Sorry, unknown loss funtion")
