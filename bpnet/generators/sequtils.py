@@ -19,8 +19,6 @@
             returns a nested python dictionary of tasks, specifying the
             'signal' and/or 'control' bigWigs, 'peaks' file, 'task_id'
             & 'strand
-                
-        roundToMultiple - Return the largest multiple of y < x
         
         one_hot_encode - returns a 3-dimension numpy array of one hot
             encoding of a list of DNA sequences
@@ -325,24 +323,6 @@ def getPeakPositions(tasks, chrom_sizes, flank,
         allPeaks = allPeaks.drop_duplicates(ignore_index=True)
         
     return allPeaks
-
-
-def roundToMultiple(x, y): 
-    """Return the largest multiple of y < x
-        
-        Args:
-            x (int): the number to round
-            y (int): the multiplier
-        
-        Returns:
-            int: largest multiple of y <= x
-            
-    """
-
-    r = (x + int(y / 2)) & ~(y - 1)
-    if r > x:
-        r = r - y
-    return r
 
 
 def round_to_multiple(x, y, smallest=False): 
