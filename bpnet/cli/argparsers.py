@@ -138,13 +138,6 @@ def training_argsparser():
                         help="path to json file containing bias task "
                         "information")
     
-    # bias adjustment
-    parser.add_argument('--adjust-bias-model-logcounts', action='store_true', 
-                    help="if training a bias model for chromatin "
-                    "accessibility use this option to optionally adjust "
-                    "the weights of the final Dense layer that predicts the "
-                    "logcounts")
-
     # background / foreground model & samples
     parser.add_argument('--is-background-model', action='store_true', 
                     help="True if training a background model. Only "
