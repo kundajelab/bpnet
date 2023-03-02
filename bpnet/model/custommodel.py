@@ -71,8 +71,7 @@ class CustomModel(Model):
             raise Exception("Sorry, unknown loss funtion")
         
 
-        # for mnll loss we mask out samples with weight == 0.0
-        
+        # for mnll loss we mask out samples with weight == 0.0        
         boolean_mask = tf.math.greater_equal(sample_weights, 1.0)
         
         _y = tf.boolean_mask(y['profile_predictions'], boolean_mask)
@@ -106,7 +105,8 @@ class CustomModel(Model):
                     track_count_cuml = track_count_cuml+num_of_tracks
                     total_mnll_loss += loss
             return total_mnll_loss
-                    
+
+        # edge case where no example with non-zero weight             
         total_mnll_loss = tf.cond(tf.equal(tf.size(_y), 0), 
                   _zero_constant,
                   lambda:  _multinomial_nll(_y,_y_pred))
