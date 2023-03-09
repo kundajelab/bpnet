@@ -306,8 +306,7 @@ def train_and_validate(
                                train_chroms,loci_indices=train_indices,
                                background_loci_indices=background_train_indices,
                                num_threads=parallelization_params['threads'], 
-                               batch_size=hyper_params['batch_size'], 
-                               background_only=is_background_model,
+                               batch_size=hyper_params['batch_size'],                                
                                foreground_weight=mnll_loss_sample_weight,
                                background_weight=mnll_loss_background_sample_weight)
 
@@ -319,8 +318,7 @@ def train_and_validate(
                              val_chroms,loci_indices=val_indices,
                              background_loci_indices=background_val_indices, 
                              num_threads=parallelization_params['threads'], 
-                             batch_size=hyper_params['batch_size'], 
-                             background_only=is_background_model,
+                             batch_size=hyper_params['batch_size'],                              
                              foreground_weight=mnll_loss_sample_weight,
                              background_weight=mnll_loss_background_sample_weight)
 
@@ -552,8 +550,8 @@ def train_and_validate(
 def train_and_validate_ksplits(
     input_data, model_arch_name, model_arch_params_json, output_params, 
     genome_params, batch_gen_params, hyper_params, parallelization_params, 
-    splits, bias_input_data=None, is_background_model=False, 
-    mnll_loss_sample_weight=1.0, mnll_loss_background_sample_weight=0.0,orig_multi_loss=False):
+    splits, bias_input_data=None, mnll_loss_sample_weight=1.0, 
+    mnll_loss_background_sample_weight=0.0,orig_multi_loss=False):
 
     """
         Train and validate on one or more train/val splits
@@ -586,11 +584,7 @@ def train_and_validate_ksplits(
                 validation splits
             
             bias_input_data (str): path to the bias tasks json file
-    
-            is_background_model (boolean): True if a background model
-                is to be trained using 'background_loci' samples from
-                the input json
-                
+        
             mnll_loss_sample_weight (float): weight for each (foreground)
                 training sample for computing mnll loss
 
@@ -737,8 +731,8 @@ def train_and_validate_ksplits(
                   output_params, genome_params, batch_gen_params, hyper_params,
                   parallelization_params, model_dir, train_chroms, val_chroms, train_indices,
                   val_indices, background_train_indices, background_val_indices,
-                  bias_input_data, is_background_model, 
-                  mnll_loss_sample_weight, mnll_loss_background_sample_weight,orig_multi_loss,
+                  bias_input_data, mnll_loss_sample_weight, 
+                  mnll_loss_background_sample_weight,orig_multi_loss,
                   split_tag])
         p.start()
         

@@ -162,8 +162,8 @@ def getPeakPositions(tasks, chrom_sizes, flank,
                      loci_indices=None,
                      background_loci_indices=None, mode='train',
                      loci_keys=['loci', 'background_loci'], 
-                     drop_duplicates=False, background_only=False, 
-                     foreground_weight=1, background_weight=0):
+                     drop_duplicates=False, foreground_weight=1, 
+                     background_weight=0):
     """ 
         Peak positions for all the tasks filtered based on required
         chromosomes and other qc filters. Since 'task' here refers 
@@ -189,10 +189,7 @@ def getPeakPositions(tasks, chrom_sizes, flank,
             loci_keys (list): list of keys that specify the loci to
                 select from the input json for training/testing              
             drop_duplicates (boolean): True if duplicates should be
-                dropped from returned dataframe. 
-            background_only (boolean): True if only 'background_loci'
-                have to be selected. This option can be set when you
-                need to train a background/bias model
+                dropped from returned dataframe.             
             foreground_weight (int): The value to set for the weight 
                 of 'loci'
             background_weight (int): The value to set for the weight 
@@ -208,14 +205,7 @@ def getPeakPositions(tasks, chrom_sizes, flank,
     chrom_size_dict = dict(chrom_sizes.to_records(index=False))
 
     # initialize an empty dataframe
-    allPeaks = pd.DataFrame()
-
-    # check to see if background model training has been opted
-    if background_only:
-        if 'background_loci' not in loci_keys:
-            raise NoTracebackException("Key not specified: 'background_loci'")            
-        loci_keys = ['background_loci']
-        background_weight = 1
+    allPeaks = pd.DataFrame()    
     
     # we concatenate all the peaks from across all the tasks
     for task in tasks:
@@ -279,7 +269,7 @@ def getPeakPositions(tasks, chrom_sizes, flank,
                     num_foreground = len(peaks_df)
                 
                 # select random samples if its background
-                elif loci_key == 'background_loci' and not background_only:
+                elif loci_key == 'background_loci':
                     
                     # the number of samples to randomly select
                     num_samples = int(num_foreground * \

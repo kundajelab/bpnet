@@ -134,12 +134,6 @@ def training_argsparser():
                         help="path to json file containing bias task "
                         "information")
     
-    # background / foreground model & samples
-    parser.add_argument('--is-background-model', action='store_true', 
-                    help="True if training a background model. Only "
-                    "'background_loci' samples from the input json will "
-                    "be used for training")
-    
     parser.add_argument('--mnll-loss-sample-weight', type=float,
                         help="weight for each (foreground) training sample "
                         "for computing mnll loss", default=1.0)

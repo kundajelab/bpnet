@@ -128,8 +128,7 @@ class MSequenceGenerator:
                 
             epochs (int): the number of epochs for which data has to 
                 be generated
-                
-                
+                                
             foreground_weight (float): sample weight for foreground
                 samples
             
@@ -204,7 +203,7 @@ class MSequenceGenerator:
     def __init__(self, tasks_json, batch_gen_params, reference_genome, 
                  chrom_sizes, chroms=None, 
                  loci_indices=None,background_loci_indices=None, num_threads=10, batch_size=64, 
-                 epochs=100, background_only=False, foreground_weight=1, 
+                 epochs=100, foreground_weight=1, 
                  background_weight=0, set_bias_as_zero=False):
         
         #: ML task mode 'train', 'val' or 'test'
@@ -348,7 +347,7 @@ class MSequenceGenerator:
                 loci_indices=self._loci_indices,
                 background_loci_indices=self._background_loci_indices,
                 loci_keys=loci_keys,
-                drop_duplicates=True, background_only=background_only, 
+                drop_duplicates=True,
                 foreground_weight=foreground_weight, 
                 background_weight=background_weight)
             self._loci.append(peaks_df)
@@ -896,11 +895,7 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
                 default = 64
             
             epochs (int): the number of epochs for which data has to 
-                 be generated
-                 
-             background_only (boolean): True, if batches are to be 
-                 generated with background samples alone (i.e. in the 
-                 case where we are training a background model)
+                 be generated                             
                  
              foreground_weight (float): sample weight for foreground
                  samples
@@ -913,7 +908,7 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
     def __init__(self, tasks_json, batch_gen_params, reference_genome, 
                  chrom_sizes, chroms=None, loci_indices=None,
                  background_loci_indices=None, num_threads=10, batch_size=64, 
-                 epochs=100, background_only=False, foreground_weight=1, 
+                 epochs=100, foreground_weight=1, 
                  background_weight=0, set_bias_as_zero=False):
         
         # name of the generator class
@@ -923,8 +918,8 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
         super().__init__(tasks_json, batch_gen_params, reference_genome, 
                          chrom_sizes, chroms, loci_indices, 
                          background_loci_indices, num_threads, 
-                         batch_size, epochs, background_only, 
-                         foreground_weight, background_weight, set_bias_as_zero)
+                         batch_size, epochs, foreground_weight, 
+                         background_weight, set_bias_as_zero)
         
     def get_name(self):
         """ 

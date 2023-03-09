@@ -12,3 +12,4 @@ Changes since Surag started cleanup.
 
 9 March
 - removed random genomewide negatives
+- removed logic for background only training (releted to bias model training for ChromBPNet)
