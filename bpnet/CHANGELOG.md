@@ -9,3 +9,6 @@ Changes since Surag started cleanup.
 - changed CLI options and added "bpnet-" prefix
 - simplified organization, renamed directories to understandable names (e.g. mseqgen -> generators, genomicsarchsandlosses -> model)
 - removed repetition of counts loss function (two functions for mse and poisson loss calculation with identical logic) in custommodel.py
+
+9 March
+- removed random genomewide negatives
