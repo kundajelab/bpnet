@@ -70,7 +70,6 @@ def main():
     batch_gen_params['input_seq_len'] = args.input_seq_len
     batch_gen_params['output_len'] = args.output_len
     batch_gen_params['rev_comp_aug'] = args.reverse_complement_augmentation
-    batch_gen_params['negative_sampling_rate'] = args.negative_sampling_rate
     batch_gen_params['max_jitter'] = args.max_jitter
     batch_gen_params['shuffle'] = args.shuffle
     

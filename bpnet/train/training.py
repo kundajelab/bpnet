@@ -287,11 +287,10 @@ def train_and_validate(
     
     # parameters that are specific to the validation batch generation
     # process. For validation we dont use jitter, reverse complement 
-    # augmentation and negative sampling
+    # augmentation
     val_batch_gen_params = copy.deepcopy(batch_gen_params)
     val_batch_gen_params['max_jitter'] = 0
-    val_batch_gen_params['rev_comp_aug'] = False
-    val_batch_gen_params['negative_sampling_rate'] = 0.0
+    val_batch_gen_params['rev_comp_aug'] = False    
     val_batch_gen_params['mode'] = 'val'
 
     # get the corresponding batch generator class for this model

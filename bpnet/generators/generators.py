@@ -98,11 +98,7 @@ class MSequenceGenerator:
                 
                 *rev_comp_aug (boolean)*
                     enable reverse complement augmentation
-                
-                *negative_sampling_rate (float)*
-                    the fraction of batch_size that determines how many 
-                    negative samples are added to each batch
-
+                             
                 *shuffle (boolean)*
                     specify whether input data is shuffled at the 
                     begininning of each epoch
@@ -133,8 +129,6 @@ class MSequenceGenerator:
             epochs (int): the number of epochs for which data has to 
                 be generated
                 
-            background_only (boolean): True, if batches are to be 
-                generated with background samples alone
                 
             foreground_weight (float): sample weight for foreground
                 samples
@@ -181,19 +175,12 @@ class MSequenceGenerator:
             _max_jitter (int): the maximum absolute value of jitter to
                 vary the position of the peak summit to left or right
                 of the exact center of the input sequence. Range is
-                -max_jitter to +max_jitter.
-            
-            _negative_sampling_rate (float): Use a positive value > 0.0
-                to specify how many negative samples will be added to
-                each batch. num_negative_samples = 
-                negative_sampling_rate * batch_size. Ignored if 
-                --mode is not 'train'
+                -max_jitter to +max_jitter.            
             
             _rev_comp_aug (boolean): specify whether reverse complement
                 augmentation should be applied to each batch of data.
                 If True, the size of the generated batch is doubled 
-                (i.e batch_size*2 or if negative samples are added then
-                (batch_size + num_negative_samples)*2). Ignored if 
+                (i.e batch_size*2). Ignored if 
                 --mode is not 'train'
             
             _shuffle (boolean): if True input data will be shuffled at
@@ -316,17 +303,9 @@ class MSequenceGenerator:
         #: of the input sequence. Range is -max_jitter to +max_jitter.
         self._max_jitter = batch_gen_params['max_jitter']
         
-        #: Use a positive value > 0.0 to specify how many negative
-        #: samples will be added to each batch. num_negative_samples = 
-        #: negative_sampling_rate * batch_size. Ignored if --mode is
-        # not 'train'
-        self._negative_sampling_rate = \
-            batch_gen_params['negative_sampling_rate']
-        
         #: if True, reverse complement augmentation will be applied to
         #: each batch of data. The size of the generated batch is 
-        #: doubled (i.e batch_size*2 or if negative samples are added 
-        #: then (batch_size + num_negative_samples)*2). Ignored if
+        #: doubled (i.e batch_size*2). Ignored if
         #: --mode is not 'train'
         self._rev_comp_aug = batch_gen_params['rev_comp_aug']
         
@@ -624,47 +603,12 @@ class MSequenceGenerator:
         """
         raise NotImplementedError("Method not implemented.")
 
-    def _get_random_negative_batch(self):
-        """
-            Get chrom positions for the negative samples using
-            uniform random sampling from across the all chromosomes
-            in self._chroms
-            
-            Returns:
-                pandas.DataFrame: 
-                    two column dataframe of chromosome positions with
-                    'chrom' & 'pos' columns
-
-        """
-
-        # Step 1: select chromosomes, using sampling weights 
-        # according to sizes
-        chrom_df = self._chrom_sizes_df.sample(
-            n=int(self._batch_size * self._negative_sampling_rate),
-            weights=self._chrom_sizes_df.weights, replace=True)
-
-        # Step 2: generate 'n' random numbers where 'n' is the length
-        # of chrom_df 
-        r = [random.random() for _ in range(chrom_df.shape[0])]
-
-        # Step 3. multiply the random numbers with the size column.
-        # Additionally, factor in the flank size and jitter while 
-        # computing the position
-        chrom_df['pos'] = (
-            (chrom_df['size'] 
-             - ((self._input_flank + self._max_jitter) * 2)) * r 
-            + self._input_flank + self._max_jitter).astype(int)
-
-        return chrom_df[['chrom', 'pos']]
-
     def _proc_target(self, coords_df, mpq, proc_idx):
         """
             Function that will be executed in a separate process.
             Takes a dataframe of peak coordinates and parses them in 
             batches, to get one hot encoded sequences and corresponding
-            outputs, and adds the batches to the multiprocessing queue.
-            Optionally, samples negative locations and adds them to 
-            each batch
+            outputs, and adds the batches to the multiprocessing queue.      
             
             Args:
                 coords_df (pandas.DataFrame): dataframe containing
@@ -693,20 +637,7 @@ class MSequenceGenerator:
             batch_df.loc[batch_df['weight'] == 0, 'status'] = -1
             
             # index into the original loci .bed file
-            batch_df['idx'] = batch_df.index.values
-            
-            # add random negative samples
-            if self._mode == "train" and self._negative_sampling_rate > 0.0:
-                    
-                neg_batch = self._get_random_negative_batch()
-                
-                # negative sample
-                neg_batch['status'] = -1
-                
-                # since these samples are not in the original loci
-                neg_batch['idx'] = -1
-                
-                batch_df = pd.concat([batch_df, neg_batch])
+            batch_df['idx'] = batch_df.index.values                        
             
             # generate a batch of one hot encoded sequences and 
             # corresponding outputs
@@ -925,11 +856,7 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
                     peaks from the exact center of the input
                 
                 *rev_comp_aug (boolean)*
-                    enable reverse complement augmentation
-                
-                *negative_sampling_rate (float)*
-                    the fraction of batch_size that determines how many 
-                    negative samples are added to each batch
+                    enable reverse complement augmentation            
             
                 *sampling_mode (str)*
                     the mode of sampling chromosome positions - one of

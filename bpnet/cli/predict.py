@@ -375,13 +375,12 @@ def predict(args, pred_dir):
 
     # parameters that are specific to the batch generation process.
     # for prediction we dont use jitter, reverse complement 
-    # augmentation and negative sampling
+    # augmentation
     batch_gen_params = {}    
     batch_gen_params['sequence_generator_name'] = args.sequence_generator_name
     batch_gen_params['input_seq_len'] = args.input_seq_len
     batch_gen_params['output_len'] = args.output_len
-    batch_gen_params['rev_comp_aug'] = False
-    batch_gen_params['negative_sampling_rate'] = 0.0
+    batch_gen_params['rev_comp_aug'] = False    
     batch_gen_params['max_jitter'] = 0
     batch_gen_params['shuffle'] = False
     batch_gen_params['mode'] = 'test'
