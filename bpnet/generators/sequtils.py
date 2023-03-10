@@ -289,6 +289,7 @@ def getPeakPositions(tasks, chrom_sizes, flank,
                             peaks_df = peaks_df.sample(
                                 n=num_samples, replace=False)
                         else:
+                            # must keep the validation set fixed across epochs
                             peaks_df = peaks_df.sample(
                                 n=num_samples, replace=False,random_state=1)
                             
