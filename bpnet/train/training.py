@@ -196,11 +196,7 @@ def train_and_validate(
             background_val_indices (list): list of indices that index to 
                  validation peaks from the background peaks file
             
-            bias_input_data (str): path to the bias tasks json file
-            
-            is_background_model (boolean): True if a background model
-                is to be trained using 'background_loci' samples from
-                the input json
+            bias_input_data (str): path to the bias tasks json file                        
                 
             mnll_loss_sample_weight (float): weight for each (foreground)
                 training sample for computing mnll loss
