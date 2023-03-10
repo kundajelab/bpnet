@@ -143,8 +143,8 @@ def train_and_validate(
     train_chroms, val_chroms, train_indices=None, 
     val_indices=None, background_train_indices=None, 
     background_val_indices=None, bias_input_data=None, 
-    is_background_model=False, mnll_loss_sample_weight=1.0, 
-    mnll_loss_background_sample_weight=0.0, orig_multi_loss=False, suffix_tag=None):
+    mnll_loss_sample_weight=1.0, mnll_loss_background_sample_weight=0.0, 
+    orig_multi_loss=False, suffix_tag=None):
 
     """
         Train and validate on a single train and validation set
