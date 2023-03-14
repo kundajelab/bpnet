@@ -6,10 +6,6 @@
     
     List of functions:
     
-        getChromPositions - returns two column dataframe of chromosome
-            positions spanning the entire chromosome at 
-            a) regular intervals or b) random locations
-        
         getPeakPositions - returns two column dataframe of chromosome
             positions
         
@@ -75,87 +71,6 @@ import pandas as pd
 
 from bpnet.utils.exceptionhandler import NoTracebackException
 
-
-
-def getChromPositions(chroms, chrom_sizes, flank, mode='sequential',
-                      num_positions=-1, step=50):
-    """
-        Chromosome positions spanning the entire chromosome at 
-        a) regular intervals or b) random locations
-        
-        Args:
-            chroms (list): The list of required chromosomes 
-            chrom_sizes (pandas.Dataframe): dataframe of chromosome 
-                sizes with 'chrom' and 'size' columns
-            flank (int): Buffer size before & after the position to  
-                ensure we dont fetch values at index < 0 & > chrom size
-            mode (str): mode of returned position 'sequential' (from
-                the beginning) or 'random'
-            num_positions (int): number of chromosome positions
-                to return on each chromosome, use -1 to return 
-                positions across the entrire chromosome for all given
-                chromosomes in `chroms`. mode='random' cannot be used
-                with num_positions=-1
-            step (int): the interval between consecutive chromosome
-                positions in 'sequential' mode
-            
-        Returns:
-            pandas.DataFrame: 
-                two column dataframe of chromosome positions (chrom, pos)
-            
-    """
-    
-    if mode == 'random' and num_positions == -1:
-        raise NoTracebackException(
-            "Incompatible parameter pairing: 'mode' = random, "
-            "'num_positions' = -1")
-
-    # check if chrom_sizes has a column called 'chrom'
-    if 'chrom' not in chrom_sizes.columns:
-        logging.error("Expected column 'chrom' not found in chrom_sizes")
-        return None
-
-    chrom_sizes = chrom_sizes.set_index('chrom')
-    
-    # initialize an empty dataframe with 'chrom' and 'pos' columns
-    positions = pd.DataFrame(columns=['chrom', 'pos'])
-
-    # for each chromosome in the list
-    for i in range(len(chroms)):
-        chrom_size = chrom_sizes.at[chroms[i], 'size']
-        
-        # keep start & end within bounds
-        start = flank
-        end = chrom_size - flank + 1
-                
-        if mode == 'random':
-            # randomly sample positions
-            pos_array = np.random.randint(start, end, num_positions)
-
-        if mode == 'sequential':
-            _end = end
-            if num_positions != -1:
-                # change the last positon based on the number of 
-                # required positions
-                _end = start + step * num_positions
-                
-                # if the newly computed 'end' goes beyond the 
-                # chromosome end (we could throw an error here)
-                if _end > end:
-                    _end = end
-        
-            # positions at regular intervals
-            pos_array = list(range(start, _end, step))    
-
-        # construct a dataframe for this chromosome
-        chrom_df = pd.DataFrame({'chrom': [chroms[i]] * len(pos_array), 
-                                 'pos': pos_array})
-        
-        # concatenate to existing df
-        positions = pd.concat([positions, chrom_df])
-        
-    return positions    
-    
 
 def getPeakPositions(tasks, chrom_sizes, flank,  
                      chroms=None,  
