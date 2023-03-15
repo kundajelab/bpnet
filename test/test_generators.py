@@ -228,6 +228,16 @@ class TestGenerator(unittest.TestCase):
         self.assertTrue(len(set(seqs_dna_fwd).intersection(self.peak_seqs)) == 6)
         self.assertTrue(len(set(seqs_dna_fwd).intersection(self.background_seqs)) == 2)
 
+        # check that weights of peak is 1 and bg is 0
+        weights_fwd = np.array([y for x in batches for y in x[2][:2]])
+        weights_rev = np.array([y for x in batches for y in x[2][2:]])
+
+        # rev seqs (2nd half of each batch) should have same weights as fwd
+        self.assertTrue(np.all(np.equal(weights_fwd, weights_rev)))
+
+        self.assertTrue(len(set(one_hot_to_dna(seqs_fwd[weights_fwd == 1])).intersection(self.peak_seqs)) == 6)
+        self.assertTrue(len(set(one_hot_to_dna(seqs_fwd[weights_fwd == 0])).intersection(self.background_seqs)) == 2)
+
         # check rev comp-ing of sequence
         self.assertTrue(np.all(np.equal(seqs_fwd, seqs_rev[:,::-1,::-1])))
 
