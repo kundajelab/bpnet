@@ -110,8 +110,6 @@ class TestGenerator(unittest.TestCase):
             self.plus_vals[self.peak_seqs[i]] = self.plus_data[st:en]
             self.minus_vals[self.peak_seqs[i]] = self.minus_data[st:en]
 
-        self.bg_plus, self.bg_minus = {}, {}
-
         bg_coords = pd.read_csv(f"{DATA_PATH}/mini_genome/background.bed", sep='\t', names=SCHEMA)
         for i,x in bg_coords.iterrows():
             offset = 50 if x['chr']=="chr2" else 0
