@@ -144,6 +144,7 @@ class TestGenerator(unittest.TestCase):
 
         seqs = np.vstack([x['sequence'] for x in batches])
 
+        # no background loci should be used for test set
         self.assertTrue(seqs.shape == (6, 6, 4))
 
         self.assertTrue(np.all(np.equal(seqs, self.peak_seqs_one_hot)))
@@ -192,3 +193,57 @@ class TestGenerator(unittest.TestCase):
 
         self.assertTrue(np.all(np.equal(profile_bias[:,:,0], ref_plus_vals)))
         self.assertTrue(np.all(np.equal(profile_bias[:,:,1], ref_minus_vals)))
+
+        counts_labels = np.vstack([x[1]['logcounts_predictions'] for x in batches])
+
+        self.assertTrue(np.all(np.equal(counts_labels, np.log(1+profile_labels.sum(1)))))
+
+    def test_train_gen(self):
+        """
+        Test data generation from train set
+        """
+        self.batch_gen_params['rev_comp_aug'] = True
+        self.batch_gen_params['max_jitter'] =  0
+        self.batch_gen_params['mode'] = 'train'
+
+        gen = generators.MBPNetSequenceGenerator(self.input_json,
+                 self.batch_gen_params,
+                 self.genome_params['reference_genome'],
+                 self.genome_params['chrom_sizes'],
+                 ['chr1', 'chr2'], num_threads=1, batch_size=2)
+
+        ep1_gen = gen.gen()
+        batches = [x for x in ep1_gen]
+
+        # each batch should contain in first half the sequences
+        # and second half their rev comps
+        self.assertTrue(batches[0][0]['sequence'].shape == (4,6,4))
+
+        self.bg_plus, self.bg_minus = {}, {}
+
+        seqs_fwd = np.vstack([x[0]['sequence'][:2] for x in batches])
+        seqs_rev = np.vstack([x[0]['sequence'][2:] for x in batches])
+
+        seqs_dna_fwd = one_hot_to_dna(seqs_fwd)
+        self.assertTrue(len(set(seqs_dna_fwd).intersection(self.peak_seqs)) == 6)
+        self.assertTrue(len(set(seqs_dna_fwd).intersection(self.background_seqs)) == 2)
+
+        # check rev comp-ing of sequence
+        self.assertTrue(np.all(np.equal(seqs_fwd, seqs_rev[:,::-1,::-1])))
+
+        profile_bias_fwd = np.vstack([x[0]['profile_bias_input_0'][:2] for x in batches])
+        profile_bias_rev = np.vstack([x[0]['profile_bias_input_0'][2:] for x in batches])
+        profile_labels_fwd = np.vstack([x[1]['profile_predictions'][:2] for x in batches])
+        profile_labels_rev = np.vstack([x[1]['profile_predictions'][2:] for x in batches])
+
+        # since we used the same file for bias and signal
+        self.assertTrue(np.all(np.equal(profile_bias_fwd, profile_labels_fwd)))
+        self.assertTrue(np.all(np.equal(profile_bias_rev, profile_labels_rev)))
+
+        # check rev-comping of profiles
+        self.assertTrue(np.all(np.equal(profile_bias_fwd, profile_bias_rev[:, ::-1, ::-1])))
+
+        logcts_preds_fwd = np.vstack([x[1]['logcounts_predictions'][:2] for x in batches])
+        logcts_preds_rev = np.vstack([x[1]['logcounts_predictions'][2:] for x in batches])
+
+        self.assertTrue(np.all(np.equal(logcts_preds_fwd, np.log(1+profile_labels_fwd.sum(1)))))
