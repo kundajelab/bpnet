@@ -16,4 +16,5 @@ Changes since Surag started cleanup.
 
 14 March
 - removed getChromPositions from seqUtils
-- started adding unit tests beginning with sequtils 
+- started adding unit tests beginning with sequtils
+- added some unit tests for generator 
