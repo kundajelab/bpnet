@@ -430,11 +430,11 @@ class MSequenceGenerator:
         if self._mode == "train":
             resized_loci_df = self._loci[-1].sample(largest_multiple, replace=False)
             self._resized_loci.append(resized_loci_df)
-            print("after trim hash:",int(hashlib.sha256(str(resized_loci_df).encode('utf-8')).hexdigest(), 16))
+            # print("after trim hash:",int(hashlib.sha256(str(resized_loci_df).encode('utf-8')).hexdigest(), 16))
         else:
             resized_loci_df = self._loci[-1].sample(largest_multiple, replace=False, random_state=1)
             self._resized_loci.append(resized_loci_df)
-            print("after trim hash:",int(hashlib.sha256(str(resized_loci_df).encode('utf-8')).hexdigest(), 16))
+            # print("after trim hash:",int(hashlib.sha256(str(resized_loci_df).encode('utf-8')).hexdigest(), 16))
 
         #: size of the loci dataframe after resizing
         self._resized_loci_size.append(len(self._resized_loci[-1]))

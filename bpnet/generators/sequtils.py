@@ -191,8 +191,8 @@ def getPeakPositions(tasks, chrom_sizes, flank,
                         tasks[task][loci_key]['ratio'][idx])
                     
                     
-                    print("before sample hash:",
-                          int(hashlib.sha256(str(peaks_df).encode('utf-8')).hexdigest(), 16))
+                    #print("before sample hash:",
+                    #      int(hashlib.sha256(str(peaks_df).encode('utf-8')).hexdigest(), 16))
   
                     if num_samples > len(peaks_df):                    
                         raise NoTracebackException(
@@ -208,8 +208,8 @@ def getPeakPositions(tasks, chrom_sizes, flank,
                             peaks_df = peaks_df.sample(
                                 n=num_samples, replace=False,random_state=1)
                             
-                    print("after sample hash:",
-                          int(hashlib.sha256(str(peaks_df).encode('utf-8')).hexdigest(), 16))                
+                    #print("after sample hash:",
+                    #      int(hashlib.sha256(str(peaks_df).encode('utf-8')).hexdigest(), 16))                
                 # set weight of sample based on loci_key
                 if loci_key == 'loci':
                     peaks_df['weight'] = foreground_weight
