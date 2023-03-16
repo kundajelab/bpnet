@@ -257,3 +257,4 @@ class TestGenerator(unittest.TestCase):
         logcts_preds_rev = np.vstack([x[1]['logcounts_predictions'][2:] for x in batches])
 
         self.assertTrue(np.all(np.equal(logcts_preds_fwd, np.log(1+profile_labels_fwd.sum(1)))))
+        self.assertTrue(np.all(np.equal(logcts_preds_rev, np.log(1+profile_labels_rev.sum(1)))))
