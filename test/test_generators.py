@@ -187,7 +187,7 @@ class TestGenerator(unittest.TestCase):
         # self.assertTrue(np.all(np.equal(seqs1,seqs2)))
         # self.assertTrue(np.all(np.equal(seqs2,seqs3)))
 
-        # check it contains all positive sequences and 2 bg sequences
+        # check it contains all positive sequences and 4 bg sequences
         # not assuming order is maintained
         seqs = one_hot_to_dna(seqs3)
 
