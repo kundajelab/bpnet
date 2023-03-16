@@ -1056,6 +1056,9 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
             end = row['pos'] + self._input_flank + jitter
             seq = fasta_ref[chrom][start:end].seq.upper()
             
+            if row['rev_comp']==1:
+                seq = sequtils.reverse_complement_of_sequences([seq])[0]
+
             # collect all the sequences into a list
             sequences.append(seq)
             
@@ -1071,27 +1074,43 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
             # iterate over each task and read the signal and bias
             # values from the bigWig files
             for i in range(self._num_tasks):
-                                          
+                
+                cur_num_signal_files = len(signal_files[i])
+                assert(cur_num_signal_files>0)
+                if cur_num_signal_files>2:
+                    logging.error(f"signal_files cannot be more than two per task. But given: {signal_files} for task {i}")                       
+                                
                 # Step 2. get the profile signal value
                 for signal_file in signal_files[i]:
                     profile_predictions[rowCnt, :, profile_track_idx] = \
                         np.nan_to_num(signal_file.values(chrom, start, end))  
                         
                     profile_track_idx += 1
-                    
-                if not self._set_bias_as_zero:
+
+                if row['rev_comp']==1:
+                    profile_predictions[rowCnt, :, profile_track_idx-cur_num_signal_files:profile_track_idx] = \
+                        sequtils.reverse_complement_of_profiles(profile_predictions[rowCnt:rowCnt+1, :, 
+                                                                                    profile_track_idx-cur_num_signal_files:profile_track_idx],
+                                                                stranded=(cur_num_signal_files==2))
+                
+                cur_num_bias_files = len(bias_files[i])
+                # Step 3. get the bias values
                 #skip setting the bias values. Initialization value of zero will be used
-                    # Step 3. get the bias values
-                    bias_track_idx = 0
-                    for j in range(len(bias_files[i])):
+                if not self._set_bias_as_zero and cur_num_bias_files>0:
+                    assert(cur_num_bias_files <= 2)
+                    bias_track_idx = 0 
+
+                    for j in range(cur_num_bias_files):
                         bias_file = bias_files[i][j]
                         profile_bias_input[i][rowCnt, :, bias_track_idx] = \
                             np.nan_to_num(bias_file.values(chrom, start, end))
 
-                        bias_track_idx += 1
-
-                        # add the smoothed track if 'smoothing' has been
-                        # specified
+                        bias_track_idx += 1                    
+                    
+                    cur_num_smoothed_bias_files = 0
+                    # add the smoothed track if 'smoothing' has been
+                    # specified                        
+                    for j in range(cur_num_bias_files):
                         if self._tasks[i]['bias']['smoothing'][j] is not None:
                             # get the smoothing params
                             sigma = self._tasks[i]['bias']['smoothing'][j][0]
@@ -1104,10 +1123,22 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
                             profile_bias_input[i][rowCnt, :, bias_track_idx] = \
                                 gaussian1D_smoothing(
                                     profile_bias_input[i][
-                                        rowCnt, :, bias_track_idx - 1],
-                                    sigma, window_size)
+                                        rowCnt, :, j],
+                                    sigma, window_size)                            
 
                             bias_track_idx += 1
+                            cur_num_smoothed_bias_files += 1
+                    
+                    if row['rev_comp']==1:
+                        profile_bias_input[i][rowCnt, :, 0:cur_num_bias_files] = \
+                            sequtils.reverse_complement_of_profiles(profile_bias_input[i][rowCnt:rowCnt+1, :, 
+                                                                                        0:cur_num_bias_files],
+                                                                                        stranded=(cur_num_bias_files==2))
+                        if cur_num_smoothed_bias_files > 0:
+                            profile_bias_input[i][rowCnt, :, cur_num_bias_files:cur_num_bias_files+cur_num_smoothed_bias_files] = \
+                               sequtils.reverse_complement_of_profiles(profile_bias_input[i][rowCnt:rowCnt+1, :, 
+                                                                                        cur_num_bias_files:cur_num_bias_files+cur_num_smoothed_bias_files],
+                                                                                        stranded=(cur_num_smoothed_bias_files==2))
 
             rowCnt += 1
 
