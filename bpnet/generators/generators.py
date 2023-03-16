@@ -1143,6 +1143,8 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
 
             rowCnt += 1
 
+        fasta_ref.close()
+
         # Step 4. one hot encode all the sequences in the batch 
         if len(sequences) == profile_predictions.shape[0]:
             X = sequtils.one_hot_encode(sequences, self._input_flank * 2)
