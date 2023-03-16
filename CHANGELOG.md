@@ -18,3 +18,4 @@ Changes since Surag started cleanup.
 - removed getChromPositions from seqUtils
 - started adding unit tests beginning with sequtils
 - added some unit tests for generator 
+- fixed issue where rev comp augmentation wasn't happening
