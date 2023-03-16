@@ -1134,6 +1134,7 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
                             sequtils.reverse_complement_of_profiles(profile_bias_input[i][rowCnt:rowCnt+1, :, 
                                                                                         0:cur_num_bias_files],
                                                                                         stranded=(cur_num_bias_files==2))
+                        # for edge cases when only one strand out of 2 strands is smoothed
                         if cur_num_smoothed_bias_files > 0:
                             profile_bias_input[i][rowCnt, :, cur_num_bias_files:cur_num_bias_files+cur_num_smoothed_bias_files] = \
                                sequtils.reverse_complement_of_profiles(profile_bias_input[i][rowCnt:rowCnt+1, :, 
