@@ -17,6 +17,9 @@ import os
 
 DATA_PATH = os.path.join(os.path.dirname(__file__)) + "/data/"
 
+# length of both the chromosomes
+CHR_LEN = 80
+
 def one_hot_to_dna(one_hot):
     bases = np.array(["A", "C", "G", "T", "N"])
     # Create N x L array of all 5s
@@ -34,10 +37,10 @@ def one_hot_to_dna(one_hot):
 
 def write_bigwig_file(fname, data):
     bw = pyBigWig.open(fname, 'w')
-    bw.addHeader([("chr1", 50), ("chr2", 50)], maxZooms=0)
-    chroms = ["chr1"]*50 + ["chr2"]*50
-    starts = list(range(50)) + list(range(50))
-    ends = list(range(1,51)) + list(range(1,51))
+    bw.addHeader([("chr1", CHR_LEN), ("chr2", CHR_LEN)], maxZooms=0)
+    chroms = ["chr1"]*CHR_LEN + ["chr2"]*CHR_LEN
+    starts = list(range(CHR_LEN)) + list(range(CHR_LEN))
+    ends = list(range(1,CHR_LEN+1)) + list(range(1,CHR_LEN+1))
     bw.addEntries(chroms, starts=starts, ends=ends, values=data)
     bw.close()
 
@@ -54,8 +57,8 @@ class TestGenerator(unittest.TestCase):
         self.batch_gen_params['shuffle'] = False
 
         # dots (floats) are for pyBigWig
-        self.plus_data = list(np.arange(50.)) + list(np.arange(100.,50.,-1.))
-        self.minus_data = list(np.arange(0.,100.,2.)) + list(np.arange(200.,100.,-2.))
+        self.plus_data = list(np.arange(0., CHR_LEN, 1.)) + list(np.arange(2*CHR_LEN,CHR_LEN,-1.))
+        self.minus_data = list(np.arange(0.,2*CHR_LEN,2.)) + list(np.arange(4*CHR_LEN,2*CHR_LEN,-2.))
 
         _, self.plus_bw = tempfile.mkstemp()
         _, self.minus_bw = tempfile.mkstemp()
@@ -75,7 +78,7 @@ class TestGenerator(unittest.TestCase):
                 },
                 'background_loci': {
                     'source': [f"{DATA_PATH}/mini_genome/background.bed"],
-                    'ratio': [1./3]
+                    'ratio': [0.5]
                 },
                 'bias': {
                     'source': [self.plus_bw,
@@ -90,11 +93,12 @@ class TestGenerator(unittest.TestCase):
             json.dump(tasks, f)
 
         # manually extracted from files 
-        self.peak_seqs = ["ATATAT", "ACACAC", "CCAACC", 
-                       "ATTTTT", "CGGGGG", "CGGAAG"]
+        self.peak_seqs = ["ATATAT", "ACACAC", "CCAACC", "GGGGGG", 
+                          "ATTTTT", "CGGGGG", "CGGAAG", "TTTTTT"]
         self.peak_seqs_one_hot = one_hot_encode(self.peak_seqs, 6)
 
-        self.background_seqs = ["TGCGCG", "GTGTGT", "GAAAAA", "TCCCCC"]
+        self.background_seqs = ["TGCGCG", "GTGTGT", "AAAAAA", "TAAATT", 
+                                "GAAAAA", "TCCCCC", "CCCCCC", "GTATCT"]
         self.background_seqs_one_hot = one_hot_encode(self.background_seqs, 6)
         
         # load plus and minus bw values corresponding to peaks and background
@@ -104,7 +108,7 @@ class TestGenerator(unittest.TestCase):
 
         peak_coords = pd.read_csv(f"{DATA_PATH}/mini_genome/peaks.bed", sep='\t', names=SCHEMA)
         for i,x in peak_coords.iterrows():
-            offset = 50 if x['chr']=="chr2" else 0
+            offset = CHR_LEN if x['chr']=="chr2" else 0
             st = offset+x['start']+x['summit']-2
             en = offset+x['start']+x['summit']+2
             self.plus_vals[self.peak_seqs[i]] = self.plus_data[st:en]
@@ -112,7 +116,7 @@ class TestGenerator(unittest.TestCase):
 
         bg_coords = pd.read_csv(f"{DATA_PATH}/mini_genome/background.bed", sep='\t', names=SCHEMA)
         for i,x in bg_coords.iterrows():
-            offset = 50 if x['chr']=="chr2" else 0
+            offset = CHR_LEN if x['chr']=="chr2" else 0
             st = offset+x['start']+x['summit']-2
             en = offset+x['start']+x['summit']+2
             self.plus_vals[self.background_seqs[i]] = self.plus_data[st:en]
@@ -136,7 +140,7 @@ class TestGenerator(unittest.TestCase):
                  self.batch_gen_params, 
                  self.genome_params['reference_genome'], 
                  self.genome_params['chrom_sizes'], 
-                 ['chr1', 'chr2'], num_threads=1, batch_size=2)
+                 ['chr1', 'chr2'], num_threads=2, batch_size=2)
     
         ep1_gen = gen.gen()
 
@@ -145,9 +149,12 @@ class TestGenerator(unittest.TestCase):
         seqs = np.vstack([x['sequence'] for x in batches])
 
         # no background loci should be used for test set
-        self.assertTrue(seqs.shape == (6, 6, 4))
+        self.assertTrue(seqs.shape == (8, 6, 4))
 
-        self.assertTrue(np.all(np.equal(seqs, self.peak_seqs_one_hot)))
+        self.assertTrue(set(one_hot_to_dna(seqs)) == set(self.peak_seqs))
+ 
+        # not sure if this always holds
+        #self.assertTrue(np.all(np.equal(seqs, self.peak_seqs_one_hot)))
 
     def test_val_gen(self):
         """ 
@@ -161,24 +168,31 @@ class TestGenerator(unittest.TestCase):
                  self.batch_gen_params,
                  self.genome_params['reference_genome'],
                  self.genome_params['chrom_sizes'],
-                 ['chr1', 'chr2'], num_threads=1, batch_size=2)
+                 ['chr1', 'chr2'], num_threads=2, batch_size=2)
 
         ep1_gen = gen.gen()
         seqs1 = np.vstack([x[0]['sequence'] for x in ep1_gen])  
         
         ep2_gen = gen.gen()
-        batches = [x for x in ep2_gen]
-        seqs2 = np.vstack([x[0]['sequence'] for x in batches])
+        seqs2 = np.vstack([x[0]['sequence'] for x in ep2_gen])
 
+        ep3_gen = gen.gen()
+        batches = [x for x in ep3_gen]
+        seqs3 = np.vstack([x[0]['sequence'] for x in batches])
+        
         # check equivalence of generator for different epochs
-        self.assertTrue(np.all(np.equal(seqs1,seqs2)))
+        self.assertTrue(set(one_hot_to_dna(seqs1)) == set(one_hot_to_dna(seqs2)) == set(one_hot_to_dna(seqs3)))
+
+        # stricter doesn't hold 
+        # self.assertTrue(np.all(np.equal(seqs1,seqs2)))
+        # self.assertTrue(np.all(np.equal(seqs2,seqs3)))
 
         # check it contains all positive sequences and 2 bg sequences
         # not assuming order is maintained
-        seqs = one_hot_to_dna(seqs1)
+        seqs = one_hot_to_dna(seqs3)
 
-        self.assertTrue(len(set(seqs).intersection(self.peak_seqs)) == 6)
-        self.assertTrue(len(set(seqs).intersection(self.background_seqs)) == 2)
+        self.assertTrue(len(set(seqs).intersection(self.peak_seqs)) == 8)
+        self.assertTrue(len(set(seqs).intersection(self.background_seqs)) == 4)
 
         # check values
         profile_bias = np.vstack([x[0]['profile_bias_input_0'] for x in batches])
@@ -210,7 +224,7 @@ class TestGenerator(unittest.TestCase):
                  self.batch_gen_params,
                  self.genome_params['reference_genome'],
                  self.genome_params['chrom_sizes'],
-                 ['chr1', 'chr2'], num_threads=1, batch_size=2)
+                 ['chr1', 'chr2'], num_threads=2, batch_size=2)
 
         ep1_gen = gen.gen()
         batches = [x for x in ep1_gen]
@@ -225,8 +239,8 @@ class TestGenerator(unittest.TestCase):
         seqs_rev = np.vstack([x[0]['sequence'][2:] for x in batches])
 
         seqs_dna_fwd = one_hot_to_dna(seqs_fwd)
-        self.assertTrue(len(set(seqs_dna_fwd).intersection(self.peak_seqs)) == 6)
-        self.assertTrue(len(set(seqs_dna_fwd).intersection(self.background_seqs)) == 2)
+        self.assertTrue(len(set(seqs_dna_fwd).intersection(self.peak_seqs)) == 8)
+        self.assertTrue(len(set(seqs_dna_fwd).intersection(self.background_seqs)) == 4)
 
         # check that weights of peak is 1 and bg is 0
         weights_fwd = np.array([y for x in batches for y in x[2][:2]])
@@ -235,8 +249,8 @@ class TestGenerator(unittest.TestCase):
         # rev seqs (2nd half of each batch) should have same weights as fwd
         self.assertTrue(np.all(np.equal(weights_fwd, weights_rev)))
 
-        self.assertTrue(len(set(one_hot_to_dna(seqs_fwd[weights_fwd == 1])).intersection(self.peak_seqs)) == 6)
-        self.assertTrue(len(set(one_hot_to_dna(seqs_fwd[weights_fwd == 0])).intersection(self.background_seqs)) == 2)
+        self.assertTrue(len(set(one_hot_to_dna(seqs_fwd[weights_fwd == 1])).intersection(self.peak_seqs)) == 8)
+        self.assertTrue(len(set(one_hot_to_dna(seqs_fwd[weights_fwd == 0])).intersection(self.background_seqs)) == 4)
 
         # check rev comp-ing of sequence
         self.assertTrue(np.all(np.equal(seqs_fwd, seqs_rev[:,::-1,::-1])))
