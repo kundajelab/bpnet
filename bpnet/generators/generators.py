@@ -1117,8 +1117,8 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
                             window_size = \
                                 self._tasks[i]['bias']['smoothing'][j][1]
 
-                            # the smoothed bias track will immediately 
-                            # follow the original bias track in the last
+                            # the smoothed bias track will follow after 
+                            # the original bias tracks in the last
                             # dimension
                             profile_bias_input[i][rowCnt, :, bias_track_idx] = \
                                 gaussian1D_smoothing(
