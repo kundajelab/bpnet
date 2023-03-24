@@ -217,8 +217,8 @@ def getPeakPositions(tasks, chrom_sizes, flank,
                     peaks_df['weight'] = background_weight
                 
                 # append to all peaks data frame
-                allPeaks = allPeaks.append(peaks_df[
-                    ['chrom', 'start_coord', 'end_coord', 'pos', 'weight']])
+                allPeaks = pd.concat([allPeaks, peaks_df[
+                    ['chrom', 'start_coord', 'end_coord', 'pos', 'weight']]])
 
                 allPeaks = allPeaks.reset_index(drop=True)
                 
