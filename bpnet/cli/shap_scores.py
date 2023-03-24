@@ -53,11 +53,10 @@ def save_scores(peaks_df, one_hot_sequences, hyp_shap_scores, output_fname):
     
     # open the HDF% file for writing
     f = h5py.File(output_fname, "w")
-    
+
     coords_chrom_dset = f.create_dataset(
         "coords_chrom", (num_examples,),
-        dtype=h5py.string_dtype(encoding="ascii"), 
-        **hdf5plugin.Blosc()
+        dtype=h5py.string_dtype(encoding="ascii") 
     )
     coords_chrom_dset[:] = coords_chrom
     
@@ -416,10 +415,7 @@ def shap_scores_main():
     
     # shap
     logging.info("Loading {}".format(args.model))
-    with CustomObjectScope({'tf': tf,                          
-                            'CustomModel': CustomModel}):
-            
-        shap_scores(args, shap_scores_dir)
+    shap_scores(args, shap_scores_dir)
 
 if __name__ == '__main__':
     shap_scores_main()

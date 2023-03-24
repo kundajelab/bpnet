@@ -488,9 +488,6 @@ def train_and_validate(
     if suffix_tag is not None:
         model_fname += "_{}".format(suffix_tag)
     
-    # extension
-    model_fname += ".h5"
-
     # save HDF5 model file
     model.save(model_fname)
     logging.info("Finished saving model: {}".format(model_fname))

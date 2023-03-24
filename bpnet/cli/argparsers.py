@@ -102,8 +102,8 @@ def training_argsparser():
                         "and filename should be auto generated")
 
     parser.add_argument('--model-output-filename', type=str,
-                        help="basename of the model file without the .h5 "
-                        "extension (required if --automate-filenames is "
+                        help="basename of the model file "
+                        "(required if --automate-filenames is "
                         "not used)", default="")
 
     # batch gen parameters
@@ -195,7 +195,7 @@ def fastpredict_argsparser():
                         help="path to json file containing task information")
     
     parser.add_argument('--model', type=str, required=True,
-                        help="path to the .h5 model file")
+                        help="path to the model file")
     
     parser.add_argument('--sequence-generator-name', type=str,
                         help="the name of the sequence generator from "
@@ -257,7 +257,7 @@ def shap_scores_argsparser():
                         help="the length of the control input to the model")
 
     parser.add_argument('--model', '-m', type=str, required=True,
-                        help="the path to the model (.h5) file")
+                        help="the path to the model file")
 
     parser.add_argument('--task-id', '-t', type=int,
                         help="In the multitask case the integer sequence "
@@ -366,7 +366,7 @@ def embeddings_argsparser():
     parser = argparse.ArgumentParser()
     
     parser.add_argument('--model', '-m', type=str, required=True,
-                        help="the path to the model (.h5) file")
+                        help="the path to the model file")
     
     parser.add_argument('--reference-genome', '-g', type=str, required=True,
                         help="number of gpus to use")

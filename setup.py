@@ -5,15 +5,15 @@ from setuptools import setup, find_packages
 
 setup(
     name="bpnet",
-    version='0.3.1',
+    version='0.4.0',
     description=("BPNet: toolkit to learn motif synthax from high-resolution functional genomics data"
                  " using convolutional neural networks"),
-    author="Zahoor Zafrulla",
+    author="Surag Nair, Vivekanandan Ramalingam, Zahoor Zafrulla",
     author_email="zahoor@stanford.edu",
-    url="https://github.com/kundajelab/basepairmodels",
+    url="https://github.com/kundajelab/bpnet",
     packages=find_packages(exclude=["docs", "docs-build"]),
-    install_requires=["tensorflow==2.4.1", 
-                      "tensorflow-probability==0.12.2", "tqdm", "scikit-learn",
+    install_requires=["tensorflow==2.11.0", 
+                      "tensorflow-probability==0.19.0", "tqdm", "scikit-learn",
                       "scipy", "scikit-image", "scikit-learn", 
                       "numpy", "deepdish", "pandas", "matplotlib", "plotly", 
                       "deeptools", "pyfaidx", "deeplift", "hdf5plugin"

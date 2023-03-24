@@ -849,11 +849,7 @@ def predict_main():
     logger.init_logger(logfname)
 
     # predict
-    logging.info("Loading {}".format(args.model))
-    with CustomObjectScope({'tf': tf,                             
-                            'CustomModel': CustomModel}):
-            
-        predict(args, pred_dir)
+    predict(args, pred_dir)
     
 if __name__ == '__main__':
     predict_main()
