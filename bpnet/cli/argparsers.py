@@ -201,6 +201,10 @@ def fastpredict_argsparser():
                         help="the name of the sequence generator from "
                         "mseqgen library that will be used to generate "
                         "batches of data ", default='BPNet')
+    
+    parser.add_argument('--reverse-complement-average', 
+                        action='store_true', 
+                        help="average over fwd and rev sequences")
 
     # output params
     parser.add_argument('--output-window-size', type=int, required=True,

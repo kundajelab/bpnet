@@ -14,18 +14,20 @@ from bpnet.utils import logger
 from bpnet.utils.bigwig_helper import write_bigwig
 from bpnet.utils.datetime import *
 from bpnet.utils.exceptionhandler import NoTracebackException
+from bpnet.generators import sequtils
 
-from bpnet.model.custommodel \
-    import CustomModel
 from bpnet.generators import generators
 from scipy.ndimage import gaussian_filter1d
 from scipy.spatial.distance import jensenshannon
-from scipy.special import logsumexp, softmax
+from scipy.special import logsumexp
 from scipy.stats import pearsonr, spearmanr, multinomial
 from tqdm import tqdm
 from tensorflow.keras.models import load_model
-from tensorflow.keras.utils import CustomObjectScope
 
+"""
+Currently only supports single-tasking 
+TODO: output window size implementation is not correct
+"""
 
 def mnll(true_counts, logits=None, probs=None):
     """
@@ -380,7 +382,8 @@ def predict(args, pred_dir):
     batch_gen_params['sequence_generator_name'] = args.sequence_generator_name
     batch_gen_params['input_seq_len'] = args.input_seq_len
     batch_gen_params['output_len'] = args.output_len
-    batch_gen_params['rev_comp_aug'] = False    
+    # if True, average predictions over fwd and rev strands
+    batch_gen_params['rev_comp_aug'] = args.reverse_complement_average    
     batch_gen_params['max_jitter'] = 0
     batch_gen_params['shuffle'] = False
     batch_gen_params['mode'] = 'test'
@@ -430,6 +433,9 @@ def predict(args, pred_dir):
     
     # number of tracks in the prediction output 
     num_output_tracks = test_gen._total_signal_tracks
+
+    # for now handling the single-task case
+    assert(1<=num_output_tracks<=2)
     
     # the dataframe of loci with chrom, start, end, pos, weight columns
     loci = test_gen.get_samples()
@@ -532,7 +538,13 @@ def predict(args, pred_dir):
         coordinates = batch['coordinates']
         true_profiles = batch['true_profiles']
         true_logcounts = batch['true_logcounts']
-        
+        rev_comp_status = batch['rev_comp']
+
+        if args.reverse_complement_average:
+            # first half should be original and second half should be rev comp
+            assert(rev_comp_status[:len(rev_comp_status)//2].sum() == 0)
+            assert(rev_comp_status[len(rev_comp_status)//2:].sum() == len(rev_comp_status)//2)
+
         # predict on the batch
         predictions = model.predict(batch)
         
@@ -555,6 +567,11 @@ def predict(args, pred_dir):
         
         # for each coordinate in the batch
         for idx in range(len(coordinates)):
+            # skip second half of rev comp examples
+            # they are averaged when the for loop handles the first half
+            if rev_comp_status[idx]==1:
+                continue
+
             (chrom, start, end) = coordinates[idx]
             start = int(start)
             end = int(end)
@@ -582,24 +599,53 @@ def predict(args, pred_dir):
                 _start = args.output_len // 2 - args.output_window_size // 2  
                 _end = _start + args.output_window_size
                 
+                cur_profile_prediction = predictions[0][idx:idx+1]
+                cur_logcounts_prediction = predictions[1][idx:idx+1]
+
+                if args.reverse_complement_average:
+                    # take the prediction from the rev comp version
+                    # and average the predicted logits and counts
+                    # after rev comping them back
+                    rev_comp_idx = (len(coordinates)//2)+idx
+                    assert((coordinates[idx]==coordinates[rev_comp_idx]).all())
+                    assert(rev_comp_status[idx]==0)
+                    assert(rev_comp_status[rev_comp_idx]==1)
+
+                    rev_comp_profile_prediction = predictions[0][rev_comp_idx:rev_comp_idx+1]
+                    rev_comp_logcounts_prediction = predictions[1][rev_comp_idx:rev_comp_idx+1]
+
+                    # average the counts
+                    if args.orig_multi_loss:
+                        assert(len(cur_logcounts_prediction.ravel())==2)
+                        rev_comp_logcounts_prediction = rev_comp_logcounts_prediction[:,::-1]
+                    
+                    # average the counts
+                    cur_logcounts_prediction = (cur_logcounts_prediction + rev_comp_logcounts_prediction) / 2
+
+                    rev_comp_profile_prediction = sequtils.reverse_complement_of_profiles(rev_comp_profile_prediction,
+                                                                                          stranded=rev_comp_profile_prediction.shape[2]==2)
+                    # average the profiles
+                    cur_profile_prediction = (cur_profile_prediction + rev_comp_profile_prediction) / 2
+
+                
                 if args.orig_multi_loss:
                     # counts prediction
-                    logcounts_prediction = predictions[1][idx, j]
+                    logcounts_prediction = cur_logcounts_prediction[0, j]
                     pred_logcounts[cnt_batch_examples, j] = logcounts_prediction
 
                     # predicted profile
-                    pred_profile_logits = predictions[0][idx, _start:_end, j]
+                    pred_profile_logits = cur_profile_prediction[0, :, j]
                     pred_profiles[cnt_batch_examples, :, j] = np.exp(
                         pred_profile_logits - logsumexp(pred_profile_logits)) * \
                         (np.exp(logcounts_prediction) - 1)
                 else:
                 
                     # combined counts prediction from the count head
-                    logcounts_prediction = predictions[1][idx] # this is the logsum of both the strands that is 
+                    logcounts_prediction = cur_logcounts_prediction[0]  # this is the logsum of both the strands that is 
                                                                # predicted                
 
                     # predicted profile — for now assuming that there are two strands and only one task
-                    pred_profile_logits = np.reshape(predictions[0][idx, :, :],[1,args.output_len*2])
+                    pred_profile_logits = np.reshape(cur_profile_prediction[0, :, :],[1,args.output_len*2])
 
                     profile_predictions = (np.exp(\
                                                   pred_profile_logits - \
