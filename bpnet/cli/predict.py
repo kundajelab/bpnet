@@ -258,24 +258,24 @@ def jsd_min_max_bounds(profile):
 
     return (min_jsd, max_jsd)
 
-def min_max_normalize(metric_value, min_max_bounds, default=1.0):
+def min_max_normalize(metric_value, best_worst_bounds, default=0.0):
     """
-        Min Max normalize a metric value
+        Best-case worst-case normalize a metric value
         
         Args:
             metric_value (float): unnormalized metric value
-            min_max_bounds (tuple): (min, max) bounds
+            best_worst_bounds (tuple): (min, max) bounds for jsd, mnll, cross-entropy
             default (float): the default value to return in case
                 of runtime exceptions
     """
     
-    min_bound = min_max_bounds[0]
-    max_bound = min_max_bounds[1]
+    best_bound = best_worst_bounds[0]
+    worst_bound = best_worst_bounds[1]
     
-    if (max_bound - min_bound) == 0:
+    if (best_bound - worst_bound) == 0:
         return default
     
-    norm_value = (metric_value - min_bound) / (max_bound - min_bound) 
+    norm_value = (metric_value - worst_bound) / (best_bound - worst_bound) 
     
     if norm_value < 0:
         return 0
