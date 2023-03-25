@@ -12,12 +12,9 @@ from bpnet.utils.datetime import *
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.utils.shaputils import *
 from bpnet.utils.logger import *
-from bpnet.model.custommodel \
-    import CustomModel
 from bpnet.generators.sequtils import one_hot_encode
 from bpnet.utils.misc import gaussian1D_smoothing
 from tensorflow.keras.models import load_model
-from tensorflow.keras.utils import CustomObjectScope
 
 import hdf5plugin
 
