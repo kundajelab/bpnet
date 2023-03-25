@@ -24,3 +24,4 @@ Changes since Surag started cleanup.
 - Upgrading to tf2.11 (py3.10), removing CustomScore since it's no longer required. Removing h5 extension so that files are saved in the SavedModel format instead of h5.
 - Also requires a small change in writing the shap hdf5 (string compression with blosc causes seg fault).
 - Add modisco-lite and shap to setup.py
+- added reverse complement averaging for predict.py
