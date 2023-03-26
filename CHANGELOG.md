@@ -25,3 +25,6 @@ Changes since Surag started cleanup.
 - Also requires a small change in writing the shap hdf5 (string compression with blosc causes seg fault).
 - Add modisco-lite and shap to setup.py
 - added reverse complement averaging for predict.py
+
+26 March
+- Test revert to tf2.4.1 (py3.7) since the newer version seems to give lower model performance for experiments with lower peaks
