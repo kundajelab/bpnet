@@ -23,6 +23,10 @@ from scipy.special import logsumexp
 from scipy.stats import pearsonr, spearmanr, multinomial
 from tqdm import tqdm
 from tensorflow.keras.models import load_model
+from tensorflow.keras.utils import CustomObjectScope
+
+from bpnet.model.custommodel \
+    import CustomModel
 
 """
 Currently only supports single-tasking 
@@ -601,6 +605,10 @@ def predict(args, pred_dir):
                 
                 cur_profile_prediction = predictions[0][idx:idx+1]
                 cur_logcounts_prediction = predictions[1][idx:idx+1]
+                
+                assert(cur_profile_prediction.shape==(1,args.output_len,2))
+                assert((cur_logcounts_prediction.shape==(1,1))|
+                       (cur_logcounts_prediction.shape==(1,2)))
 
                 if args.reverse_complement_average:
                     # take the prediction from the rev comp version
@@ -613,6 +621,11 @@ def predict(args, pred_dir):
 
                     rev_comp_profile_prediction = predictions[0][rev_comp_idx:rev_comp_idx+1]
                     rev_comp_logcounts_prediction = predictions[1][rev_comp_idx:rev_comp_idx+1]
+                    
+                    assert(rev_comp_profile_prediction.shape==(1,args.output_len,2))
+                    assert((rev_comp_logcounts_prediction.shape==(1,1))|
+                           (rev_comp_logcounts_prediction.shape==(1,2)))
+                    
 
                     # average the counts
                     if args.orig_multi_loss:
@@ -624,6 +637,9 @@ def predict(args, pred_dir):
 
                     rev_comp_profile_prediction = sequtils.reverse_complement_of_profiles(rev_comp_profile_prediction,
                                                                                           stranded=rev_comp_profile_prediction.shape[2]==2)
+                    
+                    assert(rev_comp_profile_prediction.shape==(1,args.output_len,2))
+                    
                     # average the profiles
                     cur_profile_prediction = (cur_profile_prediction + rev_comp_profile_prediction) / 2
 
@@ -637,7 +653,7 @@ def predict(args, pred_dir):
                     pred_profile_logits = cur_profile_prediction[0, :, j]
                     pred_profiles[cnt_batch_examples, :, j] = np.exp(
                         pred_profile_logits - logsumexp(pred_profile_logits)) * \
-                        (np.exp(logcounts_prediction) - 1)
+                        (np.exp(logcounts_prediction))
                 else:
                 
                     # combined counts prediction from the count head
@@ -895,7 +911,11 @@ def predict_main():
     logger.init_logger(logfname)
 
     # predict
-    predict(args, pred_dir)
+
+    with CustomObjectScope({'tf': tf,
+                            'CustomModel': CustomModel}):
+            
+        predict(args, pred_dir)
     
 if __name__ == '__main__':
     predict_main()
