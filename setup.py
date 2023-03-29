@@ -13,7 +13,7 @@ setup(
     url="https://github.com/kundajelab/bpnet",
     packages=find_packages(exclude=["docs", "docs-build"]),
     install_requires=["tensorflow==2.4.1", 
-                      "tensorflow-probability==0.12.2", 
+                      "tensorflow-probability==0.12.2", "shap @ git+https://github.com/kundajelab/shap.git",
                       "tqdm", "scikit-learn",
                       "scipy", "scikit-image", "scikit-learn", "deepdish", "pandas", "matplotlib", "plotly", 
                       "deeptools", "pyfaidx", "deeplift", "hdf5plugin"
