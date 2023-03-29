@@ -15,6 +15,11 @@ from bpnet.utils.logger import *
 from bpnet.generators.sequtils import one_hot_encode
 from bpnet.utils.misc import gaussian1D_smoothing
 from tensorflow.keras.models import load_model
+import tensorflow as tf
+from tensorflow.keras.utils import CustomObjectScope
+
+from bpnet.model.custommodel \
+    import CustomModel
 
 import hdf5plugin
 
@@ -91,7 +96,7 @@ def shap_scores(args, shap_dir):
     
     # read all the peaks into a pandas dataframe
     peaks_df = pd.read_csv(args.bed_file, sep='\t', header=None, 
-                           names=['chrom', 'st', 'end', 'name', 'score',
+                           names=['chrom', 'st', 'stop', 'name', 'score',
                                   'strand', 'signalValue', 'p', 'q', 'summit'])
 
     if args.chroms is not None:
@@ -412,7 +417,9 @@ def shap_scores_main():
     
     # shap
     logging.info("Loading {}".format(args.model))
-    shap_scores(args, shap_scores_dir)
+    with CustomObjectScope({'tf': tf,
+                            'CustomModel': CustomModel}):
+        shap_scores(args, shap_scores_dir)
 
 if __name__ == '__main__':
     shap_scores_main()
