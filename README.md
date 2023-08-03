@@ -27,14 +27,14 @@ pip install git+https://github.com/kundajelab/bpnet-refactor.git
 
 ### 4. Docker and Anvil options
 
+Instead of installing the BPNet repo by yourself, you can also try the Anvil or Docker options to train/use BPNet models.
+
 **Anvil**
 
 <a href="https://anvil.terra.bio/#workspaces/terra-billing-vir/tf-atlas/workflows">Anvil/Terra </a> 
 
 **Docker**
 ```
-# get coverage of 5’ positions of the plus strand
-
 docker pull vivekramalingam/tf-atlas:gcp-modeling_v2.0.0-rc.2
 
 docker run -it --rm --cpus=10 --memory=200g --gpus device=1 --mount src=/mnt/bpnet-models/,target=/mydata,type=bind vivekramalingam/tf-atlas:gcp-modeling_v2.0.0-rc.2
