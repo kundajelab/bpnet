@@ -22,7 +22,25 @@ conda activate bpnet
 
 ```
 pip install git+https://github.com/kundajelab/bpnet-refactor.git
+
 ```
+
+### 4. Docker and Anvil options
+
+**Anvil**
+
+<a href="https://anvil.terra.bio/#workspaces/terra-billing-vir/tf-atlas/workflows">Anvil/Terra </a> 
+
+**Docker**
+```
+# get coverage of 5’ positions of the plus strand
+
+docker pull vivekramalingam/tf-atlas:gcp-modeling_v2.0.0-rc.2
+
+docker run -it --rm --cpus=10 --memory=200g --gpus device=1 --mount src=/mnt/bpnet-models/,target=/mydata,type=bind vivekramalingam/tf-atlas:gcp-modeling_v2.0.0-rc.2
+
+```
+
 
 ## Tutorial on how to use the command line interface
 
@@ -131,7 +149,56 @@ See image below that shows the file listed in the ENCODE data portal
 Link to download the file 
 <a href="https://www.encodeproject.org/files/ENCFF396BZQ/@@download/ENCFF396BZQ.bed.gz">ENCFF396BZQ</a>
 
-#### 1.3 Organize you data
+#### 1.3 Outlier removal
+
+Filter the peaks file for outliers 
+
+```
+bpnet-outliers \
+    --input-data /project/input_outliers.json  \
+    --quantile 0.99 \
+    --quantile-value-scale-factor 1.2 \
+    --task 0 \
+    --chrom-sizes /project/reference/chrom.sizes \
+    --chroms chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM \
+    --sequence-len 1000 \
+    --blacklist /project/reference/blacklist.bed \
+    --global-sample-weight 1.0 \
+    --output-bed /project/peaks_inliers.bed
+```
+
+#### 1.4 gc matched negatives
+
+```
+
+python get_genomewide_gc_bins.py \
+        --ref_fasta /project/reference/genome.fa \
+        --chrom_sizes $REFERENCE_DIR/hg38.chrom.sizes \
+        --out_prefix /project/reference/genomewide_gc_stride_1000_flank_size_1057.gc.bed \
+        --inputlen 2114 \
+        --stride 1000
+    
+python get_gc_content.py \
+       --input_bed /project/data/ENCSR000AIB_inliers.bed \
+       --ref_fasta /project/reference/genome.fa \
+       --out_prefix /project/data/ENCSR000AIB.gc.bed \
+       --flank_size 1057
+
+bedtools intersect -v -a \
+    /project/reference/genomewide_gc_stride_1000_flank_size_1057.bed \
+    -b /project/data/ENCSR000AIB_inliers.bed > /project/data/ENCSR000AIB.tsv
+
+python get_gc_matched_negatives.py \
+        --candidate_negatives /project/data/ENCSR000AIB.tsv \
+        --foreground_gc_bed  /project/data/ENCSR000AIB.gc.bed \
+        --output_prefix /project/data/ENCSR000AIB_negatives \
+        --neg_to_pos_ratio_train 4
+        
+       
+```
+
+
+#### 1.5 Organize you data
 
 We suggest creating a directory structure to store the data, models, predictions, metrics, importance scores, discovered motifs, plots & visualizations etc. that will make it easier for you to organize and maintain your work. Let's start by creating a parent directory for the experiment and moving the bigwig files and peaks file from section 1.1 & 1.2 to a data directory
 
@@ -146,7 +213,7 @@ Once this is done, your directory heirarchy should resemble this
 
 <div align="left"><img src="./docs-build/tutorial/bpnet/images/directory-data.png"></div>
 
-#### 1.4 Reference genome
+#### 1.6 Reference genome
 
 For the sake of this tutorial let's assume we have a `reference` directory at the same level as the `ENCSR000EGM` experiment directory. In the `reference` directory we will place 4 files the hg38 fasta file, the index to the fasta file, chromosome sizes file and one text file that contains a list of chromosomes we care about (one per line - chr1-22, X, Y, M and exclude the rest). The directory structure looks like this.
 
@@ -233,7 +300,7 @@ The `loss_weights` field has two values the `profile` loss weight and the
 using the following command
 
 ```
-counts_loss_weight --input-data $INPUT_DATA
+bpnet-counts-loss-weight --input-data $INPUT_DATA
 ```
 
 Now that we have our data prepped, we can train our first model!!
@@ -255,23 +322,23 @@ MODEL_PARAMS=$BASE_DIR/bpnet_params.json
 
 
 mkdir $MODEL_DIR
-train \
-    --input-data $INPUT_DATA \
-    --output-dir $MODEL_DIR \
-    --reference-genome $REFERENCE_GENOME \
-    --chroms $(paste -s -d ' ' $REFERENCE_DIR/hg38_chroms.txt) \
-    --chrom-sizes $CHROM_SIZES \
-    --splits $CV_SPLITS \
-    --model-arch-name BPNet \
-    --model-arch-params-json $MODEL_PARAMS \
-    --sequence-generator-name BPNet \
-    --model-output-filename model \
-    --input-seq-len 2114 \
-    --output-len 1000 \
-    --shuffle \
-    --threads 10 \
-    --epochs 100 \
-    --learning-rate 0.004
+bpnet-train \
+        --input-data $INPUT_DATA \
+        --output-dir $MODEL_DIR \
+        --reference-genome $REFERENCE_GENOME \
+        --chroms $(paste -s -d ' ' $REFERENCE_DIR/hg38_chroms.txt) \
+        --chrom-sizes $CHROM_SIZES \
+        --splits $CV_SPLITS \
+        --model-arch-name BPNet \
+        --model-arch-params-json $MODEL_PARAMS \
+        --sequence-generator-name BPNet \
+        --model-output-filename model \
+        --input-seq-len 2114 \
+        --output-len 1000 \
+        --shuffle \
+        --threads 10 \
+        --epochs 100 \
+        --learning-rate 0.004
 ```
 
 The `splits.json` file contains information about the chromosomes that are used for validation and test. Here is a sample that contains one split.
@@ -294,20 +361,20 @@ Once the training is complete we can generate predictions on the test chromosome
 ```
 PREDICTIONS_DIR=$BASE_DIR/predictions_and_metrics
 mkdir $PREDICTIONS_DIR
-predict \
-    --model $MODEL_DIR/model_split000.h5 \
-    --chrom-sizes $REFERENCE_DIR/GRCh38_EBV.chrom.sizes \
-    --chroms chr1 \
-    --reference-genome $REFERENCE_DIR/hg38.genome.fa \
-    --output-dir $PREDICTIONS_DIR \
-    --input-data $BASE_DIR/input.json \
-    --sequence-generator-name BPNet \
-    --input-seq-len 2114 \
-    --output-len 1000 \
-    --output-window-size 1000 \
-    --batch-size 64 \
-    --threads 2 \
-    --generate-predicted-profile-bigWigs
+bpnet-predict \
+        --model $MODEL_DIR/model_split000.h5 \
+        --chrom-sizes $REFERENCE_DIR/GRCh38_EBV.chrom.sizes \
+        --chroms chr1 \
+        --reference-genome $REFERENCE_DIR/hg38.genome.fa \
+        --output-dir $PREDICTIONS_DIR \
+        --input-data $BASE_DIR/input.json \
+        --sequence-generator-name BPNet \
+        --input-seq-len 2114 \
+        --output-len 1000 \
+        --output-window-size 1000 \
+        --batch-size 64 \
+        --threads 2 \
+        --generate-predicted-profile-bigWigs
 ```
 
 This script will output test metrics and also output bigwig tracks if the 
@@ -318,62 +385,20 @@ This script will output test metrics and also output bigwig tracks if the
 ```
 SHAP_DIR=$BASE_DIR/shap
 mkdir $SHAP_DIR
-shap_scores \
-    --reference-genome $REFERENCE_GENOME \
-    --model $MODEL_DIR/model_split000.h5  \
-    --bed-file $DATA_DIR/peaks_med.bed \
-    --chroms chr1 \
-    --output-dir $SHAP_DIR \
-    --input-seq-len 2114 \
-    --control-len 1000 \
-    --task-id 0 \
-    --input-data $BASE_DIR/input.json 
+bpnet-shap \
+        --reference-genome $REFERENCE_GENOME \
+        --model $MODEL_DIR/model_split000.h5  \
+        --bed-file $DATA_DIR/peaks_med.bed \
+        --chroms chr1 \
+        --output-dir $SHAP_DIR \
+        --input-seq-len 2114 \
+        --control-len 1000 \
+        --task-id 0 \
+        --input-data $BASE_DIR/input.json 
 ```
 
 ### 5. Discover motifs with TF-modisco
 
 ```
-MODISCO_PROFILE_DIR=$BASE_DIR/modisco_profile
-mkdir $MODISCO_PROFILE_DIR
-motif_discovery \
-    --scores-path $SHAP_DIR/profile_scores.h5 \
-    --output-directory $MODISCO_PROFILE_DIR
-
-MODISCO_COUNTS_DIR=$BASE_DIR/modisco_counts
-mkdir $MODISCO_COUNTS_DIR
-motif_discovery \
-    --scores-path $SHAP_DIR/counts_scores.h5 \
-    --output-directory $MODISCO_COUNTS_DIR
-```
-
-### 6. Filter the peaks file for outliers
-
-```
-outliers \
-    --input-data $INPUT_DATA  \
-    --quantile 0.99 \
-    --quantile-value-scale-factor 1.2 \
-    --task 0 \
-    --chrom-sizes $REFERENCE_DIR/hg38.chrom.sizes \
-    --chroms $(paste -s -d ' ' $REFERENCE_DIR/hg38_chroms.txt) \
-    --sequence-len 1000 \
-    --blacklist $BASE_DIR/blacklist.bed \
-    --global-sample-weight 1.0 \
-    --output-bed $DATA_DIR/inliers.bed
-```
-
-### 7. Compute embeddings from intermediate layers
-
-```
-EMBEDDINGS_DIR=$BASE_DIR/embeddings
-mkdir $EMBEDDINGS_DIR
-embeddings \
-    --model $MODEL_DIR/model_split000.h5 \
-    --reference-genome $REFERENCE_GENOME \
-    --embeddings-layer-name main_profile_head \
-    --cropped-size 1000 \
-    --input-layer-shape 2114 4 \
-    --peaks $DATA_DIR/peaks_med.bed \
-    --output-directory $EMBEDDINGS_DIR \
-    --batch-size 256
+Use the newer version of TF-modisco called modisco-lite to discover the motifs. Support to directly use modisco-lite from the BPNet repo will be added later.
 ```
