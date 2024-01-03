@@ -639,12 +639,12 @@ def train_and_validate_ksplits(
                 test_chroms = splits[str(i)]['test']
                 # take the set difference of the whole list of
                 # chroms with the union of val and test
-                train_chroms = list(chroms.difference(
+                train_chroms = list(set(chroms).difference(
                     set(val_chroms + test_chroms)))
             else:
                 # take the set difference of the whole list of
                 # chroms with val
-                train_chroms = list(chroms.difference(val_chroms))
+                train_chroms = list(set(chroms).difference(val_chroms))
                 
             logging.info("Train chroms: {}".format(train_chroms))
             logging.info("Val chroms: {}".format(val_chroms))
