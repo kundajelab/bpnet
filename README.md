@@ -86,7 +86,7 @@ wget https://www.encodeproject.org/files/ENCFF023NGN/@@download/ENCFF023NGN.bam 
 For the following steps you will need `samtools` `bamtools` and `bedGraphToBigWig`, which are not 
 installed as part of this repository. 
 
-Here are some links to help install those tools.
+The tools can be installed via the links below or using `conda`.
 
 <a href="http://www.htslib.org/download/">samtools</a>
 
@@ -95,6 +95,10 @@ Here are some links to help install those tools.
 <a href="http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/">bedGraphToBigWig (Linux 64-bit)</a>
 
 <a href="http://hgdownload.soe.ucsc.edu/admin/exe/macOSX.x86_64/">bedGraphToBigWig (Mac OSX 10.14.6)</a>
+
+```
+conda install -c conda-forge -c bioconda samtools=1.19 bamtools=2.5.2 ucsc-bedgraphtobigwig=445
+```
 
 ##### 1.1.1 Merge the two replicates and create and index
 
@@ -149,59 +153,10 @@ See image below that shows the file listed in the ENCODE data portal
 Link to download the file 
 <a href="https://www.encodeproject.org/files/ENCFF396BZQ/@@download/ENCFF396BZQ.bed.gz">ENCFF396BZQ</a>
 
-#### 1.3 Outlier removal
+#### 1.3 Organize you data
 
-Filter the peaks file for outliers 
-
-```
-bpnet-outliers \
-    --input-data /project/input_outliers.json  \
-    --quantile 0.99 \
-    --quantile-value-scale-factor 1.2 \
-    --task 0 \
-    --chrom-sizes /project/reference/chrom.sizes \
-    --chroms chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM \
-    --sequence-len 1000 \
-    --blacklist /project/reference/blacklist.bed \
-    --global-sample-weight 1.0 \
-    --output-bed /project/peaks_inliers.bed
-```
-
-#### 1.4 gc matched negatives
-
-```
-
-python get_genomewide_gc_bins.py \
-        --ref_fasta /project/reference/genome.fa \
-        --chrom_sizes $REFERENCE_DIR/hg38.chrom.sizes \
-        --out_prefix /project/reference/genomewide_gc_stride_1000_flank_size_1057.gc.bed \
-        --inputlen 2114 \
-        --stride 1000
-    
-python get_gc_content.py \
-       --input_bed /project/data/ENCSR000AIB_inliers.bed \
-       --ref_fasta /project/reference/genome.fa \
-       --out_prefix /project/data/ENCSR000AIB.gc.bed \
-       --flank_size 1057
-
-bedtools intersect -v -a \
-    /project/reference/genomewide_gc_stride_1000_flank_size_1057.bed \
-    -b /project/data/ENCSR000AIB_inliers.bed > /project/data/ENCSR000AIB.tsv
-
-python get_gc_matched_negatives.py \
-        --candidate_negatives /project/data/ENCSR000AIB.tsv \
-        --foreground_gc_bed  /project/data/ENCSR000AIB.gc.bed \
-        --output_prefix /project/data/ENCSR000AIB_negatives \
-        --neg_to_pos_ratio_train 4
-        
-       
-```
-
-
-#### 1.5 Organize you data
-
-We suggest creating a directory structure to store the data, models, predictions, metrics, importance scores, discovered motifs, plots & visualizations etc. that will make it easier for you to organize and maintain your work. Let's start by creating a parent directory for the experiment and moving the bigwig files and peaks file from section 1.1 & 1.2 to a data directory
-
+At this point, we suggest creating a directory structure to store the data, models, predictions, metrics, importance 
+scores, discovered motifs, plots & visualizations etc. that will make it easier for you to organize and maintain your work. Let's start by creating a parent directory for the experiment and moving the bigwig files and peaks file from section 1.1 & 1.2 to a data directory
 ```
 mkdir ENCSR000EGM
 mkdir ENCSR000EGM/data
@@ -209,47 +164,151 @@ mv *.bw ENCSR000EGM/data
 mv peaks.bed ENCSR000EGM/data
 ```
 
-Once this is done, your directory heirarchy should resemble this
+Once this is done, your directory hierarchy should resemble this
 
 <div align="left"><img src="./docs-build/tutorial/bpnet/images/directory-data.png"></div>
 
-#### 1.6 Reference genome
+Note that the relative paths in subsequent pipeline steps assume that the current working directory is the one 
+immediately above the project directory. For example, if you are in the `ENCSR000EGM` folder, navigate up one level with `cd ..`.
 
-For the sake of this tutorial let's assume we have a `reference` directory at the same level as the `ENCSR000EGM` experiment directory. In the `reference` directory we will place 4 files the hg38 fasta file, the index to the fasta file, chromosome sizes file and one text file that contains a list of chromosomes we care about (one per line - chr1-22, X, Y, M and exclude the rest). The directory structure looks like this.
+#### 1.4 Download and prepare references
+
+Make a `reference` directory at the same level as the `ENCSR000EGM` experiment directory. In the `reference` directory we will place 4 files the hg38 fasta file, the index to the fasta file, chromosome sizes file and one text file that contains a list of chromosomes we care about (one per line - chr1-22, X, Y, M and exclude the rest). 
+
+<NOTE: is the `fai` file required? If not, hen remove the `faidx` step>
+
+```
+mkdir reference && cd reference
+
+# download genome refrence 
+wget https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz \
+-O hg38.genome.fa.gz | gunzip
+
+# index genome reference
+samtools faidx hg38.genome.fa
+
+# download chrom sizes
+wget https://www.encodeproject.org/files/GRCh38_EBV.chrom.sizes/@@download/GRCh38_EBV.chrom.sizes.tsv 
+
+# exclude alt contigs and chrEBV
+grep -v -e '_' -e 'chrEBV' GRCh38_EBV.chrom.sizes.tsv > hg38.chrom.sizes
+rm GRCh38_EBV.chrom.sizes.tsv
+
+# make file with chromosomes only
+awk '{print $1}' hg38.chrom.sizes > chroms.txt
+
+cd ../
+```
+The directory structure should look like this:
 
 <div align="left"><img src="./docs-build/tutorial/bpnet/images/directory-reference.png"></img>
 </div>
 
-### 2. Train a model!
+#### 1.5 Outlier removal
 
-Before we start training, we need to compile a json file that contains information about the input data. Here is a sample json file that shows how to specify the input data information for the data we organized in Section 1.3. The data is organized into tasks and tracks. In this example we have one task and two tracks, the plus and the minus strand. Each track has 4 required keys `signal`, `loci`, `background_loci`, & `bias`. 
+Filter the peaks file for outliers. 
 
+<TODO: Perhaps 1-2 sentences regarding how an outlier is defined/how it is removed?>
+
+First prepare a file `input_outliers.json` as shown below:
 
 ```
 {
     "0": {
         "signal": {
-            "source": ["/users/john/ENCSR000EGM/data/plus.bw", 
-                       "/users/john/ENCSR000EGM/data/minus.bw"]
+            "source": ["ENCSR000EGM/data/plus.bw",
+                       "ENCSR000EGM/data/minus.bw"]
         },
         "loci": {
-            "source": ["/users/john/ENCSR000EGM/data/peaks.bed"]
+            "source": ["ENCSR000EGM/data/peaks.bed"]
+        },
+        "bias": {
+            "source": ["ENCSR000EGM/data/control_plus.bw",
+                       "ENCSR000EGM/data/control_minus.bw"],
+            "smoothing": [null, null]
+        }
+    }
+}
+```
+Next, run the following command:
+
+```
+bpnet-outliers \
+    --input-data input_outliers.json  \
+    --quantile 0.99 \
+    --quantile-value-scale-factor 1.2 \
+    --task 0 \
+    --chrom-sizes reference/hg38.chrom.sizes \
+    --chroms $(paste -s -d ' ' reference/chroms.txt) \
+    --sequence-len 1000 \
+    --blacklist reference/blacklist.bed \
+    --global-sample-weight 1.0 \
+    --output-bed ENCSR000EGM/data/peaks_inliers.bed
+```
+
+#### 1.6 gc matched negatives
+
+<TODO: a little more detail about what this step does would be useful. Also, I think the code needs to be added to the 
+repo?>
+
+```
+python get_genomewide_gc_bins.py \
+        --ref_fasta reference/hg38.genome.fa \
+        --chrom_sizes reference/hg38.chrom.sizes \
+        --out_prefix reference/genomewide_gc_stride_1000_flank_size_1057.gc.bed \
+        --inputlen 2114 \
+        --stride 1000
+    
+python get_gc_content.py \
+       --input_bed ENCSR000EGM/data/peaks_inliers.bed \
+       --ref_fasta reference/hg38.genome.fa \
+       --out_prefix ENCSR000EGM/data/gc.bed \
+       --flank_size 1057
+
+bedtools intersect -v -a \
+    reference/genomewide_gc_stride_1000_flank_size_1057.gc.bed \
+    -b ENCSR000EGM/data/peaks_inliers.bed > ENCSR000EGM/data/candidate_negatives.tsv
+
+python get_gc_matched_negatives.py \
+        --candidate_negatives ENCSR000EGM/data/candidate_negatives.tsv \
+        --foreground_gc_bed  ENCSR000EGM/data/gc.bed \
+        --output_prefix ENCSR000EGM/data/negatives \
+        --neg_to_pos_ratio_train 4     
+```
+
+
+### 2. Train a model!
+
+Before we start training, we need to compile a json file that contains information about the input data. We will call this file `input_data.json`. Here is a sample json file that shows how to specify the input data information for the data we organized in Section 1.3. The data is organized into tasks and tracks. In this example we have one task and two tracks, the plus and the minus strand. Each track has 4 required keys `signal`, `loci`, `background_loci`, & `bias`. 
+
+Note that the `input_data.json` file is used for multiple downstream steps.
+
+<NOTE: maybe add some more details about what each of the fields represents? Also double check that using the 
+correct peaks file.>
+```
+{
+    "0": {
+        "signal": {
+            "source": ["ENCSR000EGM/data/plus.bw", 
+                       "ENCSR000EGM/data/minus.bw"]
+        },
+        "loci": {
+            "source": ["ENCSR000EGM/data/peaks.bed"]
         },
         "background_loci": {
             "source": [],
             "ratio": []
         },
         "bias": {
-            "source": ["/users/john/ENCSR000EGM/data/control_plus.bw",
-                       "/users/john/ENCSR000EGM/data/control_minus.bw"],
+            "source": ["ENCSR000EGM/data/control_plus.bw",
+                       "ENCSR000EGM/data/control_minus.bw"],
             "smoothing": [null, null]
         }
     }
 }
 ```
 
-We'll call the above json file `input_data.json`. Additionally we need a json
-file to specify parameters for the BPNet architecture. Let's call this json file
+Additionally, we need a json file to specify parameters for the BPNet architecture. Let's call this json file
 `bpnet_params.json` 
 
 ```
@@ -291,16 +350,33 @@ file to specify parameters for the BPNet architecture. Let's call this json file
         "profile_grad_loss_weight": 200,
         "counts_grad_loss_weight": 100        
     },
-    "loss_weights": [1, 42]
+    "loss_weights": [1, 42],
+    "counts_loss": "MSE"
 }
 ```
 
-The `loss_weights` field has two values the `profile` loss weight and the 
+The `loss_weights` field has two values: the `profile` loss weight and the 
 `counts` loss weight. The counts loss weight can be automatically generated 
-using the following command
+using the following command:
 
 ```
-bpnet-counts-loss-weight --input-data $INPUT_DATA
+bpnet-counts-loss-weight --input-data input_data.json
+```
+
+Finally, we will make the `splits.json` file, which contains information about the chromosomes that are used for 
+validation and test. Here is a sample that contains one split.
+
+```
+{
+    "0": {
+        "test":
+            ["chr7", "chr13", "chr17", "chr19", "chr21", "chrX"],
+        "val":
+            ["chr10", "chr18"],
+        "train":
+            ["chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr8", "chr9", "chr11", "chr12", "chr14", "chr15", "chr16", "chr21", "chr22", "chrY"]
+    }
+}
 ```
 
 Now that we have our data prepped, we can train our first model!!
@@ -310,10 +386,10 @@ The command to train a model is called `train`.
 You can kick start the training process by executing this command in your shell
 
 ```
-BASE_DIR=/users/john/ENCSR000EGM
+BASE_DIR=ENCSR000EGM
 DATA_DIR=$BASE_DIR/data
 MODEL_DIR=$BASE_DIR/models
-REFERENCE_DIR=$BASE_DIR/reference
+REFERENCE_DIR=reference
 CHROM_SIZES=$REFERENCE_DIR/hg38.chrom.sizes
 REFERENCE_GENOME=$REFERENCE_DIR/hg38.genome.fa
 CV_SPLITS=$BASE_DIR/splits.json
@@ -326,7 +402,7 @@ bpnet-train \
         --input-data $INPUT_DATA \
         --output-dir $MODEL_DIR \
         --reference-genome $REFERENCE_GENOME \
-        --chroms $(paste -s -d ' ' $REFERENCE_DIR/hg38_chroms.txt) \
+        --chroms $(paste -s -d ' ' $REFERENCE_DIR/chroms.txt) \
         --chrom-sizes $CHROM_SIZES \
         --splits $CV_SPLITS \
         --model-arch-name BPNet \
@@ -341,17 +417,6 @@ bpnet-train \
         --learning-rate 0.004
 ```
 
-The `splits.json` file contains information about the chromosomes that are used for validation and test. Here is a sample that contains one split.
-
-```
-{
-    "0": {
-        "val": ["chr10", "chr8"], 
-        "test": ["chr1"]
-    }
-}
-```
-
 Note: It might take a few minutes for the training to begin once the above command has been issued, be patient and you should see the training eventually start. 
 
 ### 3. Predict on test set
@@ -362,12 +427,12 @@ Once the training is complete we can generate predictions on the test chromosome
 PREDICTIONS_DIR=$BASE_DIR/predictions_and_metrics
 mkdir $PREDICTIONS_DIR
 bpnet-predict \
-        --model $MODEL_DIR/model_split000.h5 \
-        --chrom-sizes $REFERENCE_DIR/GRCh38_EBV.chrom.sizes \
+        --model $MODEL_DIR/model_split000 \
+        --chrom-sizes $CHROM_SIZES \
         --chroms chr1 \
-        --reference-genome $REFERENCE_DIR/hg38.genome.fa \
+        --reference-genome $REFERENCE_GENOME \
         --output-dir $PREDICTIONS_DIR \
-        --input-data $BASE_DIR/input.json \
+        --input-data $INPUT_DATA \
         --sequence-generator-name BPNet \
         --input-seq-len 2114 \
         --output-len 1000 \
@@ -387,7 +452,7 @@ SHAP_DIR=$BASE_DIR/shap
 mkdir $SHAP_DIR
 bpnet-shap \
         --reference-genome $REFERENCE_GENOME \
-        --model $MODEL_DIR/model_split000.h5  \
+        --model $MODEL_DIR/model_split000  \
         --bed-file $DATA_DIR/peaks_med.bed \
         --chroms chr1 \
         --output-dir $SHAP_DIR \
