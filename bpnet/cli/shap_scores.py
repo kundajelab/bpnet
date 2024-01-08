@@ -330,7 +330,11 @@ def shap_scores(args, shap_dir):
     
     # save the hyp shap scores, one hot sequences & chrom positions
     # to a HDF5 file
-    save_scores(peaks_df, X, counts_shap_scores[0], output_fname)
+    if isinstance(counts_shap_scores, list):
+        save_scores(peaks_df, X, counts_shap_scores[0], output_fname)
+    else:
+        save_scores(peaks_df, X, counts_shap_scores, output_fname)
+        
     
     logging.info("Generating 'profile' shap scores")
     profile_shap_scores = profile_model_profile_explainer.shap_values(
@@ -342,8 +346,12 @@ def shap_scores(args, shap_dir):
 
     # save the profile hyp shap scores, one hot sequences & chrom 
     # positions to a HDF5 file
-    save_scores(peaks_df, X, profile_shap_scores[0], output_fname)
     
+    if isinstance(counts_shap_scores, list):
+        save_scores(peaks_df, X, profile_shap_scores[0], output_fname)
+    else:
+        save_scores(peaks_df, X, profile_shap_scores, output_fname)
+            
     # save the dataframe as a new .bed file 
     peaks_df.to_csv('{}/peaks_valid_scores.bed'.format(shap_dir), 
                            sep='\t', header=False, index=False)
