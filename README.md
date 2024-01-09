@@ -150,8 +150,11 @@ See image below that shows the file listed in the ENCODE data portal
 
 <img src="./docs-build/tutorial/bpnet/images/tutorial-idrpeaks.png">
 
-Link to download the file 
-<a href="https://www.encodeproject.org/files/ENCFF396BZQ/@@download/ENCFF396BZQ.bed.gz">ENCFF396BZQ</a>
+Download the file: 
+```
+wget https://www.encodeproject.org/files/ENCFF396BZQ/@@download/ENCFF396BZQ.bed.gz -O peaks.bed
+```
+
 
 #### 1.3 Organize you data
 
@@ -197,6 +200,10 @@ rm GRCh38_EBV.chrom.sizes.tsv
 # make file with chromosomes only
 awk '{print $1}' hg38.chrom.sizes > chroms.txt
 
+# download blacklist
+wget https://www.encodeproject.org/files/ENCFF356LFX/@@download/ENCFF356LFX.bed.gz -O blacklist.bed.gz
+gunzip blacklist.bed.gz
+
 cd ../
 ```
 The directory structure should look like this:
@@ -206,9 +213,10 @@ The directory structure should look like this:
 
 #### 1.5 Outlier removal
 
-Filter the peaks file for outliers. 
+Filter the peaks file for outliers. Peaks that meet either of two criteria are removed:
 
-<TODO: Perhaps 1-2 sentences regarding how an outlier is defined/how it is removed?>
+(1) Overlap with regions identified in `blacklist.bed`.
+(2) Number of reads in the peak is in the `--quantile` quantile. 
 
 First prepare a file `input_outliers.json` as shown below:
 
@@ -293,7 +301,7 @@ correct peaks file.>
                        "ENCSR000EGM/data/minus.bw"]
         },
         "loci": {
-            "source": ["ENCSR000EGM/data/peaks.bed"]
+            "source": ["ENCSR000EGM/data/peaks_inliers.bed"]
         },
         "background_loci": {
             "source": [],
