@@ -81,6 +81,33 @@ Link provided below
 wget https://www.encodeproject.org/files/ENCFF023NGN/@@download/ENCFF023NGN.bam -O control.bam
 ```
 
+Finally, download the reference files. In the example below, some preprocessing is required to filter out unwanted chromosomes from the 
+`hg38.chrom.sizes` file. Additionally, the blacklist file shown is specific to hg38, and should be replaced with a genome-specific blacklist
+if alternative genomes are used.
+
+```
+# download genome refrence
+wget https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz \
+-O hg38.genome.fa.gz | gunzip
+
+# index genome reference
+samtools faidx hg38.genome.fa
+
+# download chrom sizes
+wget https://www.encodeproject.org/files/GRCh38_EBV.chrom.sizes/@@download/GRCh38_EBV.chrom.sizes.tsv
+
+# exclude alt contigs and chrEBV
+grep -v -e '_' -e 'chrEBV' GRCh38_EBV.chrom.sizes.tsv > hg38.chrom.sizes
+rm GRCh38_EBV.chrom.sizes.tsv
+
+# make file with chromosomes only
+awk '{print $1}' hg38.chrom.sizes > chroms.txt
+
+# download blacklist
+wget https://www.encodeproject.org/files/ENCFF356LFX/@@download/ENCFF356LFX.bed.gz -O blacklist.bed.gz
+gunzip blacklist.bed.gz
+```  
+
 #### 1.1 Preprocessing steps to generate bigwig counts tracks
 
 For the following steps you will need `samtools` `bamtools` and `bedGraphToBigWig`, which are not 
@@ -97,7 +124,7 @@ The tools can be installed via the links below or using `conda`.
 <a href="http://hgdownload.soe.ucsc.edu/admin/exe/macOSX.x86_64/">bedGraphToBigWig (Mac OSX 10.14.6)</a>
 
 ```
-conda install -c conda-forge -c bioconda samtools=1.19 bamtools=2.5.2 ucsc-bedgraphtobigwig=445
+conda install -c conda-forge -c bioconda samtools=1.19.2 bamtools=2.5.2 ucsc-bedgraphtobigwig=445
 ```
 
 ##### 1.1.1 Merge the two replicates and create and index
@@ -107,19 +134,29 @@ samtools merge -f merged.bam rep1.bam rep2.bam
 samtools index merged.bam
 ```
 
+We will also index the control BAM file
+
+```
+samtools index control.bam
+```
+
 ##### 1.1.2 Create bigwig files using bedtools via intermediate bedGraph files
+
+In addition to creating the bigwig files, at this step we will filter the bam files
+to keep only the chromosomes that we want to use in the model. In the example shown below, 
+we do this using `samtools view` and the `hg38.chrom.sizes` reference file.
 
 **Experiment**
 ```
 # get coverage of 5’ positions of the plus strand
-bedtools genomecov -5 -bg -strand + \
-        -g hg38.chrom.sizes -ibam merged.bam \
-        | sort -k1,1 -k2,2n > plus.bedGraph
+samtools view -b merged.bam $(cut -f 1 hg38.chrom.sizes) | \
+	bedtools genomecov -5 -bg -strand + -ibam stdin| \
+	sort -k1,1 -k2,2n > plus.bedGraph
 
 # get coverage of 5’ positions of the minus strand
-bedtools genomecov -5 -bg -strand - \
-        -g hg38.chrom.sizes -ibam merged.bam \
-        | sort -k1,1 -k2,2n > minus.bedGraph
+samtools view -b merged.bam $(cut -f 1 hg38.chrom.sizes) | \
+        bedtools genomecov -5 -bg -strand - -ibam stdin | \
+        sort -k1,1 -k2,2n > plus.bedGraph
 
 # Convert bedGraph files to bigWig files
 bedGraphToBigWig plus.bedGraph hg38.chrom.sizes plus.bw
@@ -127,14 +164,15 @@ bedGraphToBigWig minus.bedGraph hg38.chrom.sizes minus.bw
 ```
 **Control**
 ```
-# get coverage of 5’ positions of the plus strand
-bedtools genomecov -5 -bg -strand + \
-        -g hg38.chrom.sizes -ibam control.bam \
-        | sort -k1,1 -k2,2n > control_plus.bedGraph
+# get coverage of 5’ positions of the control plus strand
+samtools view -b control.bam $(cut -f 1 hg38.chrom.sizes) | \
+        bedtools genomecov -5 -bg -strand + -ibam stdin | \
+        sort -k1,1 -k2,2n > control_plus.bedGraph
 
-bedtools genomecov -5 -bg -strand - \
-        -g hg38.chrom.sizes -ibam control.bam \
-         | sort -k1,1 -k2,2n > control_minus.bedGraph
+# get coverage of 5' positions of the control minus strand
+samtools view -b control.bam $(cut -f 1 hg38.chrom.sizes) | \
+        bedtools genomecov -5 -bg -strand - -ibam stdin | \
+        sort -k1,1 -k2,2n > control_minus.bedGraph
 
 # Convert bedGraph files to bigWig files
 bedGraphToBigWig control_plus.bedGraph hg38.chrom.sizes control_plus.bw
@@ -176,36 +214,15 @@ immediately above the project directory. For example, if you are in the `ENCSR00
 
 #### 1.4 Download and prepare references
 
-Make a `reference` directory at the same level as the `ENCSR000EGM` experiment directory. In the `reference` directory we will place 4 files the hg38 fasta file, the index to the fasta file, chromosome sizes file and one text file that contains a list of chromosomes we care about (one per line - chr1-22, X, Y, M and exclude the rest). 
-
-<NOTE: is the `fai` file required? If not, hen remove the `faidx` step>
+Make a `reference` directory at the same level as the `ENCSR000EGM` experiment directory. In the `reference` directory we will place 4 files: the genome reference `hg38.genome.fa`, the indexed reference `hg38.genome.fai`, the chromosome sizes file `hg38.chrom.sizes` and one text file that contains a list of chromosomes we care about `chroms.txt`. 
 
 ```
-mkdir reference && cd reference
-
-# download genome refrence 
-wget https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz \
--O hg38.genome.fa.gz | gunzip
-
-# index genome reference
-samtools faidx hg38.genome.fa
-
-# download chrom sizes
-wget https://www.encodeproject.org/files/GRCh38_EBV.chrom.sizes/@@download/GRCh38_EBV.chrom.sizes.tsv 
-
-# exclude alt contigs and chrEBV
-grep -v -e '_' -e 'chrEBV' GRCh38_EBV.chrom.sizes.tsv > hg38.chrom.sizes
-rm GRCh38_EBV.chrom.sizes.tsv
-
-# make file with chromosomes only
-awk '{print $1}' hg38.chrom.sizes > chroms.txt
-
-# download blacklist
-wget https://www.encodeproject.org/files/ENCFF356LFX/@@download/ENCFF356LFX.bed.gz -O blacklist.bed.gz
-gunzip blacklist.bed.gz
-
-cd ../
+mkdir ENCSR000EGM/reference 
+mv hg38.genome.fa* ENCSR000EGM/reference
+mv hg38.chrom.sizes ENCSR000EGM/refence
+mv chroms.txt ENCSR000EGM/reference
 ```
+
 The directory structure should look like this:
 
 <div align="left"><img src="./docs-build/tutorial/bpnet/images/directory-reference.png"></img>
