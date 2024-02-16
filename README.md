@@ -150,7 +150,7 @@ we do this using `samtools view` and the `hg38.chrom.sizes` reference file.
 ```
 # get coverage of 5’ positions of the plus strand
 samtools view -b merged.bam $(cut -f 1 hg38.chrom.sizes) | \
-	bedtools genomecov -5 -bg -strand + -ibam stdin| \
+	bedtools genomecov -5 -bg -strand + -ibam stdin | \
 	sort -k1,1 -k2,2n > plus.bedGraph
 
 # get coverage of 5’ positions of the minus strand
@@ -212,8 +212,6 @@ Once this is done, your directory hierarchy should resemble this
 Note that the relative paths in subsequent pipeline steps assume that the current working directory is the one 
 immediately above the project directory. For example, if you are in the `ENCSR000EGM` folder, navigate up one level with `cd ..`.
 
-#### 1.4 Download and prepare references
-
 Make a `reference` directory at the same level as the `ENCSR000EGM` experiment directory. In the `reference` directory we will place 4 files: the genome reference `hg38.genome.fa`, the indexed reference `hg38.genome.fai`, the chromosome sizes file `hg38.chrom.sizes` and one text file that contains a list of chromosomes we care about `chroms.txt`. 
 
 ```
@@ -221,14 +219,15 @@ mkdir ENCSR000EGM/reference
 mv hg38.genome.fa* ENCSR000EGM/reference
 mv hg38.chrom.sizes ENCSR000EGM/refence
 mv chroms.txt ENCSR000EGM/reference
+mv blacklist.bed ENCSR000EGM/reference
 ```
 
-The directory structure should look like this:
+The directory structure should look like this (TODO: update this image):
 
 <div align="left"><img src="./docs-build/tutorial/bpnet/images/directory-reference.png"></img>
 </div>
 
-#### 1.5 Outlier removal
+#### 1.4 Outlier removal
 
 Filter the peaks file for outliers. Peaks that meet either of two criteria are removed:
 
@@ -263,15 +262,15 @@ bpnet-outliers \
     --quantile 0.99 \
     --quantile-value-scale-factor 1.2 \
     --task 0 \
-    --chrom-sizes reference/hg38.chrom.sizes \
-    --chroms $(paste -s -d ' ' reference/chroms.txt) \
+    --chrom-sizes ENCSR000EGM/reference/hg38.chrom.sizes \
+    --chroms $(paste -s -d ' ' ENCSR000EGM/reference/chroms.txt) \
     --sequence-len 1000 \
-    --blacklist reference/blacklist.bed \
+    --blacklist ENCSR000EGM/reference/blacklist.bed \
     --global-sample-weight 1.0 \
     --output-bed ENCSR000EGM/data/peaks_inliers.bed
 ```
 
-#### 1.6 gc matched negatives
+#### 1.5 gc matched negatives
 
 <TODO: a little more detail about what this step does would be useful. Also, I think the code needs to be added to the 
 repo?>
@@ -304,12 +303,18 @@ python get_gc_matched_negatives.py \
 
 ### 2. Train a model!
 
-Before we start training, we need to compile a json file that contains information about the input data. We will call this file `input_data.json`. Here is a sample json file that shows how to specify the input data information for the data we organized in Section 1.3. The data is organized into tasks and tracks. In this example we have one task and two tracks, the plus and the minus strand. Each track has 4 required keys `signal`, `loci`, `background_loci`, & `bias`. 
+Before we start training, we need to compile a json file that contains information about the input data. We will call this file `input_data.json`. Here is a sample json file that shows how to specify the input data information for the data we organized in Section 1.3. The data is organized into tasks and tracks. In this example we have one task and two tracks, the plus and the minus strand. Each task has 4 required keys, with values corresponding to tracks calculated in the preprocessing steps:
+
+`signal`: the `plus` and `minus` bigwig tracks 
+
+`loci`: the bed file with the filtered peaks
+
+`background_loci`: the bed file with gc-matched background regions (`source`), and the ratio of positive-to-negative regions used when generating the gc-matched negatives file, expressed as a decimal (`ratio`) 
+
+`bias`: the `plus` and `minus` control bigwig tracks
 
 Note that the `input_data.json` file is used for multiple downstream steps.
 
-<NOTE: maybe add some more details about what each of the fields represents? Also double check that using the 
-correct peaks file.>
 ```
 {
     "0": {
@@ -321,8 +326,8 @@ correct peaks file.>
             "source": ["ENCSR000EGM/data/peaks_inliers.bed"]
         },
         "background_loci": {
-            "source": [],
-            "ratio": []
+            "source": ["ENCSR000EGM/data/negatives.bed"],
+            "ratio": [0.25]
         },
         "bias": {
             "source": ["ENCSR000EGM/data/control_plus.bw",
@@ -439,6 +444,10 @@ bpnet-train \
         --shuffle \
         --threads 10 \
         --epochs 100 \
+	--batch-size 64 \
+	--reverse-complement-augmentation \
+	--early-stopping-patience 10 \
+	--reduce-lr-on-plateau-patience 10 \
         --learning-rate 0.004
 ```
 
