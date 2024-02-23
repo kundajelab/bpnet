@@ -493,7 +493,7 @@ bpnet-shap \
         --input-seq-len 2114 \
         --control-len 1000 \
         --task-id 0 \
-        --input-data $BASE_DIR/input.json 
+        --input-data $INPUT_DATA 
 ```
 
 ### 5. Discover motifs with TF-modisco
