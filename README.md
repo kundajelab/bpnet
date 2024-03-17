@@ -156,7 +156,7 @@ samtools view -b merged.bam $(cut -f 1 hg38.chrom.sizes) | \
 # get coverage of 5’ positions of the minus strand
 samtools view -b merged.bam $(cut -f 1 hg38.chrom.sizes) | \
         bedtools genomecov -5 -bg -strand - -ibam stdin | \
-        sort -k1,1 -k2,2n > plus.bedGraph
+        sort -k1,1 -k2,2n > minus.bedGraph
 
 # Convert bedGraph files to bigWig files
 bedGraphToBigWig plus.bedGraph hg38.chrom.sizes plus.bw
