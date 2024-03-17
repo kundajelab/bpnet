@@ -85,6 +85,15 @@ Finally, download the reference files. In the example below, some preprocessing 
 `hg38.chrom.sizes` file. Additionally, the blacklist file shown is specific to hg38, and should be replaced with a genome-specific blacklist
 if alternative genomes are used.
 
+Available Blacklists:
+
+For those interested in using the blacklists, a current version for dm3, dm6, ce10, ce11, mm10, hg19, and hg38 are available in the lists/ folder at https://github.com/Boyle-Lab/Blacklist/
+
+Please cite:
+
+Amemiya, H.M., Kundaje, A. & Boyle, A.P. The ENCODE Blacklist: Identification of Problematic Regions of the Genome. Sci Rep 9, 9354 (2019). https://doi.org/10.1038/s41598-019-45839-z
+
+
 ```
 # download genome refrence
 wget https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz \
@@ -191,6 +200,7 @@ See image below that shows the file listed in the ENCODE data portal
 Download the file: 
 ```
 wget https://www.encodeproject.org/files/ENCFF396BZQ/@@download/ENCFF396BZQ.bed.gz -O peaks.bed.gz
+gunzip peaks.bed.gz
 ```
 
 
@@ -212,7 +222,7 @@ Once this is done, your directory hierarchy should resemble this
 Note that the relative paths in subsequent pipeline steps assume that the current working directory is the one 
 immediately above the project directory. For example, if you are in the `ENCSR000EGM` folder, navigate up one level with `cd ..`.
 
-Make a `reference` directory at the same level as the `ENCSR000EGM` experiment directory. In the `reference` directory we will place 4 files: the genome reference `hg38.genome.fa`, the indexed reference `hg38.genome.fai`, the chromosome sizes file `hg38.chrom.sizes` and one text file that contains a list of chromosomes we care about `chroms.txt`. 
+Make a `reference` directory at the same level as the `ENCSR000EGM` experiment directory. In the `reference` directory we will place 4 files: the genome reference `hg38.genome.fa`, the indexed reference `hg38.genome.fai`, the chromosome sizes file `hg38.chrom.sizes` and one text file that contains a list of chromosomes we care about `chroms.txt`. `blacklist.bed` contains all the blacklist regions with artifact peaks.
 
 ```
 mkdir ENCSR000EGM/reference 
@@ -447,8 +457,8 @@ bpnet-train \
 	--batch-size 64 \
 	--reverse-complement-augmentation \
 	--early-stopping-patience 10 \
-	--reduce-lr-on-plateau-patience 10 \
-        --learning-rate 0.004
+	--reduce-lr-on-plateau-patience 5 \
+        --learning-rate 0.001
 ```
 
 Note: It might take a few minutes for the training to begin once the above command has been issued, be patient and you should see the training eventually start. 
@@ -464,6 +474,7 @@ bpnet-predict \
         --model $MODEL_DIR/model_split000 \
         --chrom-sizes $CHROM_SIZES \
         --chroms chr1 \
+        --test-indices-file None \
         --reference-genome $REFERENCE_GENOME \
         --output-dir $PREDICTIONS_DIR \
         --input-data $INPUT_DATA \
@@ -472,12 +483,33 @@ bpnet-predict \
         --output-len 1000 \
         --output-window-size 1000 \
         --batch-size 64 \
+        --reverse-complement-average \
         --threads 2 \
         --generate-predicted-profile-bigWigs
 ```
 
 This script will output test metrics and also output bigwig tracks if the 
 `--generate-predicted-profile-bigWigs` is specified
+
+It is usefull to make predictions on all the peaks as the model predictions provide denoised version of the observed signal.
+```
+bpnet-predict \
+    --model $MODEL_DIR/model_split000 \
+    --chrom-sizes $CHROM_SIZES \
+    --chroms chr1 chr2 chrX chr3 chr4 chr5 chr6 chr7 chr10 chr8 chr14 chr9 chr11 chr13 chr12 chr15 chr16 chr17 chrY chr18 chr19 chrM \
+    --test-indices-file None \
+    --reference-genome $REFERENCE_GENOME \
+    --output-dir $PREDICTIONS_DIR \
+    --input-data $INPUT_DATA \
+    --sequence-generator-name BPNet \
+    --input-seq-len 2114 \
+    --output-len 1000 \
+    --output-window-size 1000 \
+    --batch-size 64 \
+    --reverse-complement-average \
+    --threads 2 \
+    --generate-predicted-profile-bigWigs
+```
 
 ### 4. Compute importance scores
 
@@ -499,5 +531,11 @@ bpnet-shap \
 ### 5. Discover motifs with TF-modisco
 
 ```
-Use the newer version of TF-modisco called modisco-lite to discover the motifs. Support to directly use modisco-lite from the BPNet repo will be added later.
+Use the newer version of TF-modisco called modisco-lite to discover the motifs. Support to directly use modisco-lite from the BPNet repo will be added later. For now use: https://github.com/jmschrei/tfmodisco-lite
+```
+
+### 5. Discover location of the identified motifs with FiNeMo
+
+```
+Support to directly use FiNeMO from the BPNet repo will be added later. For now use: https://github.com/austintwang/finemo_gpu
 ```
