@@ -190,7 +190,7 @@ See image below that shows the file listed in the ENCODE data portal
 
 Download the file: 
 ```
-wget https://www.encodeproject.org/files/ENCFF396BZQ/@@download/ENCFF396BZQ.bed.gz -O peaks.bed
+wget https://www.encodeproject.org/files/ENCFF396BZQ/@@download/ENCFF396BZQ.bed.gz -O peaks.bed.gz
 ```
 
 
