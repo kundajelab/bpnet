@@ -31,11 +31,13 @@ Instead of installing the BPNet repo by yourself, you can also try the Anvil or 
 
 **Anvil**
 
+The NHGRI's AnVIL (Genomic Data Science Analysis, Visualization, and Informatics Lab-space) platform allows biomedical researchers to run analysis tools with just a few mouse clicks. 
+
 <a href="https://anvil.terra.bio/#workspaces/terra-billing-vir/tf-atlas/workflows">Anvil/Terra </a> 
 
 **Docker**
 ```
-docker pull vivekramalingam/tf-atlas:gcp-modeling_v2.0.0-rc.2
+docker pull vivekramalingam/tf-atlas:gcp-modeling_v2.1.0-rc.1
 
 docker run -it --rm --cpus=10 --memory=200g --gpus device=1 --mount src=/mnt/bpnet-models/,target=/mydata,type=bind vivekramalingam/tf-atlas:gcp-modeling_v2.0.0-rc.2
 
@@ -491,7 +493,7 @@ bpnet-predict \
 This script will output test metrics and also output bigwig tracks if the 
 `--generate-predicted-profile-bigWigs` is specified
 
-It is usefull to make predictions on all the peaks as the model predictions provide denoised version of the observed signal.
+It is usefull to also make predictions on all the peaks as the model predictions provide denoised version of the observed signal.
 ```
 bpnet-predict \
     --model $MODEL_DIR/model_split000 \
@@ -530,12 +532,12 @@ bpnet-shap \
 
 ### 5. Discover motifs with TF-modisco
 
-```
+
 Use the newer version of TF-modisco called modisco-lite to discover the motifs. Support to directly use modisco-lite from the BPNet repo will be added later. For now use: https://github.com/jmschrei/tfmodisco-lite
-```
+
 
 ### 5. Discover location of the identified motifs with FiNeMo
 
-```
+
 Support to directly use FiNeMO from the BPNet repo will be added later. For now use: https://github.com/austintwang/finemo_gpu
-```
+
