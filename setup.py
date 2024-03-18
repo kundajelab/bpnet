@@ -36,7 +36,9 @@ setup(
             "bpnet-motif = bpnet.cli.motif_discovery:motif_discovery_main",
             "bpnet-counts-loss-weight = bpnet.cli.counts_loss_weight:counts_loss_weight_main",
             "bpnet-embeddings = bpnet.cli.embeddings:embeddings_main",
-            "bpnet-outliers = bpnet.cli.outliers:outliers_main"
+            "bpnet-outliers = bpnet.cli.outliers:outliers_main",
+            "bpnet-gc-reference = bpnet.cli.gc.get_genomewide_gc_bins:get_genomewide_gc_bins_main",
+            "bpnet-gc-background = bpnet.cli.gc.get_gc_background:get_gc_background_main"
         ]
     }
 )

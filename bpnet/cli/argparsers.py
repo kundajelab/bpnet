@@ -505,3 +505,57 @@ def outliers_argsparser():
                         help="sample weight for all peaks")
         
     return parser
+
+
+def genomewide_gc_bins_argparser():
+    """
+    Command line arguments for script to generate genomewide gc bins
+    Returns:
+        argument parser
+    """
+    parser = argparse.ArgumentParser(description="get gc content after binning the entire genome into bins")
+
+    parser.add_argument("-g", "--ref_fasta", required=True, type=str,
+                        help="path to reference genome file")
+
+    parser.add_argument("-c", "--chrom_sizes", required=True, type=str,
+                        help="path to chrom sizes file for ref genome (contains chr and chrom size separated by tab)")
+
+    parser.add_argument("-o", "--out_prefix", required=True, type=str,
+                        help="output prefix path to store the gc content of binned genome")
+
+    parser.add_argument("-f", "--inputlen", type=int, default=2114,
+                        help="inputlen to use to find gc content")
+
+    parser.add_argument("-s", "--stride", type=int, default=50,
+                        help="stride to use for shifting the bins")
+
+    return parser
+
+
+def background_gc_argparser():
+    parser = argparse.ArgumentParser(
+        description="generate a bed file of non-peak regions that are gc-matched with foreground")
+    # required arguments (listed in the order in which they appear)
+    parser.add_argument("-d", "--out_dir",
+                        help="directory where all output files are saved")
+    parser.add_argument("-i", "--peaks_bed",
+                        help="bed file in narrow peak format from which gc content will be calculated")
+    parser.add_argument("-g", "--ref_fasta", help="reference genome fasta")
+    parser.add_argument("-rgb", "--ref_gc_bed",
+                        help="reference genome gc content with appropriate bin size and flank")
+
+    # optional arguments (listed in the order in which they appear)
+    parser.add_argument("-fl", "--flank_size", type=int, default=1057,
+                        help="How many bases around each peak summit a peak extends")
+    parser.add_argument("-f", "--foreground_gc_bed", default="peaks_gc.bed",
+                        help=("filename with regions with their corresponding gc fractions for matching, "
+                              "4th column has gc content value rounded to 2 decimals"))
+    parser.add_argument("-c", "--candidate_negatives", type=str, default="candidate_negatives.bed",
+                        help="candidate negatives bed file with gc content in 4th column rounded to 2 decimals")
+    parser.add_argument("-npr", "--neg_to_pos_ratio_train", type=int, default=1,
+                        help="How many background (negative) bins are chosen for each foreground (positive) bin")
+    parser.add_argument("-o", "--output_prefix", type=str, default="negatives",
+                        help="gc-matched non-peaks output file name")
+    return parser
+
