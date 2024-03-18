@@ -324,103 +324,111 @@ def shap_scores_argsparser():
     parser.add_argument('--orig-multi-loss', action='store_true', 
                     help="True if original multinomial loss function - one for"
                     "each strand is to be used")
-    return parser
-
-
-def motif_discovery_argsparser():
-    """ Command line arguments for the motif_discovery script
-
-        Returns:
-            argparse.ArgumentParser
-    """
     
-    parser = argparse.ArgumentParser()
-    
-    parser.add_argument("--scores-path", type=str, 
-                        help="Path to the importance scores hdf5 file")
-    
-    parser.add_argument("--scores-locations", type=str, 
-                        help="path to bed file containing the locations "
-                        "that match the scores")
-
-    parser.add_argument("--output-directory", type=str, 
-                        help="Path to the output directory")
-    
-    parser.add_argument("--max_seqlets", type=int, default=50000, 
-                        help="Max number of seqlets per metacluster "
-                        "for modisco")
-
-    parser.add_argument('--modisco-window-size', type=int,
-                        help="size of the window around the peak "
-                        "coodrinate that will be considered for motif"
-                        "discovery", default=400)
-    return parser
-
-
-def embeddings_argsparser():
-    """ Command line arguments for the embeddings script
-
-        Returns:
-            argparse.ArgumentParser
-    """
-    
-    parser = argparse.ArgumentParser()
-    
-    parser.add_argument('--model', '-m', type=str, required=True,
-                        help="the path to the model file")
-    
-    parser.add_argument('--reference-genome', '-g', type=str, required=True,
-                        help="number of gpus to use")
-    
-    parser.add_argument('--input-layer-name', type=str, 
-                        help="name of the input sequence layer", 
-                        default='sequence')
-
-    parser.add_argument('--input-layer-shape', nargs='+', required=True,
-                        type=int,
-                        help="shape of the input sequence layer (specify"
-                        "list of values and omit the batch(?) dimension)")
-    
-    parser.add_argument('--embeddings-layer-name', type=str, 
-                        help="full name of layer for embeddings output. "
-                        "Cannot be combined with "
-                        "--numbered-embeddings-layers-prefix.")
-    
-    parser.add_argument('--cropped-size', type=int,
-                        help="the size to which all embeddings outputs "
-                        "should be cropped to")
-
-    parser.add_argument('--numbered-embeddings-layers-prefix', type=str, 
-                        help="common prefix string, of all required "
-                        "layers, for matching. Cannot be "
-                        "combined with --embeddings-layer-name")
-
-    parser.add_argument('--num-numbered-embeddings-layers', type=int, 
-                        help="number of embeddings layers with common prefix "
-                        "specified by --numbered-embeddings-layers-prefix. ", 
-                        default=8)
-
-    parser.add_argument('--flatten-embeddings-layer',
-                        action='store_true', 
-                        help="specify if the embeddings layers should be"
-                        "flattened")
-
-    parser.add_argument('--peaks', type=str, required=True,
-                        help="10 column bed narrowPeak file containing "
-                        "chromosome positions to compute embeddings")
-    
-    parser.add_argument('--batch-size', type=int, 
-                        help="batch size for processing the "
-                        "chromosome positions", default=64)
+    parser.add_argument('--generate-shap-bigWigs', 
+                    action='store_true', default=False, 
+                    help="specify if bigWig tracks of shap scores should " 
+                    "be generated")
+    parser.add_argument('--chrom-sizes', '-s', type=str,default=None, 
+                        help="path to chromosome sizes file. if --generate-shap-bigWigs is True then chrom-sizes file need to provided to generate the shap bigwigs. Otherwise the --generate-shap-bigWigs option is ignored.")
         
-    parser.add_argument('--output-directory', type=str,
-                        help="output directory path", default='.')
-    
-    parser.add_argument('--output-filename', type=str,
-                        help="name of compressed numpy file to store "
-                        "the embeddings", default="embeddings.h5")
-    
     return parser
+
+
+# def motif_discovery_argsparser():
+#     """ Command line arguments for the motif_discovery script
+
+#         Returns:
+#             argparse.ArgumentParser
+#     """
+    
+#     parser = argparse.ArgumentParser()
+    
+#     parser.add_argument("--scores-path", type=str, 
+#                         help="Path to the importance scores hdf5 file")
+    
+#     parser.add_argument("--scores-locations", type=str, 
+#                         help="path to bed file containing the locations "
+#                         "that match the scores")
+
+#     parser.add_argument("--output-directory", type=str, 
+#                         help="Path to the output directory")
+    
+#     parser.add_argument("--max_seqlets", type=int, default=50000, 
+#                         help="Max number of seqlets per metacluster "
+#                         "for modisco")
+
+#     parser.add_argument('--modisco-window-size', type=int,
+#                         help="size of the window around the peak "
+#                         "coodrinate that will be considered for motif"
+#                         "discovery", default=400)
+#     return parser
+
+
+# def embeddings_argsparser():
+#     """ Command line arguments for the embeddings script
+
+#         Returns:
+#             argparse.ArgumentParser
+#     """
+    
+#     parser = argparse.ArgumentParser()
+    
+#     parser.add_argument('--model', '-m', type=str, required=True,
+#                         help="the path to the model file")
+    
+#     parser.add_argument('--reference-genome', '-g', type=str, required=True,
+#                         help="number of gpus to use")
+    
+#     parser.add_argument('--input-layer-name', type=str, 
+#                         help="name of the input sequence layer", 
+#                         default='sequence')
+
+#     parser.add_argument('--input-layer-shape', nargs='+', required=True,
+#                         type=int,
+#                         help="shape of the input sequence layer (specify"
+#                         "list of values and omit the batch(?) dimension)")
+    
+#     parser.add_argument('--embeddings-layer-name', type=str, 
+#                         help="full name of layer for embeddings output. "
+#                         "Cannot be combined with "
+#                         "--numbered-embeddings-layers-prefix.")
+    
+#     parser.add_argument('--cropped-size', type=int,
+#                         help="the size to which all embeddings outputs "
+#                         "should be cropped to")
+
+#     parser.add_argument('--numbered-embeddings-layers-prefix', type=str, 
+#                         help="common prefix string, of all required "
+#                         "layers, for matching. Cannot be "
+#                         "combined with --embeddings-layer-name")
+
+#     parser.add_argument('--num-numbered-embeddings-layers', type=int, 
+#                         help="number of embeddings layers with common prefix "
+#                         "specified by --numbered-embeddings-layers-prefix. ", 
+#                         default=8)
+
+#     parser.add_argument('--flatten-embeddings-layer',
+#                         action='store_true', 
+#                         help="specify if the embeddings layers should be"
+#                         "flattened")
+
+#     parser.add_argument('--peaks', type=str, required=True,
+#                         help="10 column bed narrowPeak file containing "
+#                         "chromosome positions to compute embeddings")
+    
+#     parser.add_argument('--batch-size', type=int, 
+#                         help="batch size for processing the "
+#                         "chromosome positions", default=64)
+        
+#     parser.add_argument('--output-directory', type=str,
+#                         help="output directory path", default='.')
+    
+#     parser.add_argument('--output-filename', type=str,
+#                         help="name of compressed numpy file to store "
+#                         "the embeddings", default="embeddings.h5")
+    
+#     return parser
 
 
 def counts_loss_weight_argsparser():
