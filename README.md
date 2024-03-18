@@ -92,7 +92,7 @@ Available Blacklists:
 
 For those interested in using the blacklists, a current version for dm3, dm6, ce10, ce11, mm10, hg19, and hg38 are available in the lists/ folder at https://github.com/Boyle-Lab/Blacklist/
 
-Please cite:
+#### Please cite:
 
 Amemiya, H.M., Kundaje, A. & Boyle, A.P. The ENCODE Blacklist: Identification of Problematic Regions of the Genome. Sci Rep 9, 9354 (2019). https://doi.org/10.1038/s41598-019-45839-z
 
@@ -533,7 +533,7 @@ This script will output shap bigwig tracks which are usefull for visualizing in 
 
 UCSC, WashU browsers currently support visualizing the importance scores - use the Dynseq option
 
-Please cite:
+#### Please cite:
 
 <a href=https://www.nature.com/articles/s41588-022-01194-w> The dynseq browser  track shows context-specific features at nucleotide resolution </a>
 
