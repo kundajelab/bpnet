@@ -472,7 +472,7 @@ mkdir $PREDICTIONS_DIR
 bpnet-predict \
         --model $MODEL_DIR/model_split000 \
         --chrom-sizes $CHROM_SIZES \
-        --chroms chr1 \
+        --chroms chr7 chr13 chr17 chr19 chr21 chrX \
         --test-indices-file None \
         --reference-genome $REFERENCE_GENOME \
         --output-dir $PREDICTIONS_DIR \

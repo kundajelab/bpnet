@@ -61,10 +61,7 @@ def training_argsparser():
     parser.add_argument('--threads', '-t', type=int,
                         help="number of parallel threads for batch "
                         "generation", default=10)
-        
-    parser.add_argument('--gpus', '-p', type=int,
-                        help="number of gpus to use", default=1)
-    
+            
     # reference params
     parser.add_argument('--reference-genome', '-g', type=str, required=True,
                         help="number of gpus to use", default=1)
