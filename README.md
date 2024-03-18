@@ -534,6 +534,7 @@ This script will output shap bigwig tracks which are usefull for visualizing in 
 
 UCSC, WashU browsers currently support visualizing the importance scores - use the Dynseq option
 
+Please cite:
 
 <a href=https://www.nature.com/articles/s41588-022-01194-w> The dynseq browser  track shows context-specific features at nucleotide resolution </a>
 
