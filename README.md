@@ -524,8 +524,20 @@ bpnet-shap \
         --input-seq-len 2114 \
         --control-len 1000 \
         --task-id 0 \
-        --input-data $INPUT_DATA 
+        --input-data $INPUT_DATA \
+        --generate-shap-bigWigs
+
+This script will output shap bigwig tracks which are usefull for visualizing in a genome browser the bases/motif that are important for binding example if
+`--generate-shap-bigWigs`  is specified.
+
+UCSC, WashU browsers currently support visualizing the importance scores - use the Dynseq option
 ```
+
+<a href=https://www.nature.com/articles/s41588-022-01194-w> The dynseq browser  track shows context-specific features at nucleotide resolution </a>
+
+S Nair, A Barrett, D Li, BJ Raney, BT Lee, P Kerpedjiev, V Ramalingam, ...
+Nature genetics 54 (11), 1581-1583
+
 
 ### 5. Discover motifs with TF-modisco
 
