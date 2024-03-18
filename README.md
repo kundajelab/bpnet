@@ -31,9 +31,11 @@ Instead of installing the BPNet repo by yourself, you can also try the Anvil or 
 
 **Anvil**
 
-The NHGRI's AnVIL (Genomic Data Science Analysis, Visualization, and Informatics Lab-space) platform allows biomedical researchers to run analysis tools with just a few mouse clicks. 
+The NHGRI's AnVIL (Genomic Data Science Analysis, Visualization, and Informatics Lab-space) platform allows researchers with no/minimal computation skills to run analysis tools with just a few mouse clicks. Using our BPNet workflow on the AnVIL platform you can train state-of-art deep learning BPNet models for ChIP-seq data without any programming experience. We highly recommand this option for biologists. It is also highly scalable as GPU provisioning on the cloud etc., is automatically handled by AnVIL. We trained our Atlas scale models on the entire ENCODE compendium using the AnVIL platform. 
 
 <a href="https://anvil.terra.bio/#workspaces/terra-billing-vir/tf-atlas/workflows">Anvil/Terra </a> 
+
+It is also available for training models for <a href="https://anvil.terra.bio/#workspaces/terra-billing-vir/chromatin-atlas"> chromatin accessibility </a> experiments.  
 
 **Docker**
 ```
