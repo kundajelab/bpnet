@@ -256,7 +256,7 @@ First prepare a file `input_outliers.json` as shown below:
                        "ENCSR000EGM/data/minus.bw"]
         },
         "loci": {
-            "source": ["ENCSR000EGM/data/peaks_inliers.bed"]
+            "source": ["ENCSR000EGM/data/peaks.bed"]
         },
         "bias": {
             "source": ["ENCSR000EGM/data/control_plus.bw",
@@ -284,32 +284,27 @@ bpnet-outliers \
 
 #### 1.5 gc matched negatives
 
-<TODO: a little more detail about what this step does would be useful. Also, I think the code needs to be added to the 
-repo?>
+Generate a bed file of non-peak regions that are gc-matched with the peaks (foreground). These will be included to improve training accuracy on the non-peak regions.
 
 ```
-python get_genomewide_gc_bins.py \
+"bpnet-gc-reference - get gc content after binning the entire genome into bins - can be run only once for a genome for a specific input sequence length"
+
+bpnet-gc-reference \
         --ref_fasta reference/hg38.genome.fa \
         --chrom_sizes reference/hg38.chrom.sizes \
         --out_prefix reference/genomewide_gc_stride_1000_flank_size_1057.gc.bed \
         --inputlen 2114 \
         --stride 1000
+        
     
-python get_gc_content.py \
-       --input_bed ENCSR000EGM/data/peaks_inliers.bed \
-       --ref_fasta reference/hg38.genome.fa \
-       --out_prefix ENCSR000EGM/data/gc.bed \
-       --flank_size 1057
-
-bedtools intersect -v -a \
-    reference/genomewide_gc_stride_1000_flank_size_1057.gc.bed \
-    -b ENCSR000EGM/data/peaks_inliers.bed > ENCSR000EGM/data/candidate_negatives.tsv
-
-python get_gc_matched_negatives.py \
-        --candidate_negatives ENCSR000EGM/data/candidate_negatives.tsv \
-        --foreground_gc_bed  ENCSR000EGM/data/gc.bed \
-        --output_prefix ENCSR000EGM/data/negatives \
-        --neg_to_pos_ratio_train 4     
+bpnet-gc-background \
+        --peaks_bed ENCSR000EGM/data/peaks_inliers.bed \
+        --out_dir ENCSR000EGM/data/
+        --ref_gc_bed reference/genomewide_gc_stride_1000_flank_size_1057.gc.bed \
+        --out_prefix ENCSR000EGM/data/gc_negatives.bed \
+        --flank_size 1057
+        --neg_to_pos_ratio_train 4        
+        
 ```
 
 
@@ -338,7 +333,7 @@ Note that the `input_data.json` file is used for multiple downstream steps.
             "source": ["ENCSR000EGM/data/peaks_inliers.bed"]
         },
         "background_loci": {
-            "source": ["ENCSR000EGM/data/negatives.bed"],
+            "source": ["ENCSR000EGM/data/gc_negatives.bed"],
             "ratio": [0.25]
         },
         "bias": {
