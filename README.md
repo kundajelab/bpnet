@@ -48,7 +48,7 @@ docker run -it --rm --cpus=10 --memory=200g --gpus device=1 --mount src=/mnt/bpn
 
 ### 1. Experimental dataset
 
-For this tutorial we'll use experimental CHIP-seq data, for the transcription factor CTCF obtained for the K562 cell line, which is available on the ENCODE data portal. There are 5 such experiments that we find in ENCODE, you can see them listed here <a href="https://www.encodeproject.org/search/?type=Experiment&status=released&replicates.library.biosample.donor.organism.scientific_name=Homo+sapiens&biosample_ontology.term_name=K562&assay_title=Histone+ChIP-seq&assay_title=TF+ChIP-seq&target.label=CTCF">CHIP-seq CTCF K562 </a> . We'll restrict ourselves to one experiment 
+For this tutorial we'll use experimental CHIP-seq data, for the transcription factor CTCF in the K562 cell line, which is available on the ENCODE data portal. There are 5 such experiments that we find in ENCODE, you can see them listed here <a href="https://www.encodeproject.org/search/?type=Experiment&status=released&replicates.library.biosample.donor.organism.scientific_name=Homo+sapiens&biosample_ontology.term_name=K562&assay_title=Histone+ChIP-seq&assay_title=TF+ChIP-seq&target.label=CTCF">CHIP-seq CTCF K562 </a> . We'll restrict ourselves to one experiment 
 <a href="https://www.encodeproject.org/experiments/ENCSR000EGM/">ENCSR000EGM</a>
 
 Download the .bam files for the two replicates shown below in the image.
@@ -256,7 +256,7 @@ First prepare a file `input_outliers.json` as shown below:
                        "ENCSR000EGM/data/minus.bw"]
         },
         "loci": {
-            "source": ["ENCSR000EGM/data/peaks.bed"]
+            "source": ["ENCSR000EGM/data/peaks_inliers.bed"]
         },
         "bias": {
             "source": ["ENCSR000EGM/data/control_plus.bw",
@@ -521,7 +521,7 @@ mkdir $SHAP_DIR
 bpnet-shap \
         --reference-genome $REFERENCE_GENOME \
         --model $MODEL_DIR/model_split000  \
-        --bed-file $DATA_DIR/peaks_med.bed \
+        --bed-file $DATA_DIR/peaks_inliers.bed \
         --chroms chr1 \
         --output-dir $SHAP_DIR \
         --input-seq-len 2114 \
