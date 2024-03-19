@@ -2,6 +2,12 @@
 
 BPNet is a python package with a CLI to train and interpret base-resolution deep neural networks trained on functional genomics data such as ChIP-nexus or ChIP-seq.
 
+## Table of contents
+
+[Installation](https://github.com/kundajelab/bpnet-refactor?tab=readme-ov-file#installation)
+[Tutorial](https://github.com/kundajelab/bpnet-refactor?tab=readme-ov-file#tutorial)
+[How to Cite](https://github.com/kundajelab/bpnet-refactor?tab=readme-ov-file#installation)
+
 ## Installation
 
 ### 1. Install Miniconda
@@ -45,7 +51,7 @@ docker run -it --rm --cpus=10 --memory=200g --gpus device=1 --mount src=/mnt/bpn
 ```
 
 
-## Tutorial on how to use the command line interface
+## Tutorial
 
 ### 1. Experimental dataset
 
@@ -551,4 +557,12 @@ Use the newer version of TF-modisco called modisco-lite to discover the motifs. 
 
 
 Support to directly use FiNeMO from the BPNet repo will be added later. For now use: https://github.com/austintwang/finemo_gpu
+
+## How to Cite
+
+If you're using BPNet in your work, please cite the original BPNet paper:
+
+Avsec, Ž., Weilert, M., Shrikumar, A. et al. Base-resolution models of transcription-factor binding reveal soft motif syntax. Nat Genet 53, 354–366 (2021). 
+
+And reach out to Vivekanandan Ramalingam and Anshul Kundaje to discuss how to cite this update version. An preprint associated with this new version will soon be released and will be pointed out here. 
 
