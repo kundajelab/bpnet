@@ -11,29 +11,23 @@ BPNet is a python package with a CLI to train and interpret base-resolution deep
 
 ## Installation
 
-### 1. Install Miniconda
+This section will discuss the packages needed to train and interpret the BPNet models. Firstly, it is recommended that you use a GPU for model training and have the necessary NVIDIA drivers and CUDA already installed. You can verify that your machine is set up to use GPU's properly by executing the nvidia-smi command and ensuring that the command returns information about your system GPU(s) (rather than an error). Secondly there are three ways to ensure you have the necessary packages which we detail below:
 
-Download and install the latest version of Miniconda for your platform. Here is the link for the installers - <a href="https://docs.conda.io/en/latest/miniconda.html">Miniconda Installers</a>
 
-### 2. Create new virtual environment
-
-Create a new virtual environment and activate it as shown below
-
-```
-conda create --name bpnet python=3.7
-conda activate bpnet
-```
-
-### 3. Install basepairmodels
-
-```
-pip install git+https://github.com/kundajelab/bpnet-refactor.git
-
-```
-
-### 4. Docker and Anvil options
+### 1. Docker and 2. Anvil
 
 Instead of installing the BPNet repo by yourself, you can also try the Anvil or Docker options to train/use BPNet models.
+
+**Docker**
+
+Download and install the latest version of Docker for your platform. Here is the link for the installers -[Docker Installers](https://docs.docker.com/get-docker/). Run the docker run command below to open an environment with all the packages installed.
+
+```
+docker pull vivekramalingam/tf-atlas:gcp-modeling_v2.1.0-rc.1
+
+docker run -it --rm --cpus=10 --memory=32g --gpus device=1 --mount src=/mnt/bpnet-models/,target=/mydata,type=bind vivekramalingam/tf-atlas:gcp-modeling_v2.1.0-rc.1
+
+```
 
 **Anvil**
 
@@ -43,11 +37,28 @@ The NHGRI's AnVIL (Genomic Data Science Analysis, Visualization, and Informatics
 
 It is also available for training models for <a href="https://anvil.terra.bio/#workspaces/terra-billing-vir/chromatin-atlas"> chromatin accessibility </a> experiments.  
 
-**Docker**
-```
-docker pull vivekramalingam/tf-atlas:gcp-modeling_v2.1.0-rc.1
+***TODO - Anvil Tutorial
 
-docker run -it --rm --cpus=10 --memory=200g --gpus device=1 --mount src=/mnt/bpnet-models/,target=/mydata,type=bind vivekramalingam/tf-atlas:gcp-modeling_v2.0.0-rc.2
+
+### 3. Local Installation
+
+#### 3.1. Install Miniconda
+
+Download and install the latest version of Miniconda for your platform. Here is the link for the installers - <a href="https://docs.conda.io/en/latest/miniconda.html">Miniconda Installers</a>
+
+#### 3.2. Create new virtual environment
+
+Create a new virtual environment and activate it as shown below
+
+```
+conda create --name bpnet python=3.7
+conda activate bpnet
+```
+
+#### 3.3. Install basepairmodels
+
+```
+pip install git+https://github.com/kundajelab/bpnet-refactor.git
 
 ```
 
@@ -554,7 +565,7 @@ Nature genetics 54 (11), 1581-1583
 Use the newer version of TF-modisco called modisco-lite to discover the motifs. Support to directly use modisco-lite from the BPNet repo will be added later. For now use: https://github.com/jmschrei/tfmodisco-lite
 
 
-### 5. Discover location of the identified motifs with FiNeMo
+### 6. Discover location of the identified motifs with FiNeMo
 
 
 Support to directly use FiNeMO from the BPNet repo will be added later. For now use: https://github.com/austintwang/finemo_gpu
