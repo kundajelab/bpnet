@@ -63,13 +63,19 @@ pip install git+https://github.com/kundajelab/bpnet-refactor.git
 
 ## Tutorial
 
-### Optional walk through for downloading and preprocessing the data:
+### Optional additional walk through for downloading and preprocessing an example data:
 
+[Download-test-data](https://github.com/kundajelab/bpnet-refactor/wiki/Download-test-data)
 
+[Preprocessing](https://github.com/kundajelab/bpnet-refactor/wiki/Preprocessing)
+
+[Outlier_removal](https://github.com/kundajelab/bpnet-refactor/wiki/Outlier_removal)
+
+[Background_generation](https://github.com/kundajelab/bpnet-refactor/wiki/Background_generation)
 
 ### 1. Train a model!
 
-Before we start training, we need to compile a json file that contains information about the input data. We will call this file `input_data.json`. Here is a sample json file that shows how to specify the input data information for the data we organized in Section 1.3. The data is organized into tasks and tracks. In this example we have one task and two tracks, the plus and the minus strand. Each task has 4 required keys, with values corresponding to tracks calculated in the preprocessing steps:
+Before we start training, we need to compile a json file that contains information about the input data. We will call this file `input_data.json`. Here is a sample json file that shows how to specify the input data information for the data. The data is organized into tasks and tracks. In this example we have one task and two tracks, the plus and the minus strand. Each task has 4 required keys, with values corresponding to tracks calculated in the preprocessing steps:
 
 `signal`: the `plus` and `minus` bigwig tracks 
 
