@@ -1,6 +1,6 @@
 # BPNet
 
-BPNet is a python package with a CLI to train and interpret base-resolution deep neural networks trained on functional genomics data such as ChIP-nexus or ChIP-seq.
+BPNet is a python package with a CLI to train and interpret base-resolution deep neural networks trained on functional genomics data such as ChIP-nexus or ChIP-seq. This is the improved version of the repo associated the BPNet paper. We suggest using this going forward instead of the original repo.
 
 ## Table of contents
 
