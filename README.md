@@ -59,6 +59,24 @@ conda activate bpnet
 pip install git+https://github.com/kundajelab/bpnet-refactor.git
 
 ```
+#### 3.4 Additional tools to install
+
+For the following steps you will need `samtools` `bamtools` and `bedGraphToBigWig`, which are not 
+installed as part of this repository. 
+
+The tools can be installed via the links below or using `conda`.
+
+<a href="http://www.htslib.org/download/">samtools</a>
+
+<a href="https://anaconda.org/bioconda/bamtools">bamtools</a>
+
+<a href="http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/">bedGraphToBigWig (Linux 64-bit)</a>
+
+<a href="http://hgdownload.soe.ucsc.edu/admin/exe/macOSX.x86_64/">bedGraphToBigWig (Mac OSX 10.14.6)</a>
+
+```
+conda install -c conda-forge -c bioconda samtools=1.19.2 bamtools=2.5.2 ucsc-bedgraphtobigwig=445
+```
 
 
 ## Tutorial
