@@ -14,11 +14,9 @@ BPNet is a python package with a CLI to train and interpret base-resolution deep
 This section will discuss the packages needed to train and interpret the BPNet models. Firstly, it is recommended that you use a GPU for model training and have the necessary NVIDIA drivers and CUDA already installed. You can verify that your machine is set up to use GPU's properly by executing the nvidia-smi command and ensuring that the command returns information about your system GPU(s) (rather than an error). Secondly there are three ways to ensure you have the necessary packages which we detail below:
 
 
-### 1. Docker and 2. Anvil
+Instead of installing the BPNet repo by yourself, you can also try the Docker or Anvil options to train/use BPNet models.
 
-Instead of installing the BPNet repo by yourself, you can also try the Anvil or Docker options to train/use BPNet models.
-
-**Docker**
+### 1. Docker 
 
 Download and install the latest version of Docker for your platform. Here is the link for the installers -[Docker Installers](https://docs.docker.com/get-docker/). Run the docker run command below to open an environment with all the packages installed.
 
@@ -29,7 +27,7 @@ docker run -it --rm --cpus=10 --memory=32g --gpus device=1 --mount src=/mnt/bpne
 
 ```
 
-**Anvil**
+### 2. Anvil
 
 The NHGRI's AnVIL (Genomic Data Science Analysis, Visualization, and Informatics Lab-space) platform allows researchers with no/minimal computation skills to run analysis tools with just a few mouse clicks. Using our BPNet workflow on the AnVIL platform you can train state-of-art deep learning BPNet models for ChIP-seq data without any programming experience. We highly recommand this option for biologists. It is also highly scalable as GPU provisioning on the cloud etc., is automatically handled by AnVIL. We trained our Atlas scale models on the entire ENCODE compendium using the AnVIL platform. 
 
@@ -65,269 +63,11 @@ pip install git+https://github.com/kundajelab/bpnet-refactor.git
 
 ## Tutorial
 
-### 1. Experimental dataset
+### Optional walk through for downloading and preprocessing the data:
 
-For this tutorial we'll use experimental CHIP-seq data, for the transcription factor CTCF in the K562 cell line, which is available on the ENCODE data portal. There are 5 such experiments that we find in ENCODE, you can see them listed here <a href="https://www.encodeproject.org/search/?type=Experiment&status=released&replicates.library.biosample.donor.organism.scientific_name=Homo+sapiens&biosample_ontology.term_name=K562&assay_title=Histone+ChIP-seq&assay_title=TF+ChIP-seq&target.label=CTCF">CHIP-seq CTCF K562 </a> . We'll restrict ourselves to one experiment 
-<a href="https://www.encodeproject.org/experiments/ENCSR000EGM/">ENCSR000EGM</a>
 
-Download the .bam files for the two replicates shown below in the image.
 
-<img src="./docs-build/tutorial/bpnet/images/tutorial-data.png" alt="replicate bams"/>
-
-The two replicates are isogenic replicates (biological). A more detailed explanation 
-of the various types of replicates can be found <a href="https://www.encodeproject.org/data-standards/terms/">here</a>.
-
-Links to the replicate bam files provided below.
-
-<a href="https://www.encodeproject.org/files/ENCFF198CVB/@@download/ENCFF198CVB.bam">ENCFF198CVB</a>
-
-<a href="https://www.encodeproject.org/files/ENCFF488CXC/@@download/ENCFF488CXC.bam">ENCFF488CXC</a>
-
-```
-wget https://www.encodeproject.org/files/ENCFF198CVB/@@download/ENCFF198CVB.bam -O rep1.bam
-wget https://www.encodeproject.org/files/ENCFF488CXC/@@download/ENCFF488CXC.bam -O rep2.bam
-```
-
-Now download the control for the experiment, which is available here <a href="https://www.encodeproject.org/experiments/ENCSR000EHI/">ENCSR000EHI</a>
-
-Download the bam file shown in the image below.
-
-<img src="./docs-build/tutorial/bpnet/images/tutorial-control.png" alt="control bam"/>
-
-Link provided below
-
-<a href="https://www.encodeproject.org/files/ENCFF023NGN/@@download/ENCFF023NGN.bam">ENCFF023NGN</a>
-
-```
-wget https://www.encodeproject.org/files/ENCFF023NGN/@@download/ENCFF023NGN.bam -O control.bam
-```
-
-Finally, download the reference files. In the example below, some preprocessing is required to filter out unwanted chromosomes from the 
-`hg38.chrom.sizes` file. Additionally, the blacklist file shown is specific to hg38, and should be replaced with a genome-specific blacklist
-if alternative genomes are used.
-
-Available Blacklists:
-
-For those interested in using the blacklists, a current version for dm3, dm6, ce10, ce11, mm10, hg19, and hg38 are available in the lists/ folder at https://github.com/Boyle-Lab/Blacklist/
-
-#### Please cite:
-
-Amemiya, H.M., Kundaje, A. & Boyle, A.P. The ENCODE Blacklist: Identification of Problematic Regions of the Genome. Sci Rep 9, 9354 (2019). https://doi.org/10.1038/s41598-019-45839-z
-
-
-```
-# download genome refrence
-wget https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz \
--O hg38.genome.fa.gz | gunzip
-
-# index genome reference
-samtools faidx hg38.genome.fa
-
-# download chrom sizes
-wget https://www.encodeproject.org/files/GRCh38_EBV.chrom.sizes/@@download/GRCh38_EBV.chrom.sizes.tsv
-
-# exclude alt contigs and chrEBV
-grep -v -e '_' -e 'chrEBV' GRCh38_EBV.chrom.sizes.tsv > hg38.chrom.sizes
-rm GRCh38_EBV.chrom.sizes.tsv
-
-# make file with chromosomes only
-awk '{print $1}' hg38.chrom.sizes > chroms.txt
-
-# download blacklist
-wget https://www.encodeproject.org/files/ENCFF356LFX/@@download/ENCFF356LFX.bed.gz -O blacklist.bed.gz
-gunzip blacklist.bed.gz
-```  
-
-#### 1.1 Preprocessing steps to generate bigwig counts tracks
-
-For the following steps you will need `samtools` `bamtools` and `bedGraphToBigWig`, which are not 
-installed as part of this repository. 
-
-The tools can be installed via the links below or using `conda`.
-
-<a href="http://www.htslib.org/download/">samtools</a>
-
-<a href="https://anaconda.org/bioconda/bamtools">bamtools</a>
-
-<a href="http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/">bedGraphToBigWig (Linux 64-bit)</a>
-
-<a href="http://hgdownload.soe.ucsc.edu/admin/exe/macOSX.x86_64/">bedGraphToBigWig (Mac OSX 10.14.6)</a>
-
-```
-conda install -c conda-forge -c bioconda samtools=1.19.2 bamtools=2.5.2 ucsc-bedgraphtobigwig=445
-```
-
-##### 1.1.1 Merge the two replicates and create and index
-
-```
-samtools merge -f merged.bam rep1.bam rep2.bam
-samtools index merged.bam
-```
-
-We will also index the control BAM file
-
-```
-samtools index control.bam
-```
-
-##### 1.1.2 Create bigwig files using bedtools via intermediate bedGraph files
-
-In addition to creating the bigwig files, at this step we will filter the bam files
-to keep only the chromosomes that we want to use in the model. In the example shown below, 
-we do this using `samtools view` and the `hg38.chrom.sizes` reference file.
-
-**Experiment**
-```
-# get coverage of 5’ positions of the plus strand
-samtools view -b merged.bam $(cut -f 1 hg38.chrom.sizes) | \
-	bedtools genomecov -5 -bg -strand + -ibam stdin | \
-	sort -k1,1 -k2,2n > plus.bedGraph
-
-# get coverage of 5’ positions of the minus strand
-samtools view -b merged.bam $(cut -f 1 hg38.chrom.sizes) | \
-        bedtools genomecov -5 -bg -strand - -ibam stdin | \
-        sort -k1,1 -k2,2n > minus.bedGraph
-
-# Convert bedGraph files to bigWig files
-bedGraphToBigWig plus.bedGraph hg38.chrom.sizes plus.bw
-bedGraphToBigWig minus.bedGraph hg38.chrom.sizes minus.bw
-```
-**Control**
-```
-# get coverage of 5’ positions of the control plus strand
-samtools view -b control.bam $(cut -f 1 hg38.chrom.sizes) | \
-        bedtools genomecov -5 -bg -strand + -ibam stdin | \
-        sort -k1,1 -k2,2n > control_plus.bedGraph
-
-# get coverage of 5' positions of the control minus strand
-samtools view -b control.bam $(cut -f 1 hg38.chrom.sizes) | \
-        bedtools genomecov -5 -bg -strand - -ibam stdin | \
-        sort -k1,1 -k2,2n > control_minus.bedGraph
-
-# Convert bedGraph files to bigWig files
-bedGraphToBigWig control_plus.bedGraph hg38.chrom.sizes control_plus.bw
-bedGraphToBigWig control_minus.bedGraph hg38.chrom.sizes control_minus.bw
-```
-
-#### 1.2 Identify peaks
-
-For the purposes of this tutorial we will use the optimal IDR thresholded peaks that are already available in the ENCODE data portal. We will use the the narrowPeak files that are in BED6+4 format. Explanation of what each of the 10 fields means can be found  <a href="http://genome.ucsc.edu/FAQ/FAQformat.html#format12">here</a>. Currently, only this format is supported but in the
-future support for more formats will be added.
-
-See image below that shows the file listed in the ENCODE data portal
-
-<img src="./docs-build/tutorial/bpnet/images/tutorial-idrpeaks.png">
-
-Download the file: 
-```
-wget https://www.encodeproject.org/files/ENCFF396BZQ/@@download/ENCFF396BZQ.bed.gz -O peaks.bed.gz
-gunzip peaks.bed.gz
-```
-
-
-#### 1.3 Organize you data
-
-At this point, we suggest creating a directory structure to store the data, models, predictions, metrics, importance 
-scores, discovered motifs, plots & visualizations etc. that will make it easier for you to organize and maintain your work. Let's start by creating a parent directory for the experiment and moving the bigwig files and peaks file from section 1.1 & 1.2 to a data directory
-```
-mkdir ENCSR000EGM
-mkdir ENCSR000EGM/data
-mv *.bw ENCSR000EGM/data
-mv peaks.bed ENCSR000EGM/data
-```
-
-Once this is done, your directory hierarchy should resemble this
-
-<div align="left"><img src="./docs-build/tutorial/bpnet/images/directory-data.png"></div>
-
-Note that the relative paths in subsequent pipeline steps assume that the current working directory is the one 
-immediately above the project directory. For example, if you are in the `ENCSR000EGM` folder, navigate up one level with `cd ..`.
-
-Make a `reference` directory at the same level as the `ENCSR000EGM` experiment directory. In the `reference` directory we will place 4 files: the genome reference `hg38.genome.fa`, the indexed reference `hg38.genome.fai`, the chromosome sizes file `hg38.chrom.sizes` and one text file that contains a list of chromosomes we care about `chroms.txt`. `blacklist.bed` contains all the blacklist regions with artifact peaks.
-
-```
-mkdir ENCSR000EGM/reference 
-mv hg38.genome.fa* ENCSR000EGM/reference
-mv hg38.chrom.sizes ENCSR000EGM/refence
-mv chroms.txt ENCSR000EGM/reference
-mv blacklist.bed ENCSR000EGM/reference
-```
-
-The directory structure should look like this (TODO: update this image):
-
-<div align="left"><img src="./docs-build/tutorial/bpnet/images/directory-reference.png"></img>
-</div>
-
-#### 1.4 Outlier removal
-
-Filter the peaks file for outliers. Peaks that meet either of two criteria are removed:
-
-(1) Overlap with regions identified in `blacklist.bed`.
-(2) Number of reads in the peak is in the `--quantile` quantile. 
-
-First prepare a file `input_outliers.json` as shown below:
-
-```
-{
-    "0": {
-        "signal": {
-            "source": ["ENCSR000EGM/data/plus.bw",
-                       "ENCSR000EGM/data/minus.bw"]
-        },
-        "loci": {
-            "source": ["ENCSR000EGM/data/peaks.bed"]
-        },
-        "bias": {
-            "source": ["ENCSR000EGM/data/control_plus.bw",
-                       "ENCSR000EGM/data/control_minus.bw"],
-            "smoothing": [null, null]
-        }
-    }
-}
-```
-Next, run the following command:
-
-```
-bpnet-outliers \
-    --input-data input_outliers.json  \
-    --quantile 0.99 \
-    --quantile-value-scale-factor 1.2 \
-    --task 0 \
-    --chrom-sizes ENCSR000EGM/reference/hg38.chrom.sizes \
-    --chroms $(paste -s -d ' ' ENCSR000EGM/reference/chroms.txt) \
-    --sequence-len 1000 \
-    --blacklist ENCSR000EGM/reference/blacklist.bed \
-    --global-sample-weight 1.0 \
-    --output-bed ENCSR000EGM/data/peaks_inliers.bed
-```
-
-#### 1.5 gc matched negatives
-
-Generate a bed file of non-peak regions that are gc-matched with the peaks (foreground). These will be included to improve training accuracy on the non-peak regions.
-
-```
-"bpnet-gc-reference - get gc content after binning the entire genome into bins - can be run only once for a genome for a specific input sequence length"
-
-bpnet-gc-reference \
-        --ref_fasta reference/hg38.genome.fa \
-        --chrom_sizes reference/hg38.chrom.sizes \
-        --out_prefix reference/genomewide_gc_stride_1000_flank_size_1057.gc.bed \
-        --inputlen 2114 \
-        --stride 1000
-        
-    
-bpnet-gc-background \
-        --peaks_bed ENCSR000EGM/data/peaks_inliers.bed \
-        --out_dir ENCSR000EGM/data/
-        --ref_gc_bed reference/genomewide_gc_stride_1000_flank_size_1057.gc.bed \
-        --out_prefix ENCSR000EGM/data/gc_negatives.bed \
-        --flank_size 1057
-        --neg_to_pos_ratio_train 4        
-        
-```
-
-
-### 2. Train a model!
+### 1. Train a model!
 
 Before we start training, we need to compile a json file that contains information about the input data. We will call this file `input_data.json`. Here is a sample json file that shows how to specify the input data information for the data we organized in Section 1.3. The data is organized into tasks and tracks. In this example we have one task and two tracks, the plus and the minus strand. Each task has 4 required keys, with values corresponding to tracks calculated in the preprocessing steps:
 
@@ -479,9 +219,9 @@ bpnet-train \
 
 Note: It might take a few minutes for the training to begin once the above command has been issued, be patient and you should see the training eventually start. 
 
-### 3. Predict on test set
+### 2. Model Prediction
 
-Once the training is complete we can generate predictions on the test chromosome.
+Once the training is complete we can generate predictions on the test set chromosomes to understand how well the model performs on regions not seen during training. 
 
 ```
 PREDICTIONS_DIR=$BASE_DIR/predictions_and_metrics
@@ -527,7 +267,9 @@ bpnet-predict \
     --generate-predicted-profile-bigWigs
 ```
 
-### 4. Compute importance scores
+### 3. Compute importance scores
+
+"Understanding why a model makes a certain prediction can be as crucial as the prediction’s accuracy in many applications". [SHAP](https://proceedings.neurips.cc/paper_files/paper/2017/file/8a20a8621978632d76c43dfd28b67767-Paper.pdf) (SHapley Additive exPlanations) assigns each feature an importance value for a particular prediction. In our case we will assign each nucleotide an importance value or how much it contributed for the binding at each input region according to our model. A model that can predict the binding signal well at the test regions presumably must have learnt usefull features and thus the importance score values can shed light in to the driving sequence feature including the Transcription factor binding motifs. 
 
 ```
 SHAP_DIR=$BASE_DIR/shap
@@ -559,14 +301,18 @@ S Nair, A Barrett, D Li, BJ Raney, BT Lee, P Kerpedjiev, V Ramalingam, ...
 Nature genetics 54 (11), 1581-1583
 
 
-### 5. Discover motifs with TF-modisco
+### 4. Discover motifs with TF-modisco
 
+"TF-MoDISco is a biological motif discovery algorithm that differentiates itself by using attribution scores from a machine learning model, in addition to the sequence itself, to guide motif discovery. Using the attribution scores, as opposed to just the sequence, can be beneficial because the attributions fine-map the specific sequence drivers of biology. Although in many of our examples this model is BPNet and the attributions are from DeepLIFT/DeepSHAP, there is no limit on what attribution algorithm is used, or what model the attributions come from."
+
+This step allows one to get a list of sequence motifs that drive the signal in the studied experiment.
 
 Use the newer version of TF-modisco called modisco-lite to discover the motifs. Support to directly use modisco-lite from the BPNet repo will be added later. For now use: https://github.com/jmschrei/tfmodisco-lite
 
 
-### 6. Discover location of the identified motifs with FiNeMo
+### 5. Discover location of the identified motifs with FiNeMo
 
+While TF-modisco allows one to get a list of sequence motifs, FiNeMo allows one to map the location of these motifs in all the input regions. FiNeMO is a GPU-accelerated hit caller for retrieving TFMoDISCo motif occurences from machine-learning-model-generated contribution scores.
 
 Support to directly use FiNeMO from the BPNet repo will be added later. For now use: https://github.com/austintwang/finemo_gpu
 
