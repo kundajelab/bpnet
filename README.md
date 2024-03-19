@@ -63,7 +63,7 @@ pip install git+https://github.com/kundajelab/bpnet-refactor.git
 
 ## Tutorial
 
-### Optional additional walk through for downloading and preprocessing an example data:
+### 0. Optional additional walk through for downloading and preprocessing an example data:
 
 [Download-test-data](https://github.com/kundajelab/bpnet-refactor/wiki/Download-test-data)
 
