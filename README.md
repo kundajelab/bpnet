@@ -81,9 +81,9 @@ Before we start training, we need to compile a json file that contains informati
 
 `loci`: the bed file with the filtered peaks
 
-`background_loci`: the bed file with gc-matched background regions (`source`), and the ratio of positive-to-negative regions used when generating the gc-matched negatives file, expressed as a decimal (`ratio`) 
+`background_loci` (optional): the bed file with gc-matched background regions (`source`), and the ratio of positive-to-negative regions used when generating the gc-matched negatives file, expressed as a decimal (`ratio`) 
 
-`bias`: the `plus` and `minus` control bigwig tracks
+`bias` (optional): the `plus` and `minus` control bigwig tracks
 
 Note that the `input_data.json` file is used for multiple downstream steps.
 
@@ -158,8 +158,7 @@ Additionally, we need a json file to specify parameters for the BPNet architectu
 ```
 
 The `loss_weights` field has two values: the `profile` loss weight and the 
-`counts` loss weight. The counts loss weight can be automatically generated 
-using the following command:
+`counts` loss weight. Profile loss weight is always set to 1. Optimal counts loss weight can be automatically generated using the following command:
 
 ```
 bpnet-counts-loss-weight --input-data input_data.json
