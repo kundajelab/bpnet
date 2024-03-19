@@ -182,7 +182,7 @@ validation and test. Here is a sample that contains one split.
 
 Now that we have our data prepped, we can train our first model!!
 
-The command to train a model is called `train`. 
+The command to train a model is called `bpnet-train`. 
 
 You can kick start the training process by executing this command in your shell
 
