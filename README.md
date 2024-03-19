@@ -7,6 +7,7 @@ BPNet is a python package with a CLI to train and interpret base-resolution deep
 [Installation](https://github.com/kundajelab/bpnet-refactor?tab=readme-ov-file#installation) </br>
 [Tutorial](https://github.com/kundajelab/bpnet-refactor?tab=readme-ov-file#tutorial) </br>
 [How to Cite](https://github.com/kundajelab/bpnet-refactor?tab=readme-ov-file#how-to-cite) </br>
+[Full Documentation](https://github.com/kundajelab/bpnet-refactor/wiki) </br>
 
 ## Installation
 
