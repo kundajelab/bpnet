@@ -52,7 +52,7 @@ import os
 import pandas as pd
 import time
 
-from bpnet.utils.datetime import *
+from bpnet.utils.datetime_custom import *
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.utils import logger
 from bpnet.model import arch

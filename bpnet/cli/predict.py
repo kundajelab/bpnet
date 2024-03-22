@@ -12,7 +12,7 @@ from bpnet.cli import argparsers
 from bpnet.utils import logger
 
 from bpnet.utils.bigwig_helper import write_bigwig
-from bpnet.utils.datetime import *
+from bpnet.utils.datetime_custom import *
 from bpnet.utils.exceptionhandler import NoTracebackException
 from bpnet.generators import sequtils
 
