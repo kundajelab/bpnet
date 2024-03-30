@@ -314,7 +314,9 @@ bpnet-shap \
 This script will output shap bigwig tracks which are usefull for visualizing in a genome browser the bases/motif that are important for binding example if
 `--generate-shap-bigWigs`  is specified.
 
-UCSC, WashU browsers currently support visualizing the importance scores - use the Dynseq option
+UCSC, WashU browsers currently support visualizing the importance scores - use the [Dynseq](https://kundajelab.github.io/dynseq-pages/) option.
+
+
 
 #### Please cite:
 
