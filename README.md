@@ -75,7 +75,8 @@ The tools can be installed via the links below or using `conda`.
 <a href="http://hgdownload.soe.ucsc.edu/admin/exe/macOSX.x86_64/">bedGraphToBigWig (Mac OSX 10.14.6)</a>
 
 ```
-conda install -c conda-forge -c bioconda samtools=1.3.1 bamtools=2.5.1 ucsc-bedgraphtobigwig=357
+conda install -y -c bioconda samtools=1.1 bedtools ucsc-bedgraphtobigwig
+
 ```
 
 
