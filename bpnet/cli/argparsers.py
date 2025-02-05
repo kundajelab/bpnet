@@ -270,7 +270,7 @@ def shap_scores_argsparser():
                         help="the path to the bed file containing "
                         "postions at which the model should be interpreted")
 
-    parser.add_argument('--sample', '-s', type=int,
+    parser.add_argument('--sample', type=int,
                         help="the number of samples to randomly sample from "
                         "the bed file. Only one of --sample or --chroms can "
                         "be used.")
@@ -523,7 +523,7 @@ def genomewide_gc_bins_argparser():
     parser.add_argument("-c", "--chrom_sizes", required=True, type=str,
                         help="path to chrom sizes file for ref genome (contains chr and chrom size separated by tab)")
 
-    parser.add_argument("-o", "--out_prefix", required=True, type=str,
+    parser.add_argument("-o", "--output_prefix", required=True, type=str,
                         help="output prefix path to store the gc content of binned genome")
 
     parser.add_argument("-f", "--inputlen", type=int, default=2114,

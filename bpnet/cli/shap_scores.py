@@ -17,7 +17,7 @@ from bpnet.utils.misc import gaussian1D_smoothing
 from tensorflow.keras.models import load_model
 import tensorflow as tf
 from tensorflow.keras.utils import CustomObjectScope
-import bpnet.utils.importance_hdf5_to_bigwig
+import bpnet.utils.importance_hdf5_to_bigwig as importance_hdf5_to_bigwig
 
 from bpnet.model.custommodel \
     import CustomModel
@@ -363,15 +363,15 @@ def shap_scores(args, shap_dir):
         config = vars(args)
         json.dump(config, fp)
     
-    if args.generate_shap_bigWigs 
+    if args.generate_shap_bigWigs:
         if args.chrom_sizes:
-            importance_hdf5_to_bigwig(h5py_path=f"{shap_dir}/counts_scores.h5", 
+            importance_hdf5_to_bigwig(hdf5_path=f"{shap_dir}/counts_scores.h5", 
                                       chrom_sizes=args.chrom_sizes, 
                                       regions_path=f"{shap_dir}/peaks_valid_scores.bed", 
                                       outfile=f"{shap_dir}/counts_scores.bw", 
                                       outstats=f"{shap_dir}/counts_scores.stats.txt")
 
-            importance_hdf5_to_bigwig(h5py_path=f"{shap_dir}/profile_scores.h5", 
+            importance_hdf5_to_bigwig(hdf5_path=f"{shap_dir}/profile_scores.h5", 
                                       chrom_sizes=args.chrom_sizes, 
                                       regions_path=f"{shap_dir}/peaks_valid_scores.bed", 
                                       outfile=f"{shap_dir}/profile_scores.bw", 
