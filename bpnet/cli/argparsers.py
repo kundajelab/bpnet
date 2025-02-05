@@ -64,7 +64,7 @@ def training_argsparser():
             
     # reference params
     parser.add_argument('--reference-genome', '-g', type=str, required=True,
-                        help="number of gpus to use", default=1)
+                        help="reference-genome")
     
     parser.add_argument('--chrom-sizes', '-c', type=str, required=True,
                         help="path to chromosome sizes file")
@@ -376,9 +376,6 @@ def shap_scores_argsparser():
     
 #     parser.add_argument('--model', '-m', type=str, required=True,
 #                         help="the path to the model file")
-    
-#     parser.add_argument('--reference-genome', '-g', type=str, required=True,
-#                         help="number of gpus to use")
     
 #     parser.add_argument('--input-layer-name', type=str, 
 #                         help="name of the input sequence layer", 
