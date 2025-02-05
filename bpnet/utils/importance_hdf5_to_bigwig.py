@@ -9,6 +9,7 @@ def importance_hdf5_to_bigwig(hdf5_path: str,
                               regions_path: str,
                               outfile: str,
                               outstats: str,
+                              chrom_sizes: str,
                               debug_chr: str = None,
                               gzipped: bool = False) -> None:
     '''
