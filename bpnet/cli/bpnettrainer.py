@@ -88,7 +88,6 @@ def main():
     # parallelization parms
     parallelization_params = {}
     parallelization_params['threads'] = args.threads
-    parallelization_params['gpus'] = args.gpus
     
     if not os.path.exists(output_params['output_dir']):
         raise NoTracebackException(
