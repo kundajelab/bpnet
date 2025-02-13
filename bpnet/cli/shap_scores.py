@@ -17,7 +17,7 @@ from bpnet.utils.misc import gaussian1D_smoothing
 from tensorflow.keras.models import load_model
 import tensorflow as tf
 from tensorflow.keras.utils import CustomObjectScope
-import bpnet.utils.importance_hdf5_to_bigwig as importance_hdf5_to_bigwig
+from bpnet.utils.importance_hdf5_to_bigwig import importance_hdf5_to_bigwig
 
 from bpnet.model.custommodel \
     import CustomModel
