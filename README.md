@@ -35,6 +35,11 @@ The NHGRI's AnVIL (Genomic Data Science Analysis, Visualization, and Informatics
 
 It is also available for training models for <a href="https://anvil.terra.bio/#workspaces/terra-billing-vir/chromatin-atlas"> chromatin accessibility </a> experiments.  
 
+
+A video turorial for training BPNet models on AnVIL is available here:
+
+<a href="https://www.youtube.com/watch?v=wQ4xeLIGozM&list=PL6aYJ_0zJ4uA6ydpiPQwAH-v4BfVO0hcw&index=5">Video Tutorial</a>
+
 ***TODO - Anvil Tutorial
 
 
