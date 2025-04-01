@@ -302,7 +302,8 @@ def train_and_validate(
                                train_chroms,loci_indices=train_indices,
                                background_loci_indices=background_train_indices,
                                num_threads=parallelization_params['threads'], 
-                               batch_size=hyper_params['batch_size'],                                
+                               batch_size=hyper_params['batch_size'],
+			       epochs=hyper_params['epochs'],                               
                                foreground_weight=mnll_loss_sample_weight,
                                background_weight=mnll_loss_background_sample_weight)
 
@@ -314,7 +315,8 @@ def train_and_validate(
                              val_chroms,loci_indices=val_indices,
                              background_loci_indices=background_val_indices, 
                              num_threads=parallelization_params['threads'], 
-                             batch_size=hyper_params['batch_size'],                              
+                             batch_size=hyper_params['batch_size'],
+			     epochs=hyper_params['epochs'],                              
                              foreground_weight=mnll_loss_sample_weight,
                              background_weight=mnll_loss_background_sample_weight)
 
