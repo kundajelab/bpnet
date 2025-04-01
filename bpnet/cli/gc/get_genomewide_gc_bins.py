@@ -34,7 +34,7 @@ def get_genomewide_gc_bins_main() -> None:
             regions_str += '\t'.join([chrom, str(bin_start), str(bin_end), str(fract)])+"\n"
 
     print("Writing GC content file...")
-    out_bed = args.out_prefix + ".bed"
+    out_bed = args.output_prefix + ".bed"
     with open(out_bed, 'w') as outfile:
         outfile.write(regions_str)
 
