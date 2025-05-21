@@ -40,6 +40,7 @@ def mean_predictions(predictions_list_str,output_path):
             start_lst.append(coord_start[order])
             end_lst.append(coord_end[order])
             pred_prof = f['predictions']['pred_profs'][()][order]
+            pred_prof = pred_prof.clip(min=np.min(pred_prof[np.nonzero(pred_prof)]))
             pred_profs_lst.append(pred_prof)
             pred_sum = np.sum(pred_prof,axis=1)
             pred_prob = np.swapaxes(pred_prof,1,2)/np.reshape(pred_sum,(pred_sum.shape[0],pred_sum.shape[1],1))

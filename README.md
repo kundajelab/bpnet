@@ -54,7 +54,7 @@ Download and install the latest version of Miniconda for your platform. Here is 
 Create a new virtual environment and activate it as shown below
 
 ```
-conda create --name bpnet python=3.8
+conda create --name bpnet python=3.7
 conda activate bpnet
 ```
 
