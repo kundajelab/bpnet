@@ -69,6 +69,6 @@ def get_gc_background_main() -> None:
                              output_prefix=gc_matched_negatives_out)
 
 
-if __name__ == 'main':
+if __name__ == '__main__':
     get_gc_background_main()
 
