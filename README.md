@@ -379,6 +379,29 @@ While TF-modisco allows one to get a list of sequence motifs, FiNeMo allows one 
 
 Support to directly use FiNeMO from the BPNet repo will be added later. For now use: https://github.com/austintwang/finemo_gpu
 
+```
+# for example
+git clone https://github.com/austintwang/finemo_gpu.git
+cd finemo_gpu
+
+conda env create -f environment.yml -n finemo
+conda activate finemo
+pip install --editable .
+
+cd ..
+
+HITS_DIR_COUNTS=$BASE_DIR/hits/counts
+mkdir -p HITS_DIR_COUNTS
+
+finemo extract-regions-bpnet-h5 -c $SHAP_DIR/counts_scores.h5 -o ${HITS_DIR_COUNTS}/regions_bw.npz -w 400 -p $BASE_DIR/data/peaks_inliers.bed
+
+
+finemo call-hits -l ${lambda} -r ${HITS_DIR_COUNTS}/regions_bw.npz -m ${modisco_h5} -p $BASE_DIR/data/peaks_inliers.bed -C $CHROM_SIZES -o ${HITS_DIR_COUNTS} -t 0.7 --compile
+
+
+finemo report -H ${HITS_DIR_COUNTS}/hits.tsv -r ${HITS_DIR_COUNTS}/regions_bw.npz -m ${modisco_h5} -p $BASE_DIR/data/peaks_inliers.bed -o ${HITS_DIR_COUNTS}/ -t 0.7 -W 400
+```
+
 ## How to Cite
 
 If you're using BPNet in your work, please cite the original BPNet paper:
