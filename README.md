@@ -123,7 +123,7 @@ Note that the `input_data.json` file is used for multiple downstream steps.
         },
         "background_loci": {
             "source": ["ENCSR000EGM/data/gc_negatives.bed"],
-            "ratio": [0.25]
+            "ratio": [0.33]
         },
         "bias": {
             "source": ["ENCSR000EGM/data/control_plus.bw",
