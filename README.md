@@ -343,6 +343,11 @@ Use the newer version of TF-modisco called modisco-lite to discover the motifs. 
 
 ```
 # for example 
+
+conda create --name tfmodisco python=3.10
+conda activate tfmodisco
+pip install modisco-lite
+
 MODISCO_DIR=$BASE_DIR/modisco
 MODISCO_COUNTS_DIR=$BASE_DIR/modisco/counts
 MODISCO_PROFILE_DIR=$BASE_DIR/modisco/profile
