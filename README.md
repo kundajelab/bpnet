@@ -389,7 +389,8 @@ conda activate finemo
 pip install --editable .
 
 cd ..
-
+```
+```
 HITS_DIR_COUNTS=$BASE_DIR/hits/counts
 mkdir -p HITS_DIR_COUNTS
 
