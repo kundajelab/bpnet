@@ -341,6 +341,33 @@ This step allows one to get a list of sequence motifs that drive the signal in t
 Use the newer version of TF-modisco called modisco-lite to discover the motifs. Support to directly use modisco-lite from the BPNet repo will be added later. For now use: https://github.com/jmschrei/tfmodisco-lite
 
 
+```
+# for example 
+MODISCO_DIR=$BASE_DIR/modisco
+MODISCO_COUNTS_DIR=$BASE_DIR/modisco/counts
+MODISCO_PROFILE_DIR=$BASE_DIR/modisco/profile
+mkdir -p $MODISCO_COUNTS_DIR
+mkdir -p $MODISCO_PROFILE_DIR
+
+modisco motifs\
+    --max_seqlets 50000 \
+    --h5py $SHAP_DIR/profile_scores.h5 \
+    -o $MODISCO_PROFILE_DIR/profile_modisco_scores.h5 \
+    --trim_size 20 \
+    --initial_flank_to_add 5 \
+    --final_flank_to_add 10
+
+modisco motifs\
+    --max_seqlets 50000 \
+    --h5py $SHAP_DIR/counts_scores.h5 \
+    -o $MODISCO_COUNTS_DIR/counts_modisco_scores.h5 \
+    --trim_size 20 \
+    --initial_flank_to_add 5 \
+    --final_flank_to_add 10
+
+```
+
+
 ### 5. Discover location of the identified motifs with FiNeMo
 
 While TF-modisco allows one to get a list of sequence motifs, FiNeMo allows one to map the location of these motifs in all the input regions. FiNeMO is a GPU-accelerated hit caller for retrieving TFMoDISCo motif occurences from machine-learning-model-generated contribution scores.
