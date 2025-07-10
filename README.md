@@ -307,14 +307,15 @@ bpnet-shap \
         --reference-genome $REFERENCE_GENOME \
         --model $MODEL_DIR/model_split000  \
         --bed-file $DATA_DIR/peaks_inliers.bed \
-        --chroms chr1 \
         --output-dir $SHAP_DIR \
         --input-seq-len 2114 \
         --control-len 1000 \
         --task-id 0 \
         --input-data $INPUT_DATA \
+        --chrom-sizes $CHROM_SIZES \
         --generate-shap-bigWigs
 
+# can also provide for example --chroms chr1 to generate shap only on a subset of chromosomes (chr1)
 ```
 
 This script will output shap bigwig tracks which are usefull for visualizing in a genome browser the bases/motif that are important for binding example if
