@@ -5,11 +5,11 @@ from setuptools import setup, find_packages
 
 setup(
     name="bpnet",
-    version='0.4.0',
+    version='2.0.0',
     description=("BPNet: toolkit to learn motif synthax from high-resolution functional genomics data"
                  " using convolutional neural networks"),
-    author="Surag Nair, Vivekanandan Ramalingam, Zahoor Zafrulla",
-    author_email="zahoor@stanford.edu",
+    author="Vivekanandan Ramalingam, Ziga Avsec, Surag Nair, Zahoor Zafrulla",
+    author_email="vir@stanford.edu",
     url="https://github.com/kundajelab/bpnet",
     packages=find_packages(exclude=["docs", "docs-build"]),
     install_requires=["tensorflow==2.4.1", 
