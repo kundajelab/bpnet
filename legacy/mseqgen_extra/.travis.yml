@@ -1,0 +1,10 @@
+language: python
+python:
+  - "3.6"
+# command to install dependencies
+install:
+  - pip install -r requirements.txt
+  - pip install .
+# command to run tests
+script: pytest
+script: pycodestyle --ignore=W291,W293,W503 --exclude=*build,.ipynb* .

@@ -1,0 +1,20 @@
+{
+    "0": {
+        "signal": {
+            "source": ["/users/zahoor/lab_data3/TF-Atlas/test_TF/data/ENCSR362NWP_plus.bigWig", 
+                       "/users/zahoor/lab_data3/TF-Atlas/test_TF/data/ENCSR362NWP_minus.bigWig"]
+        },
+        "loci": {
+            "source": ["/users/zahoor/mseqgen/tests/test_data/loci.bed"]
+        },
+        "background_loci": {
+            "source": ["/users/zahoor/mseqgen/tests/test_data/background.bed"],
+            "ratio": [3]
+        },
+        "bias": {
+            "source": ["/users/zahoor/lab_data3/TF-Atlas/test_TF/data/ENCSR362NWP_control_plus.bigWig",
+                       "/users/zahoor/lab_data3/TF-Atlas/test_TF/data/ENCSR362NWP_control_minus.bigWig"],
+            "smoothing": [null, null]
+        }
+    }
+}

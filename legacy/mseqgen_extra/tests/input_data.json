@@ -1,0 +1,10 @@
+{
+        "ZFP1_plus": {"strand": 0, 
+                      "task_id": 0, 
+                      "signal": "/users/zahoor/lab_data3/c2h2znfs/CHIP-exo/TFs/ZFP1/plus.bw", 
+                      "peaks": "/users/zahoor/lab_data3/c2h2znfs/CHIP-exo/TFs/ZFP1/peaks.bed"},
+        "ZFP1_minus": {"strand": 1, 
+                       "task_id": 0, 
+                       "signal": "/users/zahoor/lab_data3/c2h2znfs/CHIP-exo/TFs/ZFP1/minus.bw", 
+                       "peaks": "/users/zahoor/lab_data3/c2h2znfs/CHIP-exo/TFs/ZFP1/peaks.bed"} 
+}

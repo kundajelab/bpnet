@@ -1,0 +1,12 @@
+{
+    "task0_plus": {"strand": 0, 
+                  "task_id": 0, 
+                  "signal": "/users/zahoor/mseqgen/tests/test_data/single_task/stranded_with_controls/task0/plus.bw", 
+                  "control": "/users/zahoor/mseqgen/tests/test_data/single_task/stranded_with_controls/task0/control_plus.bw", 
+                  "peaks": "/users/zahoor/mseqgen/tests/test_data/single_task/stranded_with_controls/task0/peaks.bed"},
+    "task0_minus": {"strand": 1, 
+                   "task_id": 0, 
+                   "signal": "/users/zahoor/mseqgen/tests/test_data/single_task/stranded_with_controls/task0/minus.bw", 
+                   "control": "/users/zahoor/mseqgen/tests/test_data/single_task/stranded_with_controls/task0/control_minus.bw",
+                   "peaks": "/users/zahoor/mseqgen/tests/test_data/single_task/stranded_with_controls/task0/peaks.bed"} 
+}

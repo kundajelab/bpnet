@@ -1,0 +1,68 @@
+**********************
+Command Line Interface
+**********************
+
+bpnettrainer
+=============
+
+.. argparse::
+    :module: basepairmodels.cli.argparsers
+    :func: training_argsparser
+    :prog: bpnettrainer
+
+predict
+=======
+
+.. argparse::
+    :module: basepairmodels.cli.argparsers
+    :func: predict_argsparser
+    :prog: predict
+
+bounds
+===========
+
+.. argparse::
+    :module: basepairmodels.cli.bounds
+    :func: bounds_argsparser
+    :prog: bounds
+
+metrics
+=======
+
+.. argparse::
+    :module: basepairmodels.cli.argparsers
+    :func: metrics_argsparser
+    :prog: metrics
+
+shap_scores
+=========
+
+.. argparse::
+    :module: basepairmodels.cli.argparsers
+    :func: shap_scores_argsparser
+    :prog: shap_scores
+
+motif_discovery
+===========
+
+.. argparse::
+    :module: basepairmodels.cli.argparsers
+    :func: motif_discovery_argsparser
+    :prog: motif_discovery
+
+logits2profile
+===========
+
+.. argparse::
+    :module: basepairmodels.cli.logits2profile
+    :func: logits2profile_argsparser
+    :prog: logits2profile
+
+
+embeddings
+===========
+
+.. argparse::
+    :module: basepairmodels.cli.embeddings
+    :func: embeddings_argsparser
+    :prog: embeddings

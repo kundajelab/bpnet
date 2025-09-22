@@ -1,0 +1,828 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Command Line Interface &mdash; BPNet 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="CLI Tutorial" href="tutorial.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BPNet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">BPNet Documentatation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Command Line Interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#bpnettrainer">bpnettrainer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#predict">predict</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#bounds">bounds</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#metrics">metrics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#shap-scores">shap_scores</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#motif-discovery">motif_discovery</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#logits2profile">logits2profile</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#embeddings">embeddings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">CLI Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="miscellaneous.html">Miscellaneous</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BPNet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Command Line Interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/documentation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="command-line-interface">
+<h1>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="bpnettrainer">
+<h2>bpnettrainer<a class="headerlink" href="#bpnettrainer" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">bpnettrainer</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">batch</span><span class="o">-</span><span class="n">size</span> <span class="n">BATCH_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">epochs</span> <span class="n">EPOCHS</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">learning</span><span class="o">-</span><span class="n">rate</span> <span class="n">LEARNING_RATE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="nb">min</span><span class="o">-</span><span class="n">learning</span><span class="o">-</span><span class="n">rate</span> <span class="n">MIN_LEARNING_RATE</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">early</span><span class="o">-</span><span class="n">stopping</span><span class="o">-</span><span class="n">patience</span> <span class="n">EARLY_STOPPING_PATIENCE</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">early</span><span class="o">-</span><span class="n">stopping</span><span class="o">-</span><span class="nb">min</span><span class="o">-</span><span class="n">delta</span> <span class="n">EARLY_STOPPING_MIN_DELTA</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">reduce</span><span class="o">-</span><span class="n">lr</span><span class="o">-</span><span class="n">on</span><span class="o">-</span><span class="n">plateau</span><span class="o">-</span><span class="n">patience</span> <span class="n">REDUCE_LR_ON_PLATEAU_PATIENCE</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">model</span><span class="o">-</span><span class="n">arch</span><span class="o">-</span><span class="n">name</span> <span class="n">MODEL_ARCH_NAME</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">sequence</span><span class="o">-</span><span class="n">generator</span><span class="o">-</span><span class="n">name</span> <span class="n">SEQUENCE_GENERATOR_NAME</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">filters</span> <span class="n">FILTERS</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">counts</span><span class="o">-</span><span class="n">loss</span><span class="o">-</span><span class="n">weight</span> <span class="n">COUNTS_LOSS_WEIGHT</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">control</span><span class="o">-</span><span class="n">smoothing</span> <span class="n">CONTROL_SMOOTHING</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">threads</span> <span class="n">THREADS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">gpus</span> <span class="n">GPUS</span><span class="p">]</span>
+                    <span class="o">--</span><span class="n">reference</span><span class="o">-</span><span class="n">genome</span> <span class="n">REFERENCE_GENOME</span> <span class="o">--</span><span class="n">chrom</span><span class="o">-</span><span class="n">sizes</span> <span class="n">CHROM_SIZES</span> <span class="o">--</span><span class="n">chroms</span>
+                    <span class="n">CHROMS</span> <span class="p">[</span><span class="n">CHROMS</span> <span class="o">...</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">exclude</span><span class="o">-</span><span class="n">chroms</span> <span class="n">EXCLUDE_CHROMS</span> <span class="p">[</span><span class="n">EXCLUDE_CHROMS</span> <span class="o">...</span><span class="p">]]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">splits</span> <span class="n">SPLITS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">dir</span> <span class="n">OUTPUT_DIR</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">tag</span><span class="o">-</span><span class="n">length</span> <span class="n">TAG_LENGTH</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">time</span><span class="o">-</span><span class="n">zone</span> <span class="n">TIME_ZONE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">automate</span><span class="o">-</span><span class="n">filenames</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">model</span><span class="o">-</span><span class="n">output</span><span class="o">-</span><span class="n">filename</span> <span class="n">MODEL_OUTPUT_FILENAME</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="nb">input</span><span class="o">-</span><span class="n">seq</span><span class="o">-</span><span class="nb">len</span> <span class="n">INPUT_SEQ_LEN</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">len</span> <span class="n">OUTPUT_LEN</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">jitter</span> <span class="n">MAX_JITTER</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">reverse</span><span class="o">-</span><span class="n">complement</span><span class="o">-</span><span class="n">augmentation</span><span class="p">]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">negative</span><span class="o">-</span><span class="n">sampling</span><span class="o">-</span><span class="n">rate</span> <span class="n">NEGATIVE_SAMPLING_RATE</span><span class="p">]</span> <span class="o">--</span><span class="nb">input</span><span class="o">-</span><span class="n">data</span> <span class="n">INPUT_DATA</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">stranded</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">has</span><span class="o">-</span><span class="n">control</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sampling</span><span class="o">-</span><span class="n">mode</span> <span class="p">{</span><span class="n">peaks</span><span class="p">,</span><span class="n">sequential</span><span class="p">,</span><span class="n">random</span><span class="p">}]</span>
+                    <span class="p">[</span><span class="o">--</span><span class="n">shuffle</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--batch-size, -b</kbd></dt>
+<dd><p>training batch size</p>
+<p>Default: 64</p>
+</dd>
+<dt><kbd>--epochs, -e</kbd></dt>
+<dd><p>number of training epochs</p>
+<p>Default: 100</p>
+</dd>
+<dt><kbd>--learning-rate, -L</kbd></dt>
+<dd><p>learning rate for Adam optimizer</p>
+<p>Default: 0.004</p>
+</dd>
+<dt><kbd>--min-learning-rate, -l</kbd></dt>
+<dd><p>min learning rate for Adam optimizer</p>
+<p>Default: 0.0001</p>
+</dd>
+<dt><kbd>--early-stopping-patience</kbd></dt>
+<dd><p>patience value for early stopping callback</p>
+<p>Default: 5</p>
+</dd>
+<dt><kbd>--early-stopping-min-delta</kbd></dt>
+<dd><p>minimum change in the validation loss to qualify as an improvement</p>
+<p>Default: 0.001</p>
+</dd>
+<dt><kbd>--reduce-lr-on-plateau-patience</kbd></dt>
+<dd><p>patience value for ReduceLROnPlateau callback</p>
+<p>Default: 2</p>
+</dd>
+<dt><kbd>--model-arch-name</kbd></dt>
+<dd><p>the name of the model architesture that will be used in training (the name that will be used to fetch the model from model_archs)</p>
+<p>Default: “BPNet”</p>
+</dd>
+<dt><kbd>--sequence-generator-name</kbd></dt>
+<dd><p>the name of the sequence generator from mseqgen library that will be used to generate batches of data</p>
+<p>Default: “BPNet”</p>
+</dd>
+<dt><kbd>--filters, -f</kbd></dt>
+<dd><p>number of filters to use in BPNet</p>
+<p>Default: 64</p>
+</dd>
+<dt><kbd>--counts-loss-weight, -w</kbd></dt>
+<dd><p>Weight for counts mse loss</p>
+<p>Default: 100.0</p>
+</dd>
+<dt><kbd>--control-smoothing</kbd></dt>
+<dd><p>Default: [[7.5, 80]]</p>
+</dd>
+<dt><kbd>--threads, -t</kbd></dt>
+<dd><p>number of parallel threads for batch generation</p>
+<p>Default: 10</p>
+</dd>
+<dt><kbd>--gpus, -p</kbd></dt>
+<dd><p>number of gpus to use</p>
+<p>Default: 1</p>
+</dd>
+<dt><kbd>--reference-genome, -g</kbd></dt>
+<dd><p>number of gpus to use</p>
+<p>Default: 1</p>
+</dd>
+<dt><kbd>--chrom-sizes, -c</kbd></dt>
+<dd><p>path to chromosome sizes file</p>
+</dd>
+<dt><kbd>--chroms</kbd></dt>
+<dd><p>master list of chromosomes for the genome</p>
+</dd>
+<dt><kbd>--exclude-chroms</kbd></dt>
+<dd><p>list of chromosomes to be excluded</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>--splits, -s</kbd></dt>
+<dd><p>path to json file</p>
+</dd>
+<dt><kbd>--output-dir, -d</kbd></dt>
+<dd><p>destination directory to store the model</p>
+<p>Default: “.”</p>
+</dd>
+<dt><kbd>--tag-length</kbd></dt>
+<dd><p>length of the alphanumeric tag for the model file name (applies if –automate-filenames option is used)</p>
+<p>Default: 6</p>
+</dd>
+<dt><kbd>--time-zone</kbd></dt>
+<dd><p>time zone to use for timestamping model directories (applies if –automate-filenames option is used)</p>
+<p>Default: “US/Pacific”</p>
+</dd>
+<dt><kbd>--automate-filenames</kbd></dt>
+<dd><p>specify if the model output directory and filename should be auto generated</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--model-output-filename</kbd></dt>
+<dd><p>basename of the model file without the .h5 extension (required if –automate-filenames is not used)</p>
+<p>Default: “”</p>
+</dd>
+<dt><kbd>--input-seq-len</kbd></dt>
+<dd><p>length of input DNA sequence</p>
+<p>Default: 3088</p>
+</dd>
+<dt><kbd>--output-len</kbd></dt>
+<dd><p>length of output profile</p>
+<p>Default: 1000</p>
+</dd>
+<dt><kbd>--max-jitter</kbd></dt>
+<dd><p>maximum value for randomized jitter to offset the peaks from the exact center of the input</p>
+<p>Default: 128</p>
+</dd>
+<dt><kbd>--reverse-complement-augmentation</kbd></dt>
+<dd><p>enable reverse complement augmentation</p>
+<p>Default: True</p>
+</dd>
+<dt><kbd>--negative-sampling-rate</kbd></dt>
+<dd><p>number of negatives to sample for every positive peak</p>
+<p>Default: 0.0</p>
+</dd>
+<dt><kbd>--input-data, -i</kbd></dt>
+<dd><p>path to json file containing task information</p>
+</dd>
+<dt><kbd>--stranded</kbd></dt>
+<dd><p>specify if the input data is stranded or unstranded</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--has-control</kbd></dt>
+<dd><p>specify if the input data has controls</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--sampling-mode</kbd></dt>
+<dd><p>Possible choices: peaks, sequential, random</p>
+<p>Default: “peaks”</p>
+</dd>
+<dt><kbd>--shuffle</kbd></dt>
+<dd><p>Default: False</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="predict">
+<h2>predict<a class="headerlink" href="#predict" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">predict</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">batch</span><span class="o">-</span><span class="n">size</span> <span class="n">BATCH_SIZE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="nb">input</span><span class="o">-</span><span class="n">seq</span><span class="o">-</span><span class="nb">len</span> <span class="n">INPUT_SEQ_LEN</span><span class="p">]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">len</span> <span class="n">OUTPUT_LEN</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">predict</span><span class="o">-</span><span class="n">peaks</span><span class="p">]</span> <span class="o">--</span><span class="n">reference</span><span class="o">-</span><span class="n">genome</span> <span class="n">REFERENCE_GENOME</span>
+               <span class="o">--</span><span class="n">chrom</span><span class="o">-</span><span class="n">sizes</span> <span class="n">CHROM_SIZES</span> <span class="o">--</span><span class="n">chroms</span> <span class="n">CHROMS</span> <span class="p">[</span><span class="n">CHROMS</span> <span class="o">...</span><span class="p">]</span> <span class="o">--</span><span class="nb">input</span><span class="o">-</span><span class="n">data</span> <span class="n">INPUT_DATA</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">stranded</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">has</span><span class="o">-</span><span class="n">control</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">model</span><span class="o">-</span><span class="n">name</span> <span class="n">MODEL_NAME</span><span class="p">]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">model</span><span class="o">-</span><span class="nb">dir</span> <span class="n">MODEL_DIR</span><span class="p">]</span> <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">dir</span> <span class="n">OUTPUT_DIR</span> <span class="p">[</span><span class="o">--</span><span class="n">automate</span><span class="o">-</span><span class="n">filenames</span><span class="p">]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">time</span><span class="o">-</span><span class="n">zone</span> <span class="n">TIME_ZONE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">exponentiate</span><span class="o">-</span><span class="n">counts</span><span class="p">]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">window</span><span class="o">-</span><span class="n">size</span> <span class="n">OUTPUT_WINDOW_SIZE</span><span class="p">]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">other</span><span class="o">-</span><span class="n">tags</span> <span class="n">OTHER_TAGS</span> <span class="p">[</span><span class="n">OTHER_TAGS</span> <span class="o">...</span><span class="p">]]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">write</span><span class="o">-</span><span class="n">buffer</span><span class="o">-</span><span class="n">size</span> <span class="n">WRITE_BUFFER_SIZE</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--batch-size, -b</kbd></dt>
+<dd><p>test batch size</p>
+<p>Default: 64</p>
+</dd>
+<dt><kbd>--input-seq-len</kbd></dt>
+<dd><p>length of input DNA sequence</p>
+<p>Default: 3088</p>
+</dd>
+<dt><kbd>--output-len</kbd></dt>
+<dd><p>length of output profile</p>
+<p>Default: 1000</p>
+</dd>
+<dt><kbd>--predict-peaks</kbd></dt>
+<dd><p>generate predictions only on the peaks contained in the peaks.bed files</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--reference-genome, -g</kbd></dt>
+<dd><p>the path to the reference genome fasta file</p>
+</dd>
+<dt><kbd>--chrom-sizes, -s</kbd></dt>
+<dd><p>path to chromosome sizes file</p>
+</dd>
+<dt><kbd>--chroms, -c</kbd></dt>
+<dd><p>list of test chromosomes for prediction</p>
+</dd>
+<dt><kbd>--input-data, -i</kbd></dt>
+<dd><p>path to json file containing task information</p>
+</dd>
+<dt><kbd>--stranded</kbd></dt>
+<dd><p>specify if the input data is stranded or unstranded (i.e in case –has-control is True)</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--has-control</kbd></dt>
+<dd><p>specify if the input data has controls</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--model, -m</kbd></dt>
+<dd><p>path to the .h5 model file</p>
+</dd>
+<dt><kbd>--model-name</kbd></dt>
+<dd><p>the name of the model that will be used in for predictions</p>
+<p>Default: “BPNet”</p>
+</dd>
+<dt><kbd>--model-dir</kbd></dt>
+<dd><p>directory where .h5 model files are stored</p>
+</dd>
+<dt><kbd>--output-dir, -o</kbd></dt>
+<dd><p>destination directory to store predictions as a bigWig file</p>
+</dd>
+<dt><kbd>--automate-filenames</kbd></dt>
+<dd><p>specify if the predictions output should be stored in a timestamped subdirectory within –output-dir</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--time-zone</kbd></dt>
+<dd><p>time zone to use for timestamping model directories</p>
+<p>Default: “US/Pacific”</p>
+</dd>
+<dt><kbd>--exponentiate-counts</kbd></dt>
+<dd><p>specify if the predicted counts should be exponentiated before writing to the bigWig files</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--output-window-size</kbd></dt>
+<dd><p>size of the central window of the output profile predictions that will be written to the bigWig files</p>
+<p>Default: 1000</p>
+</dd>
+<dt><kbd>--other-tags</kbd></dt>
+<dd><p>list of additional tags to be added as suffix to the filenames</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>--write-buffer-size</kbd></dt>
+<dd><p>size of the write buffer to store predictions before writing to bigWig files</p>
+<p>Default: 10000</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="bounds">
+<h2>bounds<a class="headerlink" href="#bounds" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">bounds</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="nb">input</span><span class="o">-</span><span class="n">profiles</span> <span class="n">INPUT_PROFILES</span> <span class="p">[</span><span class="n">INPUT_PROFILES</span> <span class="o">...</span><span class="p">]]</span>
+              <span class="p">[</span><span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">names</span> <span class="n">OUTPUT_NAMES</span> <span class="p">[</span><span class="n">OUTPUT_NAMES</span> <span class="o">...</span><span class="p">]]</span> <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">directory</span>
+              <span class="n">OUTPUT_DIRECTORY</span> <span class="o">--</span><span class="n">peaks</span> <span class="n">PEAKS</span> <span class="p">[</span><span class="o">--</span><span class="n">peak</span><span class="o">-</span><span class="n">width</span> <span class="n">PEAK_WIDTH</span><span class="p">]</span>
+              <span class="p">[</span><span class="o">--</span><span class="n">chroms</span> <span class="n">CHROMS</span> <span class="p">[</span><span class="n">CHROMS</span> <span class="o">...</span><span class="p">]]</span>
+              <span class="p">[</span><span class="o">--</span><span class="n">smoothing</span><span class="o">-</span><span class="n">params</span> <span class="n">SMOOTHING_PARAMS</span> <span class="p">[</span><span class="n">SMOOTHING_PARAMS</span> <span class="o">...</span><span class="p">]]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--input-profiles</kbd></dt>
+<dd><p>list of input bigWig profile</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>--output-names</kbd></dt>
+<dd><p>list of outputnames for the bounds output corresponding to each of the input profiles</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>--output-directory</kbd></dt>
+<dd><p>Path to the output directory</p>
+</dd>
+<dt><kbd>--peaks</kbd></dt>
+<dd><p>Path to the bed file containing the chromosome coordinates. The bed file should have at least 3 columns, the first 3 being ‘chrom’, ‘start’, and ‘end’</p>
+</dd>
+<dt><kbd>--peak-width</kbd></dt>
+<dd><p>the span of the peak to be considered for bounds computation</p>
+<p>Default: 1000</p>
+</dd>
+<dt><kbd>--chroms, -c</kbd></dt>
+<dd><p>list of chromosomes to be considered from peaks file</p>
+</dd>
+<dt><kbd>--smoothing-params</kbd></dt>
+<dd><p>sigma and window size for gaussian 1D smoothing of ‘observed’ and ‘predicted’ profiles</p>
+<p>Default: [7.0, 81]</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="metrics">
+<h2>metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">metrics</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">profileA</span> <span class="n">PROFILEA</span> <span class="o">--</span><span class="n">profileB</span> <span class="n">PROFILEB</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">smooth</span><span class="o">-</span><span class="n">profileA</span> <span class="n">SMOOTH_PROFILEA</span> <span class="p">[</span><span class="n">SMOOTH_PROFILEA</span> <span class="o">...</span><span class="p">]]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">smooth</span><span class="o">-</span><span class="n">profileB</span> <span class="n">SMOOTH_PROFILEB</span> <span class="p">[</span><span class="n">SMOOTH_PROFILEB</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">countsA</span> <span class="n">COUNTSA</span><span class="p">]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">countsB</span> <span class="n">COUNTSB</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">apply</span><span class="o">-</span><span class="n">softmax</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">profileA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">apply</span><span class="o">-</span><span class="n">softmax</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">profileB</span><span class="p">]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">metrics</span><span class="o">-</span><span class="n">seq</span><span class="o">-</span><span class="nb">len</span> <span class="n">METRICS_SEQ_LEN</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">peaks</span> <span class="n">PEAKS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bounds</span><span class="o">-</span><span class="n">csv</span> <span class="n">BOUNDS_CSV</span><span class="p">]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">step</span><span class="o">-</span><span class="n">size</span> <span class="n">STEP_SIZE</span><span class="p">]</span> <span class="o">--</span><span class="n">chroms</span> <span class="n">CHROMS</span> <span class="p">[</span><span class="n">CHROMS</span> <span class="o">...</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">exclude</span><span class="o">-</span><span class="n">zero</span><span class="o">-</span><span class="n">profiles</span><span class="p">]</span>
+               <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">dir</span> <span class="n">OUTPUT_DIR</span> <span class="p">[</span><span class="o">--</span><span class="n">automate</span><span class="o">-</span><span class="n">filenames</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">time</span><span class="o">-</span><span class="n">zone</span> <span class="n">TIME_ZONE</span><span class="p">]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">other</span><span class="o">-</span><span class="n">tags</span> <span class="n">OTHER_TAGS</span> <span class="p">[</span><span class="n">OTHER_TAGS</span> <span class="o">...</span><span class="p">]]</span> <span class="o">--</span><span class="n">chrom</span><span class="o">-</span><span class="n">sizes</span> <span class="n">CHROM_SIZES</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--profileA, -A</kbd></dt>
+<dd><p>the bigWig with ground truth values or a replicate</p>
+</dd>
+<dt><kbd>--profileB, -B</kbd></dt>
+<dd><p>the bigWig with predicted values or the second replicate</p>
+</dd>
+<dt><kbd>--smooth-profileA</kbd></dt>
+<dd><p>a list of two items, sigma and window width for gaussian smoothing of profileA before computing metrics. Empty list indicates nosmoothing</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>--smooth-profileB</kbd></dt>
+<dd><p>a list of two items, sigma and window width for gaussian smoothing of profileB before computing metrics. Empty list indicates nosmoothing</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>--countsA</kbd></dt>
+<dd><p>the bigWig with region counts assigned to each base (the counts track that is produced by the predict script). This is optional.</p>
+</dd>
+<dt><kbd>--countsB</kbd></dt>
+<dd><p>the bigWig with region counts assigned to each base (the counts track that is produced by the predict script). This is optional.</p>
+</dd>
+<dt><kbd>--apply-softmax-to-profileA</kbd></dt>
+<dd><p>apply softmax to profileA before computingmetrics (in casees where profileA is logits)</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--apply-softmax-to-profileB</kbd></dt>
+<dd><p>apply softmax to profileB before computingmetrics (in casees where profileB is logits)</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--metrics-seq-len</kbd></dt>
+<dd><p>the length of the sequence over which to compute the metrics</p>
+<p>Default: 1000</p>
+</dd>
+<dt><kbd>--peaks</kbd></dt>
+<dd><p>the path to the file containing</p>
+</dd>
+<dt><kbd>--bounds-csv</kbd></dt>
+<dd><p>the path to the file containing upper andlower bounds for mnll, cross entropy, jsd,pearson &amp; spearman correlation</p>
+</dd>
+<dt><kbd>--step-size</kbd></dt>
+<dd><p>the step size for genome wide metrics</p>
+<p>Default: 50</p>
+</dd>
+<dt><kbd>--chroms, -c</kbd></dt>
+<dd><p>list of test chromosomes to compute metrics</p>
+</dd>
+<dt><kbd>--exclude-zero-profiles</kbd></dt>
+<dd><p>exclude observed or predicted profiles that are all zeros</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--output-dir, -o</kbd></dt>
+<dd><p>destination directory to store metrics results</p>
+</dd>
+<dt><kbd>--automate-filenames</kbd></dt>
+<dd><p>specify if the metrics output should be stored in a timestamped subdirectory within –output-dir</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--time-zone</kbd></dt>
+<dd><p>time zone to use for timestamping output directories</p>
+<p>Default: “US/Pacific”</p>
+</dd>
+<dt><kbd>--other-tags</kbd></dt>
+<dd><p>list of additional tags to be added as suffix to the filenames</p>
+<p>Default: []</p>
+</dd>
+<dt><kbd>--chrom-sizes, -s</kbd></dt>
+<dd><p>path to chromosome sizes file</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="shap-scores">
+<h2>shap_scores<a class="headerlink" href="#shap-scores" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">shap_scores</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">reference</span><span class="o">-</span><span class="n">genome</span> <span class="n">REFERENCE_GENOME</span> <span class="o">--</span><span class="nb">input</span><span class="o">-</span><span class="n">seq</span><span class="o">-</span><span class="nb">len</span> <span class="n">INPUT_SEQ_LEN</span>
+                   <span class="o">--</span><span class="n">control</span><span class="o">-</span><span class="nb">len</span> <span class="n">CONTROL_LEN</span> <span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span> <span class="p">[</span><span class="o">--</span><span class="n">task</span><span class="o">-</span><span class="nb">id</span> <span class="n">TASK_ID</span><span class="p">]</span> <span class="o">--</span><span class="n">bed</span><span class="o">-</span><span class="n">file</span>
+                   <span class="n">BED_FILE</span> <span class="p">[</span><span class="o">--</span><span class="n">sample</span> <span class="n">SAMPLE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">chroms</span> <span class="n">CHROMS</span> <span class="p">[</span><span class="n">CHROMS</span> <span class="o">...</span><span class="p">]]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">presort</span><span class="o">-</span><span class="n">bed</span><span class="o">-</span><span class="n">file</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">control</span><span class="o">-</span><span class="n">info</span> <span class="n">CONTROL_INFO</span><span class="p">]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">control</span><span class="o">-</span><span class="n">smoothing</span> <span class="n">CONTROL_SMOOTHING</span> <span class="p">[</span><span class="n">CONTROL_SMOOTHING</span> <span class="o">...</span><span class="p">]]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">shuffles</span> <span class="n">NUM_SHUFFLES</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">gen</span><span class="o">-</span><span class="n">null</span><span class="o">-</span><span class="n">dist</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">seed</span> <span class="n">SEED</span><span class="p">]</span>
+                   <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">directory</span> <span class="n">OUTPUT_DIRECTORY</span> <span class="p">[</span><span class="o">--</span><span class="n">automate</span><span class="o">-</span><span class="n">filenames</span><span class="p">]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">time</span><span class="o">-</span><span class="n">zone</span> <span class="n">TIME_ZONE</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--reference-genome, -g</kbd></dt>
+<dd><p>path to the reference genome file</p>
+</dd>
+<dt><kbd>--input-seq-len</kbd></dt>
+<dd><p>the length of the input sequence to the model</p>
+</dd>
+<dt><kbd>--control-len</kbd></dt>
+<dd><p>the length of the control input to the model</p>
+</dd>
+<dt><kbd>--model, -m</kbd></dt>
+<dd><p>the path to the model (.h5) file</p>
+</dd>
+<dt><kbd>--task-id, -t</kbd></dt>
+<dd><p>In the multitask case the integer sequence number of the task for which the interpretation scores should be computed. For single task use 0.</p>
+<p>Default: 0</p>
+</dd>
+<dt><kbd>--bed-file, -b</kbd></dt>
+<dd><p>the path to the bed file containing postions at which the model should be interpreted</p>
+</dd>
+<dt><kbd>--sample, -s</kbd></dt>
+<dd><p>the number of samples to randomly sample from the bed file. Only one of –sample or –chroms can be used.</p>
+</dd>
+<dt><kbd>--chroms, -c</kbd></dt>
+<dd><p>list of chroms on which the contribution scores are to be computed. If not specified all chroms in –bed-file will be processed.</p>
+</dd>
+<dt><kbd>--presort-bed-file</kbd></dt>
+<dd><p>specify if the –bed-file should be sorted in descending order of enrichment. It is assumed that the –bed-file has ‘signalValue’ in column 7 to use for sorting.</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--control-info</kbd></dt>
+<dd><p>path to the input json file that has paths to control bigWigs. The –task-id is matched with ‘task_id’ in the the json file to get the list of control bigWigs</p>
+</dd>
+<dt><kbd>--control-smoothing</kbd></dt>
+<dd><p>sigma and window width for gaussian 1d smoothing of the control</p>
+<p>Default: [7.0, 81]</p>
+</dd>
+<dt><kbd>--num-shuffles</kbd></dt>
+<dd><p>the number of dinucleotide shuffles to perform on each input sequence</p>
+<p>Default: 20</p>
+</dd>
+<dt><kbd>--gen-null-dist</kbd></dt>
+<dd><p>generate null distribution of shap scores by using a dinucleotide shuffled input sequence</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--seed</kbd></dt>
+<dd><p>seed to create a NumPy RandomState object usedfor performing shuffles</p>
+<p>Default: 20210304</p>
+</dd>
+<dt><kbd>--output-directory, -o</kbd></dt>
+<dd><p>destination directory to store the interpretation scores</p>
+</dd>
+<dt><kbd>--automate-filenames</kbd></dt>
+<dd><p>specify if the interpret output should be storedin a timestamped subdirectory within –output-dir</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--time-zone</kbd></dt>
+<dd><p>time zone to use for timestamping output directories</p>
+<p>Default: “US/Pacific”</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="motif-discovery">
+<h2>motif_discovery<a class="headerlink" href="#motif-discovery" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">motif_discovery</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">scores</span><span class="o">-</span><span class="n">path</span> <span class="n">SCORES_PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">scores</span><span class="o">-</span><span class="n">locations</span> <span class="n">SCORES_LOCATIONS</span><span class="p">]</span>
+                       <span class="p">[</span><span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">directory</span> <span class="n">OUTPUT_DIRECTORY</span><span class="p">]</span>
+                       <span class="p">[</span><span class="o">--</span><span class="n">modisco</span><span class="o">-</span><span class="n">window</span><span class="o">-</span><span class="n">size</span> <span class="n">MODISCO_WINDOW_SIZE</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--scores-path</kbd></dt>
+<dd><p>Path to the importance scores hdf5 file</p>
+</dd>
+<dt><kbd>--scores-locations</kbd></dt>
+<dd><p>path to bed file containing the locations that match the scores</p>
+</dd>
+<dt><kbd>--output-directory</kbd></dt>
+<dd><p>Path to the output directory</p>
+</dd>
+<dt><kbd>--modisco-window-size</kbd></dt>
+<dd><p>size of the window around the peak coodrinate that will be considered for motifdiscovery</p>
+<p>Default: 400</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="logits2profile">
+<h2>logits2profile<a class="headerlink" href="#logits2profile" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">logits2profile</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">logits</span><span class="o">-</span><span class="n">file</span> <span class="n">LOGITS_FILE</span> <span class="o">--</span><span class="n">counts</span><span class="o">-</span><span class="n">file</span> <span class="n">COUNTS_FILE</span>
+                      <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">directory</span> <span class="n">OUTPUT_DIRECTORY</span> <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">filename</span> <span class="n">OUTPUT_FILENAME</span>
+                      <span class="o">--</span><span class="n">peaks</span> <span class="n">PEAKS</span> <span class="o">--</span><span class="n">chroms</span> <span class="n">CHROMS</span> <span class="p">[</span><span class="n">CHROMS</span> <span class="o">...</span><span class="p">]</span> <span class="o">--</span><span class="n">chrom</span><span class="o">-</span><span class="n">sizes</span> <span class="n">CHROM_SIZES</span>
+                      <span class="p">[</span><span class="o">--</span><span class="n">window</span><span class="o">-</span><span class="n">size</span> <span class="n">WINDOW_SIZE</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--logits-file</kbd></dt>
+<dd><p>Path to the logits bigWig file that was generated by the predict script</p>
+</dd>
+<dt><kbd>--counts-file</kbd></dt>
+<dd><p>Path to the exponentiated counts bigWig file that was generated by the predict script</p>
+</dd>
+<dt><kbd>--output-directory</kbd></dt>
+<dd><p>Path to the output directory</p>
+</dd>
+<dt><kbd>--output-filename</kbd></dt>
+<dd><p>output file name excluding extension</p>
+</dd>
+<dt><kbd>--peaks</kbd></dt>
+<dd><p>Path to the bed file containing the chromosomecoordinates at which the logits to counts conversion should take place</p>
+</dd>
+<dt><kbd>--chroms</kbd></dt>
+<dd><p>list of chroms for the output bigWig header</p>
+</dd>
+<dt><kbd>--chrom-sizes</kbd></dt>
+<dd><p>Path to the chromosome sizes file</p>
+</dd>
+<dt><kbd>--window-size</kbd></dt>
+<dd><p>size of the window around the chromosome coodrinate that will be considered for logits to counts conversion</p>
+<p>Default: 1000</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="embeddings">
+<h2>embeddings<a class="headerlink" href="#embeddings" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">embeddings</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span> <span class="o">--</span><span class="n">reference</span><span class="o">-</span><span class="n">genome</span> <span class="n">REFERENCE_GENOME</span>
+                  <span class="p">[</span><span class="o">--</span><span class="nb">input</span><span class="o">-</span><span class="n">layer</span><span class="o">-</span><span class="n">name</span> <span class="n">INPUT_LAYER_NAME</span><span class="p">]</span> <span class="o">--</span><span class="nb">input</span><span class="o">-</span><span class="n">layer</span><span class="o">-</span><span class="n">shape</span> <span class="n">INPUT_LAYER_SHAPE</span>
+                  <span class="p">[</span><span class="n">INPUT_LAYER_SHAPE</span> <span class="o">...</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">embeddings</span><span class="o">-</span><span class="n">layer</span><span class="o">-</span><span class="n">name</span> <span class="n">EMBEDDINGS_LAYER_NAME</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">cropped</span><span class="o">-</span><span class="n">size</span> <span class="n">CROPPED_SIZE</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">numbered</span><span class="o">-</span><span class="n">embeddings</span><span class="o">-</span><span class="n">layers</span><span class="o">-</span><span class="n">prefix</span> <span class="n">NUMBERED_EMBEDDINGS_LAYERS_PREFIX</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">numbered</span><span class="o">-</span><span class="n">embeddings</span><span class="o">-</span><span class="n">layers</span> <span class="n">NUM_NUMBERED_EMBEDDINGS_LAYERS</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">flatten</span><span class="o">-</span><span class="n">embeddings</span><span class="o">-</span><span class="n">layer</span><span class="p">]</span> <span class="o">--</span><span class="n">peaks</span> <span class="n">PEAKS</span> <span class="p">[</span><span class="o">--</span><span class="n">batch</span><span class="o">-</span><span class="n">size</span> <span class="n">BATCH_SIZE</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">directory</span> <span class="n">OUTPUT_DIRECTORY</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">filename</span> <span class="n">OUTPUT_FILENAME</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--model, -m</kbd></dt>
+<dd><p>the path to the model (.h5) file</p>
+</dd>
+<dt><kbd>--reference-genome, -g</kbd></dt>
+<dd><p>number of gpus to use</p>
+</dd>
+<dt><kbd>--input-layer-name</kbd></dt>
+<dd><p>name of the input sequence layer</p>
+<p>Default: “sequence”</p>
+</dd>
+<dt><kbd>--input-layer-shape</kbd></dt>
+<dd><p>shape of the input sequence layer (specifylist of values and omit the batch(?) dimension)</p>
+</dd>
+<dt><kbd>--embeddings-layer-name</kbd></dt>
+<dd><p>full name of layer for embeddings output. Cannot be combined with –numbered-embeddings-layers-prefix.</p>
+</dd>
+<dt><kbd>--cropped-size</kbd></dt>
+<dd><p>the size to which all embeddings outputs should be cropped to</p>
+</dd>
+<dt><kbd>--numbered-embeddings-layers-prefix</kbd></dt>
+<dd><p>common prefix string, of all required layers, for matching. Cannot be combined with –embeddings-layer-name</p>
+</dd>
+<dt><kbd>--num-numbered-embeddings-layers</kbd></dt>
+<dd><p>number of embeddings layers with common prefix specified by –numbered-embeddings-layers-prefix.</p>
+<p>Default: 8</p>
+</dd>
+<dt><kbd>--flatten-embeddings-layer</kbd></dt>
+<dd><p>specify if the embeddings layers should beflattened</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>--peaks</kbd></dt>
+<dd><p>10 column bed narrowPeak file containing chromosome positions to compute embeddings</p>
+</dd>
+<dt><kbd>--batch-size</kbd></dt>
+<dd><p>batch size for processing the chromosome positions</p>
+<p>Default: 64</p>
+</dd>
+<dt><kbd>--output-directory</kbd></dt>
+<dd><p>output directory path</p>
+<p>Default: “.”</p>
+</dd>
+<dt><kbd>--output-filename</kbd></dt>
+<dd><p>name of compressed numpy file to store the embeddings</p>
+<p>Default: “embeddings.h5”</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="tutorial.html" class="btn btn-neutral float-right" title="CLI Tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Zahoor Zafrulla, Ziga Avsec, Avanti Shrikumar, Anshul Kundaje.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

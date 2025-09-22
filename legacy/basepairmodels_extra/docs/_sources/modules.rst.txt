@@ -1,0 +1,25 @@
+********
+Modules
+********
+
+Model Architectures
+==============
+.. automodule:: basepairmodels.common.model_archs
+    :members:
+
+Stats
+==============
+.. automodule:: basepairmodels.common.stats
+    :members:
+
+Bigwig Utils
+==============
+.. automodule:: basepairmodels.cli.bigwigutils
+    :members:
+
+Loss Functions
+==============
+.. automodule:: basepairmodels.cli.losses
+    :members:
+
+

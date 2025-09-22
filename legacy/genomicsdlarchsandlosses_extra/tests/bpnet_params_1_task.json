@@ -1,0 +1,31 @@
+{
+    "input_len": 2114,
+    "output_profile_len": 1000,
+    "motif_module_params": {
+        "filters": [64],
+        "kernel_sizes": [21],
+        "padding": "valid"
+    },
+    "syntax_module_params": {
+        "num_dilation_layers": 8,
+        "filters": 64,
+        "kernel_size": 3,
+        "padding": "valid",
+        "pre_activation_residual_unit": true
+    },
+    "profile_head_params": {
+        "filters": 1,
+        "kernel_size":  75,
+        "padding": "valid"
+    },
+    "counts_head_params": {
+        "units": [64, 32, 1],
+        "dropouts": [0.25, 0, 0],
+        "activations": ["leakyrelu", "leakyrelu", "linear"]    
+    },
+    "profile_bias_module_params": {
+        "kernel_sizes": [1]
+    },
+    "counts_bias_module_params": {
+    }
+}

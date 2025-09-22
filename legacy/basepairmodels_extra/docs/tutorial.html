@@ -1,0 +1,480 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>CLI Tutorial &mdash; BPNet 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Modules" href="modules.html" />
+    <link rel="prev" title="Command Line Interface" href="documentation.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BPNet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">BPNet Documentatation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Command Line Interface</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CLI Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#experimental-dataset">1. Experimental dataset</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#preprocessing-steps-to-generate-bigwig-counts-tracks">1.1 Preprocessing steps to generate bigwig counts tracks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#merge-the-two-replicates-and-create-and-index">1.1.1 Merge the two replicates and create and index</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-bigwig-files-using-bedtools-via-intermediate-bedgraph-files">1.1.2 Create bigwig files using bedtools via intermediate bedGraph files</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#identify-peaks">1.2 Identify peaks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#organize-you-data">1.3 Organize you data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reference-genome">1.4 Reference genome</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#train-a-model">2. Train a model!</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#predict-on-test-set">3. Predict on test set</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compute-metrics">4. Compute metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compute-importance-scores">5. Compute importance scores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#discover-motifs-with-tf-modisco">6. Discover motifs with TF-modisco</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="miscellaneous.html">Miscellaneous</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BPNet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>CLI Tutorial</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/tutorial.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="cli-tutorial">
+<h1>CLI Tutorial<a class="headerlink" href="#cli-tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="experimental-dataset">
+<h2>1. Experimental dataset<a class="headerlink" href="#experimental-dataset" title="Permalink to this headline">¶</a></h2>
+<p>For this tutorial we’ll use experimental CHIP-seq data. The particular dataset we have chosen has the transcription factor CTCF as the assay target and was obtained from the K562 cell line. The dataset is available on the ENCODE data portal here <a class="reference external" href="https://www.encodeproject.org/experiments/ENCSR000EGM/">ENCSR000EGM</a></p>
+<p>Download the .bam files for the two replicates shown below in the image.</p>
+<img alt="replicate bams" class="align-center" src="_images/tutorial-data.png" />
+<p>The two replicates are isogenic replicates (biological). A more detailed explanation
+of the various types of replicates can be found <a class="reference external" href="https://www.encodeproject.org/data-standards/terms/">here</a>.</p>
+<p>Links to the replicate bam files provided below.</p>
+<p><a class="reference external" href="https://www.encodeproject.org/files/ENCFF198CVB/&#64;&#64;download/ENCFF198CVB.bam">ENCFF198CVB</a></p>
+<p><a class="reference external" href="https://www.encodeproject.org/files/ENCFF488CXC/&#64;&#64;download/ENCFF488CXC.bam">ENCFF488CXC</a></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget https://www.encodeproject.org/files/ENCFF198CVB/@@download/ENCFF198CVB.bam -O rep1.bam
+wget https://www.encodeproject.org/files/ENCFF488CXC/@@download/ENCFF488CXC.bam -O rep2.bam
+</pre></div>
+</div>
+<p>Now download the control for the experiment, which is available here <a class="reference external" href="https://www.encodeproject.org/experiments/ENCSR000EHI/">ENCSR000EHI</a></p>
+<p>Download the bam file shown in the image below.</p>
+<img alt="control bam" class="align-center" src="_images/tutorial-control.png" />
+<p>Link provided below</p>
+<p><a class="reference external" href="https://www.encodeproject.org/files/ENCFF023NGN/&#64;&#64;download/ENCFF023NGN.bam">ENCFF023NGN</a></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget https://www.encodeproject.org/files/ENCFF023NGN/@@download/ENCFF023NGN.bam -O control.bam
+</pre></div>
+</div>
+<div class="section" id="preprocessing-steps-to-generate-bigwig-counts-tracks">
+<h3>1.1 Preprocessing steps to generate bigwig counts tracks<a class="headerlink" href="#preprocessing-steps-to-generate-bigwig-counts-tracks" title="Permalink to this headline">¶</a></h3>
+<p>For the following steps you will need <cite>samtools</cite> <cite>bamtools</cite> and <cite>bedGraphToBigWig</cite>, which are not
+installed as part of this repository.</p>
+<p>Here are some links to help install those tools.</p>
+<p><a class="reference external" href="http://www.htslib.org/download/">samtools</a></p>
+<p><a class="reference external" href="https://anaconda.org/bioconda/bamtools">bamtools</a></p>
+<p><a class="reference external" href="http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/">bedGraphToBigWig (Linux 64-bit)</a></p>
+<p><a class="reference external" href="http://hgdownload.soe.ucsc.edu/admin/exe/macOSX.x86_64/">bedGraphToBigWig (Mac OSX 10.14.6)</a></p>
+<div class="section" id="merge-the-two-replicates-and-create-and-index">
+<h4>1.1.1 Merge the two replicates and create and index<a class="headerlink" href="#merge-the-two-replicates-and-create-and-index" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>samtools merge -f merged.bam rep1.bam rep2.bam
+samtools index merged.bam
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-bigwig-files-using-bedtools-via-intermediate-bedgraph-files">
+<h4>1.1.2 Create bigwig files using bedtools via intermediate bedGraph files<a class="headerlink" href="#create-bigwig-files-using-bedtools-via-intermediate-bedgraph-files" title="Permalink to this headline">¶</a></h4>
+<p><strong>Experiment</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># get coverage of 5’ positions of the plus strand</span>
+bedtools genomecov -5 -bg -strand + <span class="se">\</span>
+        -g hg38.chrom.sizes -ibam merged.bam <span class="se">\</span>
+        <span class="p">|</span> sort -k1,1 -k2,2n &gt; plus.bedGraph
+
+<span class="c1"># get coverage of 5’ positions of the minus strand</span>
+bedtools genomecov -5 -bg -strand - <span class="se">\</span>
+        -g hg38.chrom.sizes -ibam merged.bam <span class="se">\</span>
+        <span class="p">|</span> sort -k1,1 -k2,2n &gt; minus.bedGraph
+
+<span class="c1"># Convert bedGraph files to bigWig files</span>
+bedGraphToBigWig plus.bedGraph hg38.chrom.sizes plus.bw
+bedGraphToBigWig minus.bedGraph hg38.chrom.sizes minus.bw
+</pre></div>
+</div>
+<p><strong>Control</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># get coverage of 5’ positions of the plus strand</span>
+bedtools genomecov -5 -bg -strand + <span class="se">\</span>
+        -g hg38.chrom.sizes -ibam control.bam <span class="se">\</span>
+        <span class="p">|</span> sort -k1,1 -k2,2n &gt; control_plus.bedGraph
+
+bedtools genomecov -5 -bg -strand - <span class="se">\</span>
+        -g hg38.chrom.sizes -ibam control.bam <span class="se">\</span>
+         <span class="p">|</span> sort -k1,1 -k2,2n &gt; control_minus.bedGraph
+
+<span class="c1"># Convert bedGraph files to bigWig files</span>
+bedGraphToBigWig control_plus.bedGraph hg38.chrom.sizes control_plus.bw
+bedGraphToBigWig control_minus.bedGraph hg38.chrom.sizes control_minus.bw
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="identify-peaks">
+<h3>1.2 Identify peaks<a class="headerlink" href="#identify-peaks" title="Permalink to this headline">¶</a></h3>
+<p>For the purposes of this tutorial we will use the optimal IDR thresholded peaks that are already available in the ENCODE data portal. We will use the the narrowPeak files that are in BED6+4 format. Explanation of what each of the 10 fields means can be found  <a class="reference external" href="http://genome.ucsc.edu/FAQ/FAQformat.html#format12">here</a>. Currently, only this format is supported but in the
+future support for more formats will be added.</p>
+<p>See image below that shows the file listed in the ENCODE data portal</p>
+<img alt="idr peaks" class="align-center" src="_images/tutorial-idrpeaks.png" />
+<p>Link to download the file
+<a class="reference external" href="https://www.encodeproject.org/files/ENCFF396BZQ/&#64;&#64;download/ENCFF396BZQ.bed.gz">ENCFF396BZQ</a></p>
+</div>
+<div class="section" id="organize-you-data">
+<h3>1.3 Organize you data<a class="headerlink" href="#organize-you-data" title="Permalink to this headline">¶</a></h3>
+<p>We suggest creating a directory structure to store the data, models, predictions, metrics, importance scores, discovered motifs, plots &amp; visualizations etc. that will make it easier for you to organize and maintain your work. Let’s start by creating a parent directory for the experiment and moving the bigwig files and peaks file from section 1.1 &amp; 1.2 to a data directory</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir ENCSR000EGM
+mkdir ENCSR000EGM/data
+mv *.bw ENCSR000EGM/data
+mv peaks.bed ENCSR000EGM/data
+</pre></div>
+</div>
+<p>Once this is done, your directory heirarchy should resemble this</p>
+<img alt="data directory" class="align-center" src="_images/directory-data.png" />
+<p>Note: The data organization that is suggested here is not a requirement!</p>
+</div>
+<div class="section" id="reference-genome">
+<h3>1.4 Reference genome<a class="headerlink" href="#reference-genome" title="Permalink to this headline">¶</a></h3>
+<p>For the sake of this tutorial let’s assume we have a <cite>reference</cite> directory at the same level as the <cite>ENCSR000EGM</cite> experiment directory. In the <cite>reference</cite> directory we will place 4 files the hg38 fasta file, the index to the fasta file, chromosome sizes file and one text file that contains a list of chromosomes we care about (one per line - chr1-22, X, Y, M and exclude the rest). The directory structure looks like this.</p>
+<img alt="data directory" class="align-center" src="_images/directory-reference.png" />
+</div>
+</div>
+<div class="section" id="train-a-model">
+<h2>2. Train a model!<a class="headerlink" href="#train-a-model" title="Permalink to this headline">¶</a></h2>
+<p>Before we start training, we need to compile a json file that contains information about the input data. Here is a sample json file that shows how to specify the input data information for the data we organized in Section 1.3. The data is organized into tracks. In this example we have two tracks, the plus and the minus strand. Each track has 4 required keys <cite>strand</cite>, <cite>task_id</cite>, <cite>signal</cite>, &amp; <cite>peaks</cite> and one optional key <cite>control</cite>, which can be specified if control data is available. Notice how the <cite>task_id</cite> remains the same for the two tracks. We use the same <cite>task_id</cite> for the plus &amp; minus pairs of the same experiment, and use <cite>strand</cite> to disinguish between the two, <cite>0</cite> for plus strand and <cite>1</cite> for the minus strand.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">{</span>
+    <span class="s2">&quot;task0_plus&quot;</span>: <span class="o">{</span><span class="s2">&quot;strand&quot;</span>: <span class="m">0</span>,
+                  <span class="s2">&quot;task_id&quot;</span>: <span class="m">0</span>,
+                  <span class="s2">&quot;signal&quot;</span>: <span class="s2">&quot;/users/john/ENCSR000EGM/data/plus.bw&quot;</span>,
+                  <span class="s2">&quot;control&quot;</span>: <span class="s2">&quot;/users/john/ENCSR000EGM/data/control_plus.bw&quot;</span>,
+                  <span class="s2">&quot;peaks&quot;</span>: <span class="s2">&quot;/users/john/ENCSR000EGM/data/peaks.bed&quot;</span><span class="o">}</span>,
+    <span class="s2">&quot;task0_minus&quot;</span>: <span class="o">{</span><span class="s2">&quot;strand&quot;</span>: <span class="m">1</span>,
+                   <span class="s2">&quot;task_id&quot;</span>: <span class="m">0</span>,
+                   <span class="s2">&quot;signal&quot;</span>: <span class="s2">&quot;/users/john/ENCSR000EGM/data/minus.bw&quot;</span>,
+                   <span class="s2">&quot;control&quot;</span>: <span class="s2">&quot;/users/john/ENCSR000EGM/data/control_minus.bw&quot;</span>,
+                   <span class="s2">&quot;peaks&quot;</span>: <span class="s2">&quot;/users/john/ENCSR000EGM/data/peaks.bed&quot;</span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>Now that we have our data prepped, we can train our first model!!</p>
+<p>The command to train a model is called <cite>train</cite>.</p>
+<p>You can kick start the training process by executing this command in your shell</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">BASE_DIR</span><span class="o">=</span>~/ENCSR000EGM
+<span class="nv">DATA_DIR</span><span class="o">=</span><span class="nv">$BASE_DIR</span>/data
+<span class="nv">MODEL_DIR</span><span class="o">=</span><span class="nv">$BASE_DIR</span>/models
+<span class="nv">REFERENCE_DIR</span><span class="o">=</span>~/reference
+<span class="nv">CHROM_SIZES</span><span class="o">=</span><span class="nv">$REFERENCE_DIR</span>/hg38.chrom.sizes
+<span class="nv">REFERENCE_GENOME</span><span class="o">=</span><span class="nv">$REFERENCE_DIR</span>/hg38.genome.fa
+<span class="nv">CV_SPLITS</span><span class="o">=</span><span class="nv">$BASE_DIR</span>/splits.json
+<span class="nv">INPUT_DATA</span><span class="o">=</span><span class="nv">$BASE_DIR</span>/input_data.json
+
+mkdir <span class="nv">$MODEL_DIR</span>
+train <span class="se">\</span>
+    --input-data <span class="nv">$INPUT_DATA</span> <span class="se">\</span>
+    --stranded <span class="se">\</span>
+    --has-control <span class="se">\</span>
+    --output-dir <span class="nv">$MODEL_DIR</span> <span class="se">\</span>
+    --reference-genome <span class="nv">$REFERENCE_GENOME</span> <span class="se">\</span>
+    --chroms <span class="k">$(</span>paste -s -d <span class="s1">&#39; &#39;</span> <span class="nv">$reference_dir</span>/hg38_chroms.txt<span class="k">)</span> <span class="se">\</span>
+    --chrom-sizes <span class="nv">$CHROM_SIZES</span> <span class="se">\</span>
+    --splits <span class="nv">$CV_SPLITS</span> <span class="se">\</span>
+    --model-arch-name BPNet1000d8 <span class="se">\</span>
+    --sequence-generator-name BPNet <span class="se">\</span>
+    --model-output-filename model <span class="se">\</span>
+    --input-seq-len <span class="m">2114</span> <span class="se">\</span>
+    --output-len <span class="m">1000</span> <span class="se">\</span>
+    --filters <span class="m">64</span> <span class="se">\</span>
+    --shuffle <span class="se">\</span>
+    --threads <span class="m">10</span> <span class="se">\</span>
+    --epochs <span class="m">100</span> <span class="se">\</span>
+    --learning-rate <span class="m">0</span>.004
+</pre></div>
+</div>
+<p>The <cite>splits.json</cite> file contains information about the chromosomes that are used for validation and test. Here is a sample that contains one split.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">{</span>
+    <span class="s2">&quot;0&quot;</span>: <span class="o">{</span>
+        <span class="s2">&quot;val&quot;</span>: <span class="o">[</span><span class="s2">&quot;chr10&quot;</span>, <span class="s2">&quot;chr8&quot;</span><span class="o">]</span>,
+        <span class="s2">&quot;test&quot;</span>: <span class="o">[</span><span class="s2">&quot;chr1&quot;</span><span class="o">]</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>Note: It might take a few minutes for the training to begin once the above command has been issued, be patient and you should see the training eventually start. For this experiment the training should complete in about an hour or atmost 2 hours depending on the GPU you are using.</p>
+</div>
+<div class="section" id="predict-on-test-set">
+<h2>3. Predict on test set<a class="headerlink" href="#predict-on-test-set" title="Permalink to this headline">¶</a></h2>
+<p>Once the training is complete we can generate prediction on the test chromosome.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">PREDICTIONS_DIR</span><span class="o">=</span><span class="nv">$BASE_DIR</span>/predictions
+mkdir <span class="nv">$PREDICTIONS_DIR</span>
+predict <span class="se">\</span>
+    --model <span class="k">$(</span>ls <span class="si">${</span><span class="nv">MODEL_DIR</span><span class="si">}</span>/***INSERT-DIRECTORY-NAME-HERE***/*.h5<span class="k">)</span> <span class="se">\</span>
+    --chrom-sizes <span class="nv">$CHROM_SIZES</span> <span class="se">\</span>
+    --chroms chr1 <span class="se">\</span>
+    --reference-genome <span class="nv">$REFERENCE_GENOME</span> <span class="se">\</span>
+    --exponentiate-counts <span class="se">\</span>
+    --output-dir <span class="nv">$PREDICTIONS_DIR</span> <span class="se">\</span>
+    --input-data <span class="nv">$INPUT_DATA</span> <span class="se">\</span>
+    --predict-peaks <span class="se">\</span>
+    --write-buffer-size <span class="m">2000</span> <span class="se">\</span>
+    --batch-size <span class="m">1</span> <span class="se">\</span>
+    --has-control <span class="se">\</span>
+    --stranded <span class="se">\</span>
+    --input-seq-len <span class="m">2114</span> <span class="se">\</span>
+    --output-len <span class="m">1000</span> <span class="se">\</span>
+    --output-window-size <span class="m">1000</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="compute-metrics">
+<h2>4. Compute metrics<a class="headerlink" href="#compute-metrics" title="Permalink to this headline">¶</a></h2>
+<p>To compute metrics first compute the min max bounds for each peak individually, and on both the plus and minus strands. This can be done by a single command as follows:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">BOUNDS_DIR</span><span class="o">=</span><span class="nv">$BASE_DIR</span>/bounds
+mkdir <span class="nv">$METRICS_DIR</span>
+bounds <span class="se">\</span>
+    --input-profiles <span class="nv">$DATA_DIR</span>/plus.bw <span class="nv">$DATA_DIR</span>/minus.bw <span class="se">\</span>
+    --output-names task0_plus task0_minus <span class="se">\</span>
+    --output-directory <span class="nv">$BOUNDS_DIR</span> <span class="se">\</span>
+    --peaks <span class="nv">$DATA_DIR</span>/peaks.bed <span class="se">\</span>
+    --chroms chr1
+</pre></div>
+</div>
+<p>Now compute metrics on the <cite>plus</cite> and <cite>minus</cite> strand separately using the following command</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">METRICS_DIR</span><span class="o">=</span><span class="nv">$BASE_DIR</span>/metrics
+mkdir <span class="nv">$METRICS_DIR</span>
+metrics <span class="se">\</span>
+   -A <span class="o">[</span>path to profile training bigwig<span class="o">]</span> <span class="se">\</span>
+   -B <span class="o">[</span>path to profile predictions bigwig<span class="o">]</span> <span class="se">\</span>
+   --peaks <span class="nv">$DATA_DIR</span>/peaks.bed <span class="se">\</span>
+   --chroms chr1 <span class="se">\</span>
+   --output-dir <span class="nv">$METRICS_DIR</span> <span class="se">\</span>
+   --apply-softmax-to-profileB <span class="se">\</span>
+   --countsB <span class="o">[</span>path to exponentiated counts predictions bigWig<span class="o">]</span> <span class="se">\</span>
+   --chrom-sizes <span class="nv">$CHROM_SIZES</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="compute-importance-scores">
+<h2>5. Compute importance scores<a class="headerlink" href="#compute-importance-scores" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">SHAP_DIR</span><span class="o">=</span><span class="nv">$BASE_DIR</span>/shap
+mkdir <span class="nv">$SHAP_DIR</span>
+shap_scores <span class="se">\</span>
+    --reference-genome <span class="nv">$REFERENCE_GENOME</span> <span class="se">\</span>
+    --model <span class="k">$(</span>ls <span class="si">${</span><span class="nv">MODEL_DIR</span><span class="si">}</span>/***INSERT-DIRECTORY-NAME-HERE***/*.h5<span class="k">)</span> <span class="se">\</span>
+    --bed-file <span class="nv">$DATA_DIR</span>/peaks.bed <span class="se">\</span>
+    --chroms chr1 <span class="se">\</span>
+    --output-dir <span class="nv">$SHAP_DIR</span> <span class="se">\</span>
+    --input-seq-len <span class="m">2114</span> <span class="se">\</span>
+    --control-len <span class="m">1000</span> <span class="se">\</span>
+    --control-smoothing <span class="m">7</span>.0 <span class="m">81</span> <span class="se">\</span>
+    --task-id <span class="m">0</span> <span class="se">\</span>
+    --control-info <span class="nv">$INPUT_DATA</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="discover-motifs-with-tf-modisco">
+<h2>6. Discover motifs with TF-modisco<a class="headerlink" href="#discover-motifs-with-tf-modisco" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">MODISCO_PROFILE_DIR</span><span class="o">=</span><span class="nv">$BASE_DIR</span>/modisco_profile
+mkdir <span class="nv">$MODISCO_PROFILE_DIR</span>
+motif_discovery <span class="se">\</span>
+    ---scores-path <span class="nv">$INTERPRET_DIR</span>/&lt;path to profile scores file&gt; <span class="se">\</span>
+    --output-directory <span class="nv">$MODISCO_PROFILE_DIR</span>
+
+<span class="nv">MODISCO_COUNTS_DIR</span><span class="o">=</span><span class="nv">$BASE_DIR</span>/modisco_counts
+mkdir <span class="nv">$MODISCO_COUNTS_DIR</span>
+motif_discovery <span class="se">\</span>
+    ---scores-path <span class="nv">$INTERPRET_DIR</span>/&lt;path to counts scores file&gt; <span class="se">\</span>
+    --output-directory <span class="nv">$MODISCO_COUNTS_DIR</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="modules.html" class="btn btn-neutral float-right" title="Modules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="documentation.html" class="btn btn-neutral float-left" title="Command Line Interface" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Zahoor Zafrulla, Ziga Avsec, Avanti Shrikumar, Anshul Kundaje.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

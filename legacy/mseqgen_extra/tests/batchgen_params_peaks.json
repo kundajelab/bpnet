@@ -1,0 +1,10 @@
+{
+    "input_seq_len": 1346,
+    "output_len": 1000,
+    "max_jitter": 128, 
+    "rev_comp_aug": true,
+    "negative_sampling_rate": 0.0,
+    "sampling_mode": "peaks",
+    "mode": "train",
+    "shuffle": true
+}

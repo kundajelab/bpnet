@@ -1,0 +1,53 @@
+Documentation
+===================================
+
+Modules
+*******
+
+1. generators
+-------------
+
+This module contains classes for all the sequence data generators
+
+**Classes**
+    
+*MSequenceGenerator* - The main base class for all generators.
+     
+Multi task batch data generation for training deep neural networks on 
+high-throughput sequencing data of various geonmics assays
+    
+
+*MBPNetSequenceGenerator* - Derives from MSequenceGenerator.
+    
+Multi task batch data generation for training BPNet on high-throughput
+sequencing data of various geonmics assays
+         
+
+1.1 MSequenceGenerator
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: mseqgen.generators.MSequenceGenerator
+    :members:
+    :no-private-members:
+
+1.2 MBPNetSequenceGenerator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: mseqgen.generators.MBPNetSequenceGenerator
+    :members:
+    :no-private-members:
+    :inherited-members:
+
+2. sequtils
+------------
+
+.. autofunction:: mseqgen.sequtils.one_hot_encode
+
+.. autofunction:: mseqgen.sequtils.reverse_complement_of_sequences
+
+.. autofunction:: mseqgen.sequtils.reverse_complement_of_profiles
+
+.. autofunction:: mseqgen.sequtils.getChromPositions
+
+.. autofunction:: mseqgen.sequtils.getPeakPositions
+
