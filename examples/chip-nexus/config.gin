@@ -1,9 +1,0 @@
-# exclude a large portion of the training set
-exclude_chr=["chrX","chrY","chr5","chr6","chr7","chr10","chr14","chr11","chr13","chr12","chr15"]
-valid_chr = ['chr2']
-test_chr = ['chr1', 'chr8', 'chr9',
-            'chr3', 'chr4']
-seq_width = 200
-n_dil_layers = 3
-bpnet_data.interval_augmentation_shift = 100
-train.seed = 1

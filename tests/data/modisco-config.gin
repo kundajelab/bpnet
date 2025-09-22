@@ -1,5 +1,0 @@
-import bpnet
-import tests.configurables
-
-modisco_run.workflow = @DummyModiscoWorkflow()
-modisco_run.report = None
