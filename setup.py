@@ -16,7 +16,7 @@ setup(
                       "tensorflow-probability==0.12.2","pysam==0.18.0","py2bit==0.3.0",
                       "tqdm", "scikit-learn",
                       "scipy", "scikit-image", "scikit-learn", "deepdish", "pandas", "matplotlib", "plotly", 
-                      "deeptools", "pyfaidx", "deeplift", "hdf5plugin","shap @ git+https://github.com/kundajelab/shap.git"
+                      "deeptools", "pyfaidx", "deeplift", "hdf5plugin","kundajelab-shap==1"
                       ],
     extras_require={"dev": ["pytest", "pytest-cov"]},
     license="MIT license",

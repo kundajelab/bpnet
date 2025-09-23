@@ -61,8 +61,13 @@ conda activate bpnet
 #### 3.3. Install basepairmodels
 
 ```
-pip install git+https://github.com/kundajelab/bpnet-refactor.git
+pip install git+https://github.com/kundajelab/bpnet.git
 
+```
+or
+
+```
+pip install bpnet
 ```
 #### 3.4 Additional tools to install
 
