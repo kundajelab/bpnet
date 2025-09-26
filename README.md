@@ -344,7 +344,7 @@ Nature genetics 54 (11), 1581-1583
 
 This step allows one to get a list of sequence motifs that drive the signal in the studied experiment.
 
-Use the newer version of TF-modisco called modisco-lite to discover the motifs. Support to directly use modisco-lite from the BPNet repo will be added later. For now use: https://github.com/jmschrei/tfmodisco-lite
+Use the newer version of TF-modisco to discover the motifs. Support to directly use modisco from the BPNet repo will be added later. For now use: https://github.com/kundajelab/tfmodisco
 
 
 ```
@@ -383,7 +383,7 @@ modisco motifs\
 
 While TF-modisco allows one to get a list of sequence motifs, FiNeMo allows one to map the location of these motifs in all the input regions. FiNeMO is a GPU-accelerated hit caller for retrieving TFMoDISCo motif occurences from machine-learning-model-generated contribution scores.
 
-Support to directly use FiNeMO from the BPNet repo will be added later. For now use: https://github.com/austintwang/finemo_gpu
+Support to directly use FiNeMO from the BPNet repo will be added later. For now use: https://github.com/kundajelab/finemo
 
 ```
 # for example
