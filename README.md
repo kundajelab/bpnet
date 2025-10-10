@@ -4,10 +4,10 @@ BPNet is a python package with a CLI to train and interpret base-resolution deep
 
 ## Table of contents
 
-[Installation](https://github.com/kundajelab/bpnet-refactor?tab=readme-ov-file#installation) </br>
-[Tutorial](https://github.com/kundajelab/bpnet-refactor?tab=readme-ov-file#tutorial) </br>
-[How to Cite](https://github.com/kundajelab/bpnet-refactor?tab=readme-ov-file#how-to-cite) </br>
-[Full Documentation](https://github.com/kundajelab/bpnet-refactor/wiki) </br>
+[Installation](https://github.com/kundajelab/bpnet?tab=readme-ov-file#installation) </br>
+[Tutorial](https://github.com/kundajelab/bpnet?tab=readme-ov-file#tutorial) </br>
+[How to Cite](https://github.com/kundajelab/bpnet?tab=readme-ov-file#how-to-cite) </br>
+[Full Documentation](https://github.com/kundajelab/bpnet/wiki) </br>
 
 ## Installation
 
@@ -94,13 +94,13 @@ conda install -y -c bioconda samtools=1.1 bedtools ucsc-bedgraphtobigwig
 
 ### 0. Optional additional walk through for downloading and preprocessing an example data:
 
-[Download-test-data](https://github.com/kundajelab/bpnet-refactor/wiki/Download-test-data)
+[Download-test-data](https://github.com/kundajelab/bpnet/wiki/Download-test-data)
 
-[Preprocessing](https://github.com/kundajelab/bpnet-refactor/wiki/Preprocessing)
+[Preprocessing](https://github.com/kundajelab/bpnet/wiki/Preprocessing)
 
-[Outlier_removal](https://github.com/kundajelab/bpnet-refactor/wiki/Outlier_removal)
+[Outlier_removal](https://github.com/kundajelab/bpnet/wiki/Outlier_removal)
 
-[Background_generation](https://github.com/kundajelab/bpnet-refactor/wiki/Background_generation)
+[Background_generation](https://github.com/kundajelab/bpnet/wiki/Background_generation)
 
 ### 1. Train a model!
 
