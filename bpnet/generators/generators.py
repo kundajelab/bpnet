@@ -1091,13 +1091,12 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
                     profile_predictions[rowCnt, :, profile_track_idx-cur_num_signal_files:profile_track_idx] = \
                         sequtils.reverse_complement_of_profiles(profile_predictions[rowCnt:rowCnt+1, :, 
                                                                                     profile_track_idx-cur_num_signal_files:profile_track_idx],
-                                                                stranded=(cur_num_signal_files==2))
+                                                                stranded=(cur_num_signal_files%2 == 0))
                 
                 cur_num_bias_files = len(bias_files[i])
                 # Step 3. get the bias values
                 #skip setting the bias values. Initialization value of zero will be used
                 if not self._set_bias_as_zero and cur_num_bias_files>0:
-                    assert(cur_num_bias_files <= 2)
                     bias_track_idx = 0 
 
                     for j in range(cur_num_bias_files):
@@ -1133,13 +1132,13 @@ class MBPNetSequenceGenerator(MSequenceGenerator):
                         profile_bias_input[i][rowCnt, :, 0:cur_num_bias_files] = \
                             sequtils.reverse_complement_of_profiles(profile_bias_input[i][rowCnt:rowCnt+1, :, 
                                                                                         0:cur_num_bias_files],
-                                                                                        stranded=(cur_num_bias_files==2))
+                                                                                        stranded=(cur_num_bias_files%2 == 0))
                         # for edge cases when only one strand out of 2 strands is smoothed
                         if cur_num_smoothed_bias_files > 0:
                             profile_bias_input[i][rowCnt, :, cur_num_bias_files:cur_num_bias_files+cur_num_smoothed_bias_files] = \
                                sequtils.reverse_complement_of_profiles(profile_bias_input[i][rowCnt:rowCnt+1, :, 
                                                                                         cur_num_bias_files:cur_num_bias_files+cur_num_smoothed_bias_files],
-                                                                                        stranded=(cur_num_smoothed_bias_files==2))
+                                                                                        stranded=(cur_num_smoothed_bias_files%2 == 0))
 
             rowCnt += 1
 

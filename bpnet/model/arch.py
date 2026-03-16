@@ -441,15 +441,29 @@ def counts_bias_module(counts_head, counts_bias_inputs, tasks_info,
                     name="{}_concat_with_counts_bias_{}".format(name_prefix, i),
                     axis=-1)
             else:
-                # summing over strands
-                counts_bias_input_out_logcounts = layers.Lambda(
-                    lambda x: tf.math.reduce_logsumexp(x, axis=-1, keepdims=True),
-                    name="{}_logsumexp_counts_bias_{}".format(name_prefix, i))(counts_bias_inputs[i])
+                counts_bias_input_out_logcounts = []
 
-                concat_with_counts_bias_input = layers.concatenate(
-                    [_counts_head, counts_bias_input_out_logcounts], 
-                    name="{}_concat_with_counts_bias_{}".format(name_prefix, i),
-                    axis=-1)
+                if len(counts_bias_inputs[i]) %2 ==0:
+
+                    for j in range(0, len(counts_bias_inputs[i]) - 1, 2):
+                        pair = layers.Concatenate(axis=-1)(
+                            counts_bias_inputs[i][j:j+2]
+                        )
+                        out = layers.Lambda(
+                            lambda x: tf.math.reduce_logsumexp(x, axis=-1, keepdims=True),
+                            name="{}_logsumexp_counts_bias_{}_{}".format(name_prefix, i, j)
+                        )(pair)
+                        counts_bias_input_out_logcounts.append(out)
+
+                else:
+                    layers.Lambda(
+                            lambda x: tf.math.reduce_logsumexp(x, axis=-1, keepdims=True),
+                            name="{}_logsumexp_counts_bias_{}".format(name_prefix, i)(counts_bias_inputs[i])
+
+                concat_with_counts_bias_input = layers.Concatenate(
+                    axis=-1,
+                    name="{}_concat_with_counts_bias_{}".format(name_prefix, i)
+                )([_counts_head] + counts_bias_input_out_logcounts)
 
             # single unit Dense layer to yield the counts output 
             # prediction for this task
@@ -743,5 +757,3 @@ def BPNet(
                         orig_multi_loss,
                         inputs=inputs, 
                         outputs=[profile_outputs, logcounts_outputs])
-
-

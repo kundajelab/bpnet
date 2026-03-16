@@ -1,6 +1,5 @@
 """
-    Default parameters for BPNet architecture defintion - single
-    unstranded task
+    Default parameters for BPNet architecture defintion - single stranded task
 """
 
 # length of one hot encoded input sequence
@@ -8,6 +7,8 @@ INPUT_LEN = 2114
 
 # length of profile predictions
 OUTPUT_PROFILE_LEN = 1000
+
+STRANDED = True
 
 # parameters to the motif module that has one or more 
 # regular convolutional layers
@@ -32,17 +33,13 @@ SYNTAX_MODULE_PARAMS = {
 
 # parameters to the profile head (the pre-bias profile predictions)
 PROFILE_HEAD_PARAMS = {
-    # the default for a single unstranded task, one filter resulting 
-    # in one profile head output
-    'filters': 1,
     'kernel_size':  75,
     'padding': 'valid'
 }
 
 # parameters to the counts head (the pre-bias logcounts predictions)
 COUNTS_HEAD_PARAMS = {
-    # number of Dense layer units, the default for a single 
-    # unstranded task
+    # number of Dense layer units, the default for a single stranded task
     'units': [1],
     'dropouts': [0.0],
     # 'linear', 'relu', 'leakyrelu', 'sigmoid', 'softmax', 'softplus',
