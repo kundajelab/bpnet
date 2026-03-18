@@ -223,7 +223,7 @@ def syntax_module(
 
 def profile_head(
     syntax_module_out, 
-    filters=bpnetdefaults.PROFILE_HEAD_PARAMS['filters'], 
+    filters=2, 
     kernel_size=bpnetdefaults.PROFILE_HEAD_PARAMS['kernel_size'], 
     padding=bpnetdefaults.PROFILE_HEAD_PARAMS['padding'], 
     name_prefix=None):
@@ -443,22 +443,21 @@ def counts_bias_module(counts_head, counts_bias_inputs, tasks_info,
             else:
                 counts_bias_input_out_logcounts = []
 
-                if len(counts_bias_inputs[i]) %2 ==0:
+                if counts_bias_inputs[i].shape[1] %2 ==0:
 
-                    for j in range(0, len(counts_bias_inputs[i]) - 1, 2):
-                        pair = layers.Concatenate(axis=-1)(
-                            counts_bias_inputs[i][j:j+2]
-                        )
+                    for j in range(0, counts_bias_inputs[i].shape[1] - 1, 2):
                         out = layers.Lambda(
                             lambda x: tf.math.reduce_logsumexp(x, axis=-1, keepdims=True),
                             name="{}_logsumexp_counts_bias_{}_{}".format(name_prefix, i, j)
-                        )(pair)
+                        )(counts_bias_inputs[i][:, j:j+2])
                         counts_bias_input_out_logcounts.append(out)
 
                 else:
-                    layers.Lambda(
+                    out = layers.Lambda(
                             lambda x: tf.math.reduce_logsumexp(x, axis=-1, keepdims=True),
-                            name="{}_logsumexp_counts_bias_{}".format(name_prefix, i)(counts_bias_inputs[i])
+                            name="{}_logsumexp_counts_bias_{}".format(name_prefix, i)
+                    )(counts_bias_inputs[i])
+                    counts_bias_input_out_logcounts.append(out)
 
                 concat_with_counts_bias_input = layers.Concatenate(
                     axis=-1,
